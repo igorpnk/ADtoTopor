@@ -1415,21 +1415,39 @@ Begin
    RuleNetS.Free
 End;
 
+Function GetViaTemplate (Via :IPCB_Via): String;
+Var
+  ViaName : string;
+Begin
+  ViaName := '';
+  ViaName := 'v'+FloatToStr(CoordToMMs(Via.SizeOnLayer[1])*100);
+  ViaName := 'h'+FloatToStr(CoordToMMs(Via.HoleSize)*100);
+  ViaName := 'z'+FloatToStr(CoordToMMs(Via.SizeOnLayer[2])*100);
+  ViaName := 'x'+FloatToStr(CoordToMMs(Via.SizeOnLayer[32])*100);
+  ViaName := 'St'+FloatToStr(Via.StartLayer.layerID);
+  Result := ViaName;
+
+End;
+
 Procedure AddConnectivity (FileXMLCon :TStringList;Board : IPCB_Board; ViastacksLL : TStringList; ViastacksRul : TStringList; );
   var
   BoardIterator : IPCB_BoardIterator;
   Via           : IPCB_Via;
   Track         : IPCB_Track;
   Arc           : IPCB_Arc;
+  ViaName       : String;
+  ViaPoz        : Integer;
   Begin
-    // Создаем итератор правил дифф пар
+    // Создаем итератор перебора переходных отверстий
     BoardIterator        := Board.BoardIterator_Create;
     BoardIterator.AddFilter_ObjectSet(MkSet(eViaObject));
     BoardIterator.AddFilter_LayerSet(AllLayers);
     BoardIterator.AddFilter_Method(eProcessAll);
     Via := BoardIterator.FirstPCBObject;
+    While (Via <> Nil) Do
+    Begin
 
-
+    end;
     Board.BoardIterator_Destroy(BoardIterator);
   End;
 
@@ -1559,7 +1577,11 @@ End;
 
 //ToDo
 // Обработать все варианты падстаков
+// Обработать все варианты переходников
+// Обработать маску переходных отвер
 // Обработать правила проектирования
 // Обработать боттом слой
 // Обработать не метрическую систему измерения
 // Мб сделать красивую шапку
+
+
