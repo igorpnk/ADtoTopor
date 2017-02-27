@@ -1416,7 +1416,21 @@ Begin
 End;
 
 Procedure AddConnectivity (FileXMLCon :TStringList;Board : IPCB_Board; ViastacksLL : TStringList; ViastacksRul : TStringList; );
+  var
+  BoardIterator : IPCB_BoardIterator;
+  Via           : IPCB_Via;
+  Track         : IPCB_Track;
+  Arc           : IPCB_Arc;
   Begin
+    // Создаем итератор правил дифф пар
+    BoardIterator        := Board.BoardIterator_Create;
+    BoardIterator.AddFilter_ObjectSet(MkSet(eViaObject));
+    BoardIterator.AddFilter_LayerSet(AllLayers);
+    BoardIterator.AddFilter_Method(eProcessAll);
+    Via := BoardIterator.FirstPCBObject;
+
+
+    Board.BoardIterator_Destroy(BoardIterator);
   End;
 
 Procedure Main;
