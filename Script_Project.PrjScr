@@ -76,6 +76,7 @@ StartProcName=ADtoTopoR.pas>Main
 
 [Generic_Watches]
 0=Teststring
+1=ViaName
 
 [OutputGroup1]
 Name=Netlist Outputs

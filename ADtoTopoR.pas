@@ -1,3 +1,4 @@
+uses Generics.Collections;
 Function LoadAFile : String;
 Var
    OpenDialog : TOpenDialog;
@@ -1415,40 +1416,82 @@ Begin
    RuleNetS.Free
 End;
 
-Function GetViaTemplate (Via :IPCB_Via): String;
-Var
-  ViaName : string;
+Function CompareVia (Via1 :IPCB_Via, Via2 :IPCB_Via): Boolean;
+var i : integer;
 Begin
-  ViaName := '';
-  ViaName := 'v'+FloatToStr(CoordToMMs(Via.SizeOnLayer[1])*100);
-  ViaName := 'h'+FloatToStr(CoordToMMs(Via.HoleSize)*100);
-  ViaName := 'z'+FloatToStr(CoordToMMs(Via.SizeOnLayer[2])*100);
-  ViaName := 'x'+FloatToStr(CoordToMMs(Via.SizeOnLayer[32])*100);
-  ViaName := 'St'+FloatToStr(Via.StartLayer.layerID);
-  Result := ViaName;
-
+  Result := true;
+  For i := 1 to 32 do
+  Begin // проверяем размеры переходников на всех слоях
+    if Via1.SizeOnLayer[i] <> Via2.SizeOnLayer[i] then Result := false;
+  end;
+  if Via2.StartLayer <> Via1.StartLayer then Result := false;
+  if Via2.StopLayer <> Via1.StopLayer then Result := false;
+  if Via2.IsTenting_Top <> Via1.IsTenting_Top then Result := false;
+  if Via2.IsTenting_Bottom <> Via1.IsTenting_Bottom then Result := false;
+  if Via2.SolderMaskExpansion <> Via1.SolderMaskExpansion then Result := false;
 End;
 
+
+
 Procedure AddConnectivity (FileXMLCon :TStringList;Board : IPCB_Board; ViastacksLL : TStringList; ViastacksRul : TStringList; );
-  var
+uses Classes, Generics.Collections;
+var
   BoardIterator : IPCB_BoardIterator;
   Via           : IPCB_Via;
+  ViaTemp       : IPCB_Via;
   Track         : IPCB_Track;
   Arc           : IPCB_Arc;
   ViaName       : String;
   ViaPoz        : Integer;
+  ViaMass       : array[0..99] of IPCB_Via; // пока получилось реализовать только через статический
+  ViaMassi      : integer;
+  i             : integer;
+  ViaTemplate   : Boolean;
+
   Begin
+    FileXMLCon.Add(#9+'<Connectivity version="1.2">');
+    FileXMLCon.Add(#9+#9+'<Vias>');
+    ViaMassi := -1;
     // Создаем итератор перебора переходных отверстий
     BoardIterator        := Board.BoardIterator_Create;
     BoardIterator.AddFilter_ObjectSet(MkSet(eViaObject));
     BoardIterator.AddFilter_LayerSet(AllLayers);
     BoardIterator.AddFilter_Method(eProcessAll);
     Via := BoardIterator.FirstPCBObject;
-    While (Via <> Nil) Do
-    Begin
 
-    end;
+    While (Via <> Nil) Do
+    Begin // перебираем переходные отверстия
+      FileXMLCon.Add(#9+#9+#9+'<Via>');
+      ViaTemplate := true;  // нужно ли создавать новый тип переходников
+      For i := 0 to ViaMassi do
+      Begin
+        if CompareVia(Via,ViaMass[i]) then
+        Begin
+          ViaName := 'Via'+FloatToStr(i);
+          ViaTemplate := false;
+        end;
+      end;
+      //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! СОбственно создание
+      if ViaTemplate = true then // если нужен новый тип то создаем его
+      Begin
+        inc(ViaMassi);
+        if ViaMassi > 98 then Begin ShowError('It is not allowed more than 99 types of vias.'); Exit; end;
+        ViaMass[ViaMassi] := Via;
+        ViaName := 'Via'+FloatToStr(ViaMassi);
+      end;
+      FileXMLCon.Add(#9+#9+#9+#9+'<ViastackRef name="'+ViaName+'"/>');
+      FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+Via.Net.Name+'"/>');
+      FileXMLCon.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Via.x))+
+                                    '" y="'+FloatToStr(CoordToMMs(Via.y))+'"/>');
+      FileXMLCon.Add(#9+#9+#9+'</Via>');
+      Via := BoardIterator.NextPCBObject;
+    end; //заканчиваем перебор переходников
     Board.BoardIterator_Destroy(BoardIterator);
+    FileXMLCon.Add(#9+#9+'</Vias>');
+
+
+
+    FileXMLCon.Add(#9+'</Connectivity>');
   End;
 
 Procedure Main;
@@ -1576,7 +1619,7 @@ Begin
 End;
 
 //ToDo
-// Обработать все варианты падстаков
+// Обработать все варианты падстаков  IPCB_PadTemplate!!!
 // Обработать все варианты переходников
 // Обработать маску переходных отвер
 // Обработать правила проектирования
