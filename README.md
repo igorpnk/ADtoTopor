@@ -1,6 +1,8 @@
 # ADtoTopor
 Data organization on the printed circuit board between AltiumDesigner and TopoR
 
+On development stage!
+
 Start procedure Main!
 
 1) Open in Altium Designer Script_Project.
