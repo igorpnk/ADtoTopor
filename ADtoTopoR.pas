@@ -1001,7 +1001,7 @@ Begin
               Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].vx))+
                       '" y="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].vy))+'"/>');
               Constructive.Add(#9+#9+#9+#9+#9+'</Line>');
-              Constructive.Add(#9+#9+#9+#9+'</Shape">');
+              Constructive.Add(#9+#9+#9+#9+'</Shape>');
               XEnd := BoardOutline.Segments[I].vx;
               YEnd := BoardOutline.Segments[I].vy;
               If I = (BoardOutline.PointCount - 1) Then
@@ -1013,7 +1013,7 @@ Begin
                 Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( X0))+
                       '" y="'+FloatToStr(CoordToMMs( Y0))+'"/>');
                 Constructive.Add(#9+#9+#9+#9+#9+'</Line>');
-                Constructive.Add(#9+#9+#9+#9+'</Shape">');
+                Constructive.Add(#9+#9+#9+#9+'</Shape>');
               End;
 
             End
@@ -1033,7 +1033,7 @@ Begin
               Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AStartX))+
                                                     '" y="'+FloatToStr(CoordToMMs( AStartY))+'"/>');
               Constructive.Add(#9+#9+#9+#9+#9+'</Line>');
-              Constructive.Add(#9+#9+#9+#9+'</Shape">');
+              Constructive.Add(#9+#9+#9+#9+'</Shape>');
               XEnd := AEndX;
               YEnd := AEndY;
               Constructive.Add(#9+#9+#9+#9+'<Shape lineWidth="0.001">');
@@ -1045,7 +1045,7 @@ Begin
               Constructive.Add(#9+#9+#9+#9+#9+#9+'<End x="'+FloatToStr(CoordToMMs( AEndX))+
               '" y="'+FloatToStr(CoordToMMs( AEndY))+'"/>');
               Constructive.Add(#9+#9+#9+#9+#9+'</Arc>');
-              Constructive.Add(#9+#9+#9+#9+'</Shape">');
+              Constructive.Add(#9+#9+#9+#9+'</Shape>');
             End;
 
        End;// конец перебора всех примитивов контура платы
@@ -1731,7 +1731,7 @@ var
                          16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
      BoardIterator.AddFilter_ObjectSet(MkSet(ePolyObject));
      BoardIterator.AddFilter_Method(eProcessAll);
-     Poly := BoardIterator.FirstPCBObject; //первый полигон 
+     Poly := BoardIterator.FirstPCBObject; //первый полигон
 
      While (Poly <> Nil) Do
      Begin
