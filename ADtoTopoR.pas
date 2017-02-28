@@ -1257,7 +1257,7 @@ Begin
    CompGroups.Free;
 End;
 
-Procedure AddRules (FileXMLRul :TStringList;FileXMLHSRul :TStringList; Board : IPCB_Board; Viastacks : TStringList; );
+Procedure AddRules (FileXMLRul :TStringList;FileXMLHSRul :TStringList; Board : IPCB_Board;  );
 Var
    Rule          : IPCB_Rule;
    RuleDiff      : IPCB_DifferentialPairsRoutingRule;
@@ -1276,12 +1276,14 @@ Var
    RuleNetS      : TStringList;
    IteratorNet   : IPCB_BoardIterator;
    Net           : IPCB_Net;
+   Viastacks     : TStringList;
 
 Begin
    RuleWidthS := TStringList.Create;
    RuleClearS := TStringList.Create;
    RuleClearCompS := TStringList.Create;
    RuleNetS  := TStringList.Create;
+   Viastacks := TStringList.Create;
    RuleWidth := '';
    RuleClear := '';
    RuleClearComp := '';
@@ -1294,6 +1296,7 @@ Begin
    RuleClearS.Add(#9+#9+'<RulesClearancesNetToNet>');
    RuleClearCompS.Add(#9+#9+'<RulesClearancesCompToComp>');
    RuleNetS.Add(#9+#9+'<NetProperties>');
+   Viastacks.Add(#9+#9+'<RulesViastacksOfNets>');
 
    // Создаем итератор правил дифф пар
    BoardIterator        := Board.BoardIterator_Create;
@@ -1376,6 +1379,16 @@ Begin
    End;// конец перебора всех правил
    Board.BoardIterator_Destroy(BoardIterator);
 
+  //*******Создаем общее правило переходников********//
+  Viastacks.Add(#9+#9+#9+'<ViastacksOfNets enabled="on">');
+  Viastacks.Add(#9+#9+#9+#9+'<ObjectsAffected>');
+  Viastacks.Add(#9+#9+#9+#9+#9+'<AllNets/>');
+  Viastacks.Add(#9+#9+#9+#9+'</ObjectsAffected>');
+  Viastacks.Add(#9+#9+#9+#9+'<Viastacks>');
+  Viastacks.Add(#9+#9+#9+#9+#9+'<AllViastacks/>');
+  Viastacks.Add(#9+#9+#9+#9+'</Viastacks>');
+  Viastacks.Add(#9+#9+#9+'</ViastacksOfNets>');
+
   //*******Перебираем неты********//
   IteratorNet := Board.BoardIterator_Create;
   IteratorNet.AddFilter_ObjectSet(MkSet(eNetObject));
@@ -1431,14 +1444,12 @@ Begin
   if Via2.SolderMaskExpansion <> Via1.SolderMaskExpansion then Result := false;
 End;
 
-
-
-Procedure AddConnectivity (FileXMLCon :TStringList;Board : IPCB_Board; ViastacksLL : TStringList; ViastacksRul : TStringList; );
+Procedure AddConnectivity (FileXMLCon :TStringList; Board : IPCB_Board; ViastacksLL : TStringList; );
 uses Classes, Generics.Collections;
 var
   BoardIterator : IPCB_BoardIterator;
+  LyrObj        : IPCB_LayerObject;
   Via           : IPCB_Via;
-  ViaTemp       : IPCB_Via;
   Track         : IPCB_Track;
   Arc           : IPCB_Arc;
   ViaName       : String;
@@ -1446,7 +1457,12 @@ var
   ViaMass       : array[0..99] of IPCB_Via; // пока получилось реализовать только через статический
   ViaMassi      : integer;
   i             : integer;
+  f             : integer;
   ViaTemplate   : Boolean;
+  ViaSingle     : Boolean;
+  oldSize       : TCoord;
+  ViaStart      : Boolean;
+  TestString    : String;
 
   Begin
     FileXMLCon.Add(#9+'<Connectivity version="1.2">');
@@ -1459,9 +1475,9 @@ var
     BoardIterator.AddFilter_Method(eProcessAll);
     Via := BoardIterator.FirstPCBObject;
 
+
     While (Via <> Nil) Do
     Begin // перебираем переходные отверстия
-      FileXMLCon.Add(#9+#9+#9+'<Via>');
       ViaTemplate := true;  // нужно ли создавать новый тип переходников
       For i := 0 to ViaMassi do
       Begin
@@ -1471,14 +1487,91 @@ var
           ViaTemplate := false;
         end;
       end;
-      //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! СОбственно создание
+
       if ViaTemplate = true then // если нужен новый тип то создаем его
       Begin
         inc(ViaMassi);
         if ViaMassi > 98 then Begin ShowError('It is not allowed more than 99 types of vias.'); Exit; end;
         ViaMass[ViaMassi] := Via;
         ViaName := 'Via'+FloatToStr(ViaMassi);
-      end;
+
+          //создаем переходное отверстие для LocalLibrary
+          ViastacksLL.Add(#9+#9+#9+'<Viastack name="'+ViaName+'" holeDiameter="'+FloatToStr(CoordToMMs(Via.HoleSize))+'">');
+          ViastacksLL.Add(#9+#9+#9+#9+'<LayerRange>');
+          If (Via.StartLayer.layerID = 1 & Via.StopLayer.layerID = 32) then Begin
+            ViastacksLL.Add(#9+#9+#9+#9+#9+'<AllLayers/>'); end
+          else Begin
+            ViastacksLL.Add(#9+#9+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Via.StartLayer.layerID)+
+                                                   '" name="'+Via.StartLayer.Name+'"/>');
+            ViastacksLL.Add(#9+#9+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Via.StopLayer.layerID)+
+                                                   '" name="'+Via.StopLayer.Name+'"/>');
+          End;
+          ViastacksLL.Add(#9+#9+#9+#9+'</LayerRange>');
+
+
+          ViastacksLL.Add(#9+#9+#9+#9+'<ViaPads>');
+
+          //определяем необходимость записи информации о всех слоях
+          ViaSingle := true;
+          LyrObj := Board.LayerStack.First(eLayerClass_Signal);
+          oldSize := Via.SizeOnLayer[LyrObj.LayerID];
+          Repeat
+            if Via.SizeOnLayer[LyrObj.LayerID] <> oldSize then Begin ViaSingle := false; Break; end;
+            oldSize := Via.SizeOnLayer[LyrObj.LayerID];
+            LyrObj := Board.LayerStack.Next(eLayerClass_Signal, LyrObj)
+          Until LyrObj = Nil;
+
+          if ViaSingle then // если все слои одинаковые
+          Begin
+            ViastacksLL.Add(#9+#9+#9+#9+#9+'<PadCircle diameter="'+FloatToStr(CoordToMMs(Via.SizeOnLayer[1]))+'">');
+            ViastacksLL.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+            ViastacksLL.Add(#9+#9+#9+#9+#9+'</PadCircle>');
+          end
+          else
+          begin // если все слои разные
+            ViaStart := False;
+
+            LyrObj := Board.LayerStack.First(eLayerClass_Signal);
+
+            Repeat
+              if Via.StartLayer.layerID = LyrObj.LayerID then ViaStart := true;
+
+              if ViaStart = true then // собстевнно добавляем инф о слоях
+              Begin
+              ViastacksLL.Add(#9+#9+#9+#9+#9+'<PadCircle diameter="'+FloatToStr(CoordToMMs(Via.SizeOnLayer[LyrObj.LayerID]))+'">');
+              ViastacksLL.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+LyrObj.Name+'"/>');
+              ViastacksLL.Add(#9+#9+#9+#9+#9+'</PadCircle>');
+              end;
+
+              if Via.StopLayer.layerID = LyrObj.LayerID then break;
+              LyrObj := Board.LayerStack.Next(eLayerClass_Signal, LyrObj)
+            Until LyrObj = Nil;
+
+          end;
+
+          // добавить информацию о маске
+          if Via.IsTenting_Top = false then
+          Begin
+            LyrObj := Board.LayerStack.LayerObject(37);
+            TestString := LyrObj.Name;
+            ViastacksLL.Add(#9+#9+#9+#9+#9+'<PadCircle diameter="'+FloatToStr(CoordToMMs(Via.SizeOnLayer[37]))+'">');
+            ViastacksLL.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Mask" name="'+LyrObj.Name+'"/>');
+            ViastacksLL.Add(#9+#9+#9+#9+#9+'</PadCircle>');
+          End;
+          if Via.IsTenting_Bottom = false then
+          Begin
+            LyrObj := Board.LayerStack.LayerObject(38);
+            TestString := LyrObj.Name;
+            ViastacksLL.Add(#9+#9+#9+#9+#9+'<PadCircle diameter="'+FloatToStr(CoordToMMs(Via.SizeOnLayer[38]))+'">');
+            ViastacksLL.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Mask" name="'+LyrObj.Name+'"/>');
+            ViastacksLL.Add(#9+#9+#9+#9+#9+'</PadCircle>');
+          End;
+
+          ViastacksLL.Add(#9+#9+#9+#9+'</ViaPads>');
+          ViastacksLL.Add(#9+#9+#9+'</Viastack>');
+      end;//конец создания нового переходника
+
+      FileXMLCon.Add(#9+#9+#9+'<Via>');
       FileXMLCon.Add(#9+#9+#9+#9+'<ViastackRef name="'+ViaName+'"/>');
       FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+Via.Net.Name+'"/>');
       FileXMLCon.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Via.x))+
@@ -1519,7 +1612,6 @@ Var
    FileXMLCon  : TStringList; // Ветвь соединений <Connectivity version="1.1">
    FileXMLDispC: TStringList; // Ветвь отображения <DisplayControl version="1.3">
    ViastacksLL : TStringList; // группа переходных отверстий  Библиотеки
-   ViastacksRul: TStringList; // группа переходных отверстий  Правил
    TextStyleAll: String;
    //
 
@@ -1538,8 +1630,6 @@ Begin
      FileXMLDispC := TStringList.Create;
      FileXMLCon   := TStringList.Create;
      ViastacksLL.Add(#9+#9+'<Viastacks>');
-     ViastacksRul := TStringList.Create;
-     ViastacksRul.Add(#9+#9+'<RulesViastacksOfNets>');
 
      Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
      TextStyleAll := '';
@@ -1567,7 +1657,7 @@ Begin
      AddContruct(FileXMLContr,Board,FileXmlTSt);
 
      //*******Создаем Соединения********//
-     AddConnectivity(FileXMLCon,Board,ViastacksLL,ViastacksRul);
+     AddConnectivity(FileXMLCon,Board,ViastacksLL);
 
      //*******Создаем локальную билблиотеку FileXmlLL********//
      //*******Дополняются текстовые стили********//
@@ -1582,7 +1672,7 @@ Begin
      AddGroups(FileXMLGroup,Board);
 
      //*******Создаем Правила********//
-     AddRules(FileXMLRul,FileXMLHSRul,Board,ViastacksRul);
+     AddRules(FileXMLRul,FileXMLHSRul,Board);
 
      //*******Объединяем все в 1 файл********//
      FileXml.AddStrings(FileXmlTSt);   // подгружаем итоговый список текстовых стилей
@@ -1613,13 +1703,13 @@ Begin
      FileXMLRul.Free;
      FileXMLHSRul.Free;
      ViastacksLL.Free;
-     ViastacksRul.Free;
      FileXMLDispC.Free;
      FileXMLCon.Free;
 End;
 
 //ToDo
 // Обработать все варианты падстаков  IPCB_PadTemplate!!!
+// Добавить Plane слои
 // Обработать все варианты переходников
 // Обработать маску переходных отвер
 // Обработать правила проектирования
