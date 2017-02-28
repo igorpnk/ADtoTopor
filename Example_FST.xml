@@ -6,7 +6,7 @@
 <!--   Version : 1.1.3                                                    -->
 <!--   Program : Altium Designer Script by Wolfit                         -->
 <!--   Date    : 28.02.2017                                               -->
-<!--   Time    : 13:40:35                                                 -->
+<!--   Time    : 19:49:23                                                 -->
 <!--**********************************************************************-->
 
 <TopoR_PCB_File>
@@ -14,7 +14,7 @@
 		<Format>TopoR PCB file</Format>
 		<Version>1.1.3</Version>
 		<Program>Altium Designer Script by Wolfit</Program>
-		<Date>28.02.2017 13:40:35</Date>
+		<Date>28.02.2017 19:49:23</Date>
 		<OriginalFormat>Altium Designer API</OriginalFormat>
 		<OriginalFile>D:\work\AD to Topor Script - Video\Script_Project\PCB1.PcbDoc</OriginalFile>
 		<Units dist="mm" time="ps"/>
@@ -135,10 +135,10 @@
 					<PadCircle diameter="1,2">
 						<LayerRef type="Signal" name="Bottom Layer"/>
 					</PadCircle>
-					<PadCircle diameter="1,4732">
+					<PadCircle diameter="1,67">
 						<LayerRef type="Mask" name="Top Solder"/>
 					</PadCircle>
-					<PadCircle diameter="1,4032">
+					<PadCircle diameter="1,6">
 						<LayerRef type="Mask" name="Bottom Solder"/>
 					</PadCircle>
 				</ViaPads>
@@ -1023,6 +1023,190 @@
 				<Org x="80,01" y="106,68"/>
 			</Via>
 		</Vias>
+		<Wires>
+			<Wire>
+				<LayerRef type="Signal" name="Top Layer"/>
+				<NetRef name="123"/>
+				<Subwire width="0,254">
+					<Start x="83,508" y="100,341"/>
+					<TrackLine>
+						<End x="85,101" y="100,341"/>
+					</TrackLine>
+				</Subwire>
+			</Wire>
+			<Wire>
+				<LayerRef type="Signal" name="Top Layer"/>
+				<NetRef name="123"/>
+				<Subwire width="0,254">
+					<Start x="81,915" y="100,341"/>
+					<TrackLine>
+						<End x="83,508" y="100,341"/>
+					</TrackLine>
+				</Subwire>
+			</Wire>
+			<Wire>
+				<LayerRef type="Signal" name="Top Layer"/>
+				<NetRef name="321"/>
+				<Subwire width="0,254">
+					<Start x="79,558" y="102,291"/>
+					<TrackLine>
+						<End x="82,733" y="102,291"/>
+					</TrackLine>
+				</Subwire>
+			</Wire>
+			<Wire>
+				<LayerRef type="Signal" name="Top Layer"/>
+				<NetRef name="321"/>
+				<Subwire width="0,254">
+					<Start x="82,733" y="102,291"/>
+					<TrackLine>
+						<End x="83,439" y="102,997"/>
+					</TrackLine>
+				</Subwire>
+			</Wire>
+			<Wire>
+				<LayerRef type="Signal" name="Top Layer"/>
+				<NetRef name="321"/>
+				<Subwire width="0,254">
+					<Start x="83,439" y="102,997"/>
+					<TrackLine>
+						<End x="85,217" y="102,997"/>
+					</TrackLine>
+				</Subwire>
+			</Wire>
+			<Wire>
+				<LayerRef type="Signal" name="Top Layer"/>
+				<NetRef name="123"/>
+				<Subwire width="0,254">
+					<Start x="85,101" y="100,341"/>
+					<TrackLine>
+						<End x="85,217" y="100,457"/>
+					</TrackLine>
+				</Subwire>
+			</Wire>
+			<Wire>
+				<LayerRef type="Signal" name="Top Layer"/>
+				<NetRef name="123"/>
+				<Subwire width="0,254">
+					<Start x="79,558" y="100,341"/>
+					<TrackLine>
+						<End x="81,915" y="100,341"/>
+					</TrackLine>
+				</Subwire>
+			</Wire>
+			<Wire>
+				<LayerRef type="Signal" name="Bottom Layer"/>
+				<NetRef name="123"/>
+				<Subwire width="0,254">
+					<Start x="81,915" y="103,505"/>
+					<TrackLine>
+						<End x="82,18705" y="103,77705"/>
+					</TrackLine>
+				</Subwire>
+			</Wire>
+			<Wire>
+				<LayerRef type="Signal" name="Bottom Layer"/>
+				<NetRef name="123"/>
+				<Subwire width="0,254">
+					<Start x="82,804" y="106,68"/>
+					<TrackLine>
+						<End x="82,931" y="106,553"/>
+					</TrackLine>
+				</Subwire>
+			</Wire>
+			<Wire>
+				<LayerRef type="Signal" name="Bottom Layer"/>
+				<NetRef name="123"/>
+				<Subwire width="0,254">
+					<Start x="82,931" y="105,5731"/>
+					<TrackLine>
+						<End x="82,931" y="106,553"/>
+					</TrackLine>
+				</Subwire>
+			</Wire>
+			<Wire>
+				<LayerRef type="Signal" name="Signal Layer 2"/>
+				<NetRef name="123"/>
+				<Subwire width="0,254">
+					<Start x="81,915" y="100,341"/>
+					<TrackLine>
+						<End x="81,915" y="103,505"/>
+					</TrackLine>
+				</Subwire>
+			</Wire>
+			<Wire>
+				<LayerRef type="Signal" name="Signal Layer 1"/>
+				<NetRef name="123"/>
+				<Subwire width="0,254">
+					<Start x="81,915" y="103,505"/>
+					<TrackLine>
+						<End x="81,915" y="105,918"/>
+					</TrackLine>
+				</Subwire>
+			</Wire>
+			<Wire>
+				<LayerRef type="Signal" name="Signal Layer 1"/>
+				<NetRef name="123"/>
+				<Subwire width="0,254">
+					<Start x="80,01" y="106,68"/>
+					<TrackLine>
+						<End x="81,153" y="106,68"/>
+					</TrackLine>
+				</Subwire>
+			</Wire>
+			<Wire>
+				<LayerRef type="Signal" name="Signal Layer 1"/>
+				<NetRef name="123"/>
+				<Subwire width="0,254">
+					<Start x="81,915" y="105,918"/>
+					<TrackArc>
+						<Center x="81,153" y="105,918"/>
+						<End x="81,153" y="106,68"/>
+					</TrackArc>
+				</Subwire>
+			</Wire>
+			<Wire>
+				<LayerRef type="Signal" name="Bottom Layer"/>
+				<NetRef name="123"/>
+				<Subwire width="0,254">
+					<Start x="82,18705" y="103,77705"/>
+					<TrackArc>
+						<Center x="80,391" y="105,5731"/>
+						<End x="82,931" y="105,5731"/>
+					</TrackArc>
+				</Subwire>
+			</Wire>
+		</Wires>
+		<Coppers>
+			<Copper connectPad="Thermal" lineWidth="0,2032" lineClr="0,508" minSquare="0,0127" state="Poured" fillType="Solid">
+				<LayerRef type="Signal" name="Signal Layer 1"/>
+				<NetRef name="321"/>
+				<ThermalPad>
+					<Thermal spokeNum="4" spokeWidth="0,254" backoff="0,254"/>
+				</ThermalPad>
+				<ThermalVia/>
+				<Shape>
+					<Polygon>
+						<Dot x="72,28926" y="107,72476"/>
+						<Dot x="88,265" y="108,585"/>
+						<Dot x="88,265" y="97,79"/>
+						<Dot x="71,12" y="97,917"/>
+						<Dot x="71,13933" y="97,8198"/>
+						<Dot x="71,374" y="97,663"/>
+						<Dot x="71,374" y="97,663"/>
+						<Dot x="71,374" y="97,663"/>
+						<Dot x="71,12" y="97,917"/>
+						<Dot x="72,28926" y="107,72476"/>
+						<Dot x="72,07769" y="107,67404"/>
+						<Dot x="71,72033" y="107,16208"/>
+						<Dot x="71,72033" y="107,16208"/>
+						<Dot x="71,72033" y="107,16208"/>
+					</Polygon>
+				</Shape>
+				<Voids/>
+				<Islands/>
+			</Copper>
+		</Coppers>
 	</Connectivity>
 	<DisplayControl version="1.3">
 		<Units preference="Metric"/>

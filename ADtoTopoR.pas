@@ -267,6 +267,7 @@ Begin
   Result := ResultString;
 End;
 
+// конвертирование полигона в механических сло€х
 Function PolygonToXML(Board :IPCB_Board; Poly : IPCB_Polygon; TabCount: integer;) : TStringList;
 Var
  ResultString : TStringList;
@@ -319,6 +320,86 @@ Begin
   End;
   ResultString.Add(StringTab+#9+'</Polygon>');
   ResultString.Add(StringTab+'</Detail>');
+  Result := ResultString;
+End;
+
+// конвертирование полигона в сигнальных сло€х
+Function PolygonSignalToXML(Board :IPCB_Board; Poly : IPCB_Polygon; TabCount: integer;) : TStringList;
+Var
+ ResultString : TStringList;
+ StringTab    : String;
+ TestString   : String;
+ I            : integer;
+ AStartX   : TCoord;
+ AStartY   : TCoord;
+ AEndX     : TCoord;
+ AEndY     : TCoord;
+ AMidX     : TCoord;
+ AMidY     : TCoord;
+ Temp      : float;
+ PolyType  : String;
+
+Begin
+  StringTab := '';
+  For I:=0 to TabCount-1 do StringTab := StringTab + #9;
+  ResultString := TStringList.Create;
+  TestString := FloatToStr(Poly.PolygonType);
+  Case Poly.PolygonType of
+    ePolySolid : PolyType := 'Solid';
+    ePolyHHatch :  PolyType := 'Hatched';
+
+  end;
+
+  ResultString.Add(StringTab+'<Copper connectPad="Thermal" lineWidth="'+FloatToStr(CoordToMMs(Poly.TrackSize))+
+                                                          '" lineClr="'+FloatToStr(CoordToMMs(Poly.Grid))+
+                                                        '" minSquare="'+FloatToStr(CoordToMMs(Poly.ArcApproximation))+
+                                                        '" state="Poured" fillType="Solid">');
+  ResultString.Add(StringTab+#9+'<LayerRef type="'+LayerIDtoStr(Poly.Layer)+'" name="'+Board.LayerName(Poly.Layer)+'"/>');
+  ResultString.Add(StringTab+#9+'<NetRef name="'+Poly.Net.Name+'"/>');
+  ResultString.Add(StringTab+#9+'<ThermalPad>');
+  ResultString.Add(StringTab+#9+#9+'<Thermal spokeNum="'+FloatToStr(Poly.ReliefEntries)+
+                                        '" spokeWidth="'+FloatToStr(CoordToMMs(Poly.ReliefConductorWidth))+
+                                           '" backoff="'+FloatToStr(CoordToMMs(Poly.ReliefAirGap))+'"/>');
+  ResultString.Add(StringTab+#9+'</ThermalPad>');
+  ResultString.Add(StringTab+#9+'<ThermalVia/>');
+  ResultString.Add(StringTab+#9+'<Shape>');
+
+  ResultString.Add(StringTab+#9+#9+'<Polygon>');
+  For I := 0 To Poly.PointCount - 1 Do //перебор всех примитивов
+  Begin
+    If Poly.Segments[I].Kind = ePolySegmentLine Then  // ≈сли сегмент представл€ет собой линию
+    Begin
+      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Poly.Segments[I].vx ))+'" y="'+FloatToStr(CoordToMMs( Poly.Segments[I].vy))+ '"/>');
+    End
+    Else  // если дуга то описываем ее через 5 точек
+    Begin
+      AStartX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
+      AStartY := Poly.Segments[I].cy;
+      AEndX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
+      AEndY := Poly.Segments[I].cy;
+      AMidX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
+      AMidY := Poly.Segments[I].cy;
+      RotateCoordsAroundXY(AStartX,AStartY,Poly.Segments[I].cx,Poly.Segments[I].cy,Poly.Segments[I].Angle1);
+      RotateCoordsAroundXY(AEndX,AEndY,Poly.Segments[I].cx,Poly.Segments[I].cy,Poly.Segments[I].Angle2);
+      RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*1/4));
+      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AStartX ))+'" y="'+FloatToStr(CoordToMMs( AStartY))+ '"/>'); // “очка в начале дуги
+      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX ))+'" y="'+FloatToStr(CoordToMMs( AMidY))+ '"/>'); // точка в 1/4 дуги
+      AMidX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
+      AMidY := Poly.Segments[I].cy;
+      RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*1/2));
+      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AEndX ))+'" y="'+FloatToStr(CoordToMMs( AEndY))+ '"/>'); // точка в 1/2 дуги
+      AMidX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
+      AMidY := Poly.Segments[I].cy;
+      RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*3/4));
+      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AEndX ))+'" y="'+FloatToStr(CoordToMMs( AEndY))+ '"/>'); // точка в 3/4 дуги
+      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AEndX ))+'" y="'+FloatToStr(CoordToMMs( AEndY))+ '"/>'); // точка в конце дуги
+    End;
+  End;
+  ResultString.Add(StringTab+#9+#9+'</Polygon>');
+  ResultString.Add(StringTab+#9+'</Shape>');
+  ResultString.Add(StringTab+#9+'<Voids/>');
+  ResultString.Add(StringTab+#9+'<Islands/>');
+  ResultString.Add(StringTab+'</Copper>');
   Result := ResultString;
 End;
 
@@ -1024,7 +1105,7 @@ Begin
      MechIterH.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
      MechIterH.AddFilter_ObjectSet(MkSet(ePolyObject));
      MechIterH.AddFilter_Method(eProcessAll);
-     Poly := MechIterH.FirstPCBObject; //первый трэк на механическом слое
+     Poly := MechIterH.FirstPCBObject; //первый полигон на механическом слое
 
      While (Poly <> Nil) Do
      Begin
@@ -1452,6 +1533,7 @@ var
   Via           : IPCB_Via;
   Track         : IPCB_Track;
   Arc           : IPCB_Arc;
+  Poly          : IPCB_Polygon;
   ViaName       : String;
   ViaPoz        : Integer;
   ViaMass       : array[0..99] of IPCB_Via; // пока получилось реализовать только через статический
@@ -1508,7 +1590,6 @@ var
           End;
           ViastacksLL.Add(#9+#9+#9+#9+'</LayerRange>');
 
-
           ViastacksLL.Add(#9+#9+#9+#9+'<ViaPads>');
 
           //определ€ем необходимость записи информации о всех сло€х
@@ -1530,7 +1611,6 @@ var
           else
           begin // если все слои разные
             ViaStart := False;
-
             LyrObj := Board.LayerStack.First(eLayerClass_Signal);
 
             Repeat
@@ -1583,6 +1663,85 @@ var
     FileXMLCon.Add(#9+#9+'</Vias>');
 
 
+    FileXMLCon.Add(#9+#9+'<Wires>');
+
+    // —оздаем итератор перебора ѕроводников
+    BoardIterator        := Board.BoardIterator_Create;
+    BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                         16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
+    BoardIterator.AddFilter_ObjectSet(MkSet(eTrackObject));
+    BoardIterator.AddFilter_Method(eProcessAll);
+    Track := BoardIterator.FirstPCBObject;
+
+    While (Track <> Nil) Do
+     Begin
+       FileXMLCon.Add(#9+#9+#9+'<Wire>');
+       LyrObj := Board.LayerStack.LayerObject(Track.Layer);
+       TestString := LyrObj.Name;
+       FileXMLCon.Add(#9+#9+#9+#9+'<LayerRef type="Signal" name="'+LyrObj.Name+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+Track.Net.Name+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+'<Subwire width="'+FloatToStr(CoordToMMs(Track.Width))+'">');
+       FileXMLCon.Add(#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs(Track.x1))+
+                                          '" y="'+FloatToStr(CoordToMMs(Track.y1))+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+#9+'<TrackLine>');
+       FileXMLCon.Add(#9+#9+#9+#9+#9+#9+'<End x="'+FloatToStr(CoordToMMs(Track.x2))+
+                                           '" y="'+FloatToStr(CoordToMMs(Track.y2))+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+#9+'</TrackLine>');
+       FileXMLCon.Add(#9+#9+#9+#9+'</Subwire>');
+       FileXMLCon.Add(#9+#9+#9+'</Wire>');
+       Track := BoardIterator.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(BoardIterator);
+
+    // —оздаем итератор перебора ќкружностей
+    BoardIterator        := Board.BoardIterator_Create;
+    BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                         16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
+    BoardIterator.AddFilter_ObjectSet(MkSet(eArcObject));
+    BoardIterator.AddFilter_Method(eProcessAll);
+    Arc := BoardIterator.FirstPCBObject;
+
+    While (Arc <> Nil) Do
+     Begin
+       FileXMLCon.Add(#9+#9+#9+'<Wire>');
+       LyrObj := Board.LayerStack.LayerObject(Arc.Layer);
+       FileXMLCon.Add(#9+#9+#9+#9+'<LayerRef type="Signal" name="'+LyrObj.Name+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+Arc.Net.Name+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+'<Subwire width="'+FloatToStr(CoordToMMs(Arc.LineWidth))+'">');
+       FileXMLCon.Add(#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs(Arc.StartX))+
+                                          '" y="'+FloatToStr(CoordToMMs(Arc.StartY))+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+#9+'<TrackArc>');
+       FileXMLCon.Add(#9+#9+#9+#9+#9+#9+'<Center x="'+FloatToStr(CoordToMMs(Arc.XCenter))+
+                                              '" y="'+FloatToStr(CoordToMMs(Arc.YCenter))+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+#9+#9+'<End x="'+FloatToStr(CoordToMMs(Arc.EndX))+
+                                           '" y="'+FloatToStr(CoordToMMs(Arc.EndY))+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+#9+'</TrackArc>');
+       FileXMLCon.Add(#9+#9+#9+#9+'</Subwire>');
+       FileXMLCon.Add(#9+#9+#9+'</Wire>');
+       Arc := BoardIterator.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(BoardIterator);
+     FileXMLCon.Add(#9+#9+'</Wires>');
+
+     FileXMLCon.Add(#9+#9+'<Coppers>');
+
+     //*******ѕеребираем ѕолигоны********//
+     BoardIterator := Board.BoardIterator_Create;
+    BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                         16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
+     BoardIterator.AddFilter_ObjectSet(MkSet(ePolyObject));
+     BoardIterator.AddFilter_Method(eProcessAll);
+     Poly := BoardIterator.FirstPCBObject; //первый полигон 
+
+     While (Poly <> Nil) Do
+     Begin
+       FileXMLCon.AddStrings(PolygonSignalToXML(Board,Poly,3));
+       Poly := BoardIterator.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(BoardIterator);
+
+
+    FileXMLCon.Add(#9+#9+'</Coppers>');
 
     FileXMLCon.Add(#9+'</Connectivity>');
   End;
