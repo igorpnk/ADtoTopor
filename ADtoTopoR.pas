@@ -1,4 +1,4 @@
-uses Generics.Collections;
+
 Function LoadAFile : String;
 Var
    OpenDialog : TOpenDialog;
@@ -627,7 +627,7 @@ Begin
            While (Pad <> Nil) Do
            Begin
                 inc (PadNum);
-                PadAngle := IntToStr(Pad.Rotation);
+                PadAngle := IntToStr(Pad.Rotation-Component.Rotation);
                 Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'" angle="'+PadAngle+'">');
                 Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'"/>');
                 Packages.Add(#9+#9+#9+#9+'<Pinpack pinNum="'+IntToStr(PadNum)+'" padNum="'+IntToStr(PadNum)+'"/>');
@@ -798,7 +798,7 @@ Begin
                 if Text.MirrorFlag = true then TextMirror := 'on';
 
                 Footprints.Add(#9+#9+#9+#9+#9+'<Text text="'+ Text.text
-                +'" align="LB" angle="'+inttostr(Text.Rotation)+'" mirror="'+TextMirror+'">'); // !!! не получена информация о align="LB"
+                +'" align="LB" angle="'+inttostr(Text.Rotation-Component.Rotation)+'" mirror="'+TextMirror+'">'); // !!! не получена информация о align="LB"
                 // Информация о текстовом слое
 
                 Case Text.Layer of
@@ -1867,13 +1867,13 @@ Begin
 End;
 
 //ToDo
+// Обработать компоненты расположенные на Bottom Слое
 // Обработать все варианты падстаков  IPCB_PadTemplate!!!
 // Добавить Plane слои
-// Обработать все варианты переходников
-// Обработать маску переходных отвер
 // Обработать правила проектирования
-// Обработать боттом слой
-// Обработать не метрическую систему измерения
+
+//*****Приятные мелочи****//
+// Мб добавить не метрическую систему измерения
 // Мб сделать красивую шапку
 
 
