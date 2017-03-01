@@ -582,149 +582,16 @@ Begin
 
 End;
 
-// да эту процедурку можно было разбить еще штук на 5.. но как-то несложилось;) думал что с компонентами проще будет разобраться
-Procedure AddLL(XMLInL : TStringList; Board : IPCB_Board; Units: String; FileXmlTSt : TStringList;FileXMLCOB : TStringList; ViastacksLL : TStringList;);  // Компоненты
-uses SysUtils;
-Var // жуть...
-   Padstacks               : TStringList;
-   Footprints              : TStringList;
-   Components              : TStringList;
-   Packages                : TStringList;
-   Component               : IPCB_Component;
-   ComponentIteratorHandle : IPCB_BoardIterator;
-   TrackCount              : Integer;
-   ComponentCount          : Integer;
-   padNum                  : Integer;
-   Track                   : IPCB_Track;
-   Arc                     : IPCB_Arc;
-   Poly                    : IPCB_Polygon;
-   Text                    : IPCB_Text;
-   Pad                     : IPCB_Pad;
-   IteratorHandle          : IPCB_GroupIterator;
-   PadIteratorHandle       : IPCB_GroupIterator;
-   TextIteratorHandle      : IPCB_GroupIterator;
-   NameComp                : String;
-   TestString              : String;
-   PadAngle                : String;
-   PadStackName            : String;
-   PozPadstack             : Integer;
-   PadStacksAllName        : String;
-   X                       : String;
-   Y                       : String;
-   XCoord                  : Tcoord;
-   YCoord                  : Tcoord;
+Procedure PadstacksAdd(Padstacks : TStringList;  Pad: IPCB_Pad; PadStackName : String;);
+var
+   Pad2                    : IPCB_Pad2;
+   PadPlated               : String;
+   PadTypeSurf             : String;
+   ShapeType               : TShape;
+   padType                 : String;
    PadxReal                : Treal;
    PadYReal                : Treal;
-   PadTypeSurf             : String;
-   PadPlated               : String;
-   padType                 : String;
-   ShapeType               : TShape;
-   Pad2                    : IPCB_Pad2;
-   TextStyle               : String;
-   PozTextStyle            : String;
-   TextMirror              : String;
-   TextLayer               : IPCB_LayerObject;
-   TextLayerType           : String;
-   LyrTV6                  : TV6_Layer;
-   lyrObj                  : PCB_LayerObject;
-   I                       : Integer;
-   CompFix                 : String;
-   PadFlip                 : String;
-   LayerName               : String;
-   CompSide                : String;
-   LyrMehPairs             : IPCB_MechanicalLayerPairs;
-   LayerPairS              : array[0..16,0..2] of Tlayer;
-   LayerType               : Tlayer;
-   LayerType2              : Tlayer;
-
 Begin
-     TrackCount := 0;
-     padNum     := 0;
-     ComponentCount := 0;
-     PadStacksAllName := '';
-     XMLInL.Add(#9+'<LocalLibrary version="1.1">');
-     FileXMLCOB.Add(#9+'<ComponentsOnBoard version="1.1">');
-     Padstacks := TStringList.Create;
-     Footprints := TStringList.Create;
-     Components := TStringList.Create;
-     Packages  := TStringList.Create;
-     Padstacks.Add(#9+#9+'<Padstacks>');
-     Footprints.Add(#9+#9+'<Footprints>');
-     Components.Add(#9+#9+'<Components>');
-     FileXMLCOB.Add(#9+#9+'<Components>');
-     Packages.Add(#9+#9+'<Packages>');
-     LyrMehPairs := Board.MechanicalPairs;
-
-     //находим все пары слоев перебором потому что LayerPair[I : Integer] возвращает TMechanicalLayerPair  с которой непонятно что делать.
-      i := 0;
-      for LayerType := eMechanical1 to eMechanical16 do
-        for LayerType2 := LayerType to eMechanical16 do
-        begin
-          if LyrMehPairs.PairDefined(LayerType,LayerType2) then
-          begin
-           LayerPairS[i,0] := LayerType;
-           LayerPairS[i,1] := LayerType2;
-           inc(i);
-          end;
-        end;
-
-
-     //*******Инизиализация перебора всех компонентов на плате на всех слоях********//
-     ComponentIteratorHandle := Board.BoardIterator_Create;
-     ComponentIteratorHandle.AddFilter_ObjectSet(MkSet(eComponentObject));
-     ComponentIteratorHandle.AddFilter_LayerSet(AllLayers);
-     ComponentIteratorHandle.AddFilter_Method(eProcessAll);
-     Component := ComponentIteratorHandle.FirstPCBObject; // получаем первый компонент
-
-     //*******перебор всех компонентов********//
-     While (Component <> Nil) Do
-     Begin
-           NameComp := Component.Name.Text;                        // Имя компонента
-           PadFlip := 'off';
-
-           Footprints.Add(#9+#9+#9+'<Footprint name="'+Component.Pattern+'$' +NameComp + '">');
-           //Component.GetState_FootprintDescription;
-           Components.Add(#9+#9+#9+'<Component name="'+NameComp + '">');
-           Components.Add(#9+#9+#9+#9+'<Pins>');
-           Packages.Add(#9+#9+#9+'<Package>');
-           Packages.Add(#9+#9+#9+#9+'<ComponentRef name="'+NameComp+'"/>');
-           Packages.Add(#9+#9+#9+#9+'<FootprintRef name="'+Component.Pattern+'$' +NameComp +'"/>');
-           CompFix := 'on';
-           if Component.Moveable = true then CompFix := 'off';
-
-           if Component.Layer = 1 then begin CompSide := 'Top'; end else begin CompSide := 'Bottom'; end;
-
-           FileXMLCOB.Add(#9+#9+#9+'<CompInstance name="'+NameComp+'" side="'+CompSide+
-                                    '" angle="'+inttostr(Component.Rotation)+'" fixed="'+CompFix+'">');
-           FileXMLCOB.Add(#9+#9+#9+#9+'<ComponentRef name="'+NameComp+'"/>');
-           FileXMLCOB.Add(#9+#9+#9+#9+'<FootprintRef name="'+Component.Pattern+'$' +NameComp +'"/>');
-           FileXMLCOB.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Component.x))+'" y="'+FloatToStr(CoordToMMs(Component.y))+'"/>');
-           FileXMLCOB.Add(#9+#9+#9+#9+'<Pins>');
-
-
-           //*******перебор всех падов компонента********//
-           Footprints.Add(#9+#9+#9+#9+'<Pads>');
-           PadIteratorHandle := Component.GroupIterator_Create;
-           PadIteratorHandle.AddFilter_ObjectSet(MkSet(ePadObject));
-           Pad := PadIteratorHandle.FirstPCBObject;
-           While (Pad <> Nil) Do
-           Begin
-                inc (PadNum);
-                PadAngle := IntToStr(Pad.Rotation-Component.Rotation);
-                if (Component.Layer = 32 & Pad.IsSurfaceMount = false )  then PadFlip := 'on';
-                Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'" angle="'+PadAngle+'" flipped="'+PadFlip+'">');
-                Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'"/>');
-                Packages.Add(#9+#9+#9+#9+'<Pinpack pinNum="'+IntToStr(PadNum)+'" padNum="'+IntToStr(PadNum)+'"/>');
-                FileXMLCOB.Add(#9+#9+#9+#9+#9+'<Pin padNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'">');
-                TestString := Pad.Name;
-                // проверяем был ли ранее пад такого же типа
-                PadStackName := PadTemplate(Pad,Board.DisplayUnit);
-                PozPadstack := 0;
-                PozPadstack := Pos(PadStackName, PadStacksAllName);
-
-                if PozPadstack = 0 then // если небыло подстака до нужно его создать
-                Begin
-                     PadStacksAllName :=  PadStacksAllName +PadStackName+'&';
                      Pad2 := Pad;
                      PadPlated := 'off';
                      if Pad2.plated then PadPlated := 'on';
@@ -834,6 +701,156 @@ Begin
                 Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>');
                 Padstacks.Add(#9+#9+#9+#9+'</Pads>');
                 Padstacks.Add(#9+#9+#9+'</Padstack>');
+
+End;
+
+// да эту процедурку можно было разбить еще штук на 5.. но как-то несложилось;) думал что с компонентами проще будет разобраться
+Procedure AddLL(XMLInL : TStringList; Board : IPCB_Board; Units: String; FileXmlTSt : TStringList;FileXMLCOB : TStringList; ViastacksLL : TStringList;);  // Компоненты
+uses SysUtils;
+Var // жуть...
+   Padstacks               : TStringList;
+   Footprints              : TStringList;
+   Components              : TStringList;
+   Packages                : TStringList;
+   Component               : IPCB_Component;
+   ComponentIteratorHandle : IPCB_BoardIterator;
+   TrackCount              : Integer;
+   ComponentCount          : Integer;
+   padNum                  : Integer;
+   Track                   : IPCB_Track;
+   Arc                     : IPCB_Arc;
+   Poly                    : IPCB_Polygon;
+   Text                    : IPCB_Text;
+   Pad                     : IPCB_Pad;
+   PadSide                 : String;
+   IteratorHandle          : IPCB_GroupIterator;
+   PadIteratorHandle       : IPCB_GroupIterator;
+   TextIteratorHandle      : IPCB_GroupIterator;
+   NameComp                : String;
+   TestString              : String;
+   PadAngle                : String;
+   PadStackName            : String;
+   PozPadstack             : Integer;
+   PadStacksAllName        : String;
+   X                       : String;
+   Y                       : String;
+   XCoord                  : Tcoord;
+   YCoord                  : Tcoord;
+   PadxReal                : Treal;
+   PadYReal                : Treal;
+   PadTypeSurf             : String;
+   PadPlated               : String;
+   padType                 : String;
+   ShapeType               : TShape;
+   Pad2                    : IPCB_Pad2;
+   TextStyle               : String;
+   PozTextStyle            : String;
+   TextMirror              : String;
+   TextLayer               : IPCB_LayerObject;
+   TextLayerType           : String;
+   LyrTV6                  : TV6_Layer;
+   lyrObj                  : PCB_LayerObject;
+   I                       : Integer;
+   CompFix                 : String;
+   PadFlip                 : String;
+   LayerName               : String;
+   CompSide                : String;
+   LyrMehPairs             : IPCB_MechanicalLayerPairs;
+   LayerPairS              : array[0..16,0..2] of Tlayer;
+   LayerType               : Tlayer;
+   LayerType2              : Tlayer;
+   PadIteratorHandle2      : IPCB_BoardIterator;
+   NetName                 : string;
+
+Begin
+     TrackCount := 0;
+     padNum     := 0;
+     ComponentCount := 0;
+     PadStacksAllName := '';
+     XMLInL.Add(#9+'<LocalLibrary version="1.1">');
+     FileXMLCOB.Add(#9+'<ComponentsOnBoard version="1.1">');
+     Padstacks := TStringList.Create;
+     Footprints := TStringList.Create;
+     Components := TStringList.Create;
+     Packages  := TStringList.Create;
+     Padstacks.Add(#9+#9+'<Padstacks>');
+     Footprints.Add(#9+#9+'<Footprints>');
+     Components.Add(#9+#9+'<Components>');
+     FileXMLCOB.Add(#9+#9+'<Components>');
+     Packages.Add(#9+#9+'<Packages>');
+     LyrMehPairs := Board.MechanicalPairs;
+
+     //находим все пары слоев перебором потому что LayerPair[I : Integer] возвращает TMechanicalLayerPair  с которой непонятно что делать.
+      i := 0;
+      for LayerType := eMechanical1 to eMechanical16 do
+        for LayerType2 := LayerType to eMechanical16 do
+        begin
+          if LyrMehPairs.PairDefined(LayerType,LayerType2) then
+          begin
+           LayerPairS[i,0] := LayerType;
+           LayerPairS[i,1] := LayerType2;
+           inc(i);
+          end;
+        end;
+
+
+     //*******Инизиализация перебора всех компонентов на плате на всех слоях********//
+     ComponentIteratorHandle := Board.BoardIterator_Create;
+     ComponentIteratorHandle.AddFilter_ObjectSet(MkSet(eComponentObject));
+     ComponentIteratorHandle.AddFilter_LayerSet(AllLayers);
+     ComponentIteratorHandle.AddFilter_Method(eProcessAll);
+     Component := ComponentIteratorHandle.FirstPCBObject; // получаем первый компонент
+
+     //*******перебор всех компонентов********//
+     While (Component <> Nil) Do
+     Begin
+           NameComp := Component.Name.Text;                        // Имя компонента
+           PadFlip := 'off';
+
+           Footprints.Add(#9+#9+#9+'<Footprint name="'+Component.Pattern+'$' +NameComp + '">');
+           //Component.GetState_FootprintDescription;
+           Components.Add(#9+#9+#9+'<Component name="'+NameComp + '">');
+           Components.Add(#9+#9+#9+#9+'<Pins>');
+           Packages.Add(#9+#9+#9+'<Package>');
+           Packages.Add(#9+#9+#9+#9+'<ComponentRef name="'+NameComp+'"/>');
+           Packages.Add(#9+#9+#9+#9+'<FootprintRef name="'+Component.Pattern+'$' +NameComp +'"/>');
+           CompFix := 'on';
+           if Component.Moveable = true then CompFix := 'off';
+
+           if Component.Layer = 1 then begin CompSide := 'Top'; end else begin CompSide := 'Bottom'; end;
+
+           FileXMLCOB.Add(#9+#9+#9+'<CompInstance name="'+NameComp+'" side="'+CompSide+
+                                    '" angle="'+inttostr(Component.Rotation)+'" fixed="'+CompFix+'">');
+           FileXMLCOB.Add(#9+#9+#9+#9+'<ComponentRef name="'+NameComp+'"/>');
+           FileXMLCOB.Add(#9+#9+#9+#9+'<FootprintRef name="'+Component.Pattern+'$' +NameComp +'"/>');
+           FileXMLCOB.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Component.x))+'" y="'+FloatToStr(CoordToMMs(Component.y))+'"/>');
+           FileXMLCOB.Add(#9+#9+#9+#9+'<Pins>');
+
+
+           //*******перебор всех падов компонента********//
+           Footprints.Add(#9+#9+#9+#9+'<Pads>');
+           PadIteratorHandle := Component.GroupIterator_Create;
+           PadIteratorHandle.AddFilter_ObjectSet(MkSet(ePadObject));
+           Pad := PadIteratorHandle.FirstPCBObject;
+           While (Pad <> Nil) Do
+           Begin
+                inc (PadNum);
+                PadAngle := IntToStr(Pad.Rotation-Component.Rotation);
+                if (Component.Layer = 32 & Pad.IsSurfaceMount = false )  then PadFlip := 'on';
+                Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'" angle="'+PadAngle+'" flipped="'+PadFlip+'">');
+                Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'"/>');
+                Packages.Add(#9+#9+#9+#9+'<Pinpack pinNum="'+IntToStr(PadNum)+'" padNum="'+IntToStr(PadNum)+'"/>');
+                FileXMLCOB.Add(#9+#9+#9+#9+#9+'<Pin padNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'">');
+                TestString := Pad.Name;
+                // проверяем был ли ранее пад такого же типа
+                PadStackName := PadTemplate(Pad,Board.DisplayUnit);
+                PozPadstack := 0;
+                PozPadstack := Pos(PadStackName, PadStacksAllName);
+
+                if PozPadstack = 0 then // если небыло подстака до нужно его создать
+                Begin
+                     PadStacksAllName :=  PadStacksAllName +PadStackName+'&';
+                     PadstacksAdd(Padstacks,pad,PadStackName);
                 end; // конец создания подстака
 
 
@@ -1109,12 +1126,56 @@ Begin
            FileXMLCOB.Add(#9+#9+#9+'</CompInstance>');
      End;  // заканчиваем обрабатывать этот компонент
      Board.BoardIterator_Destroy(ComponentIteratorHandle);
+     FileXMLCOB.Add(#9+#9+'</Components>');
+     FileXMLCOB.Add(#9+#9+'<FreePads>');
+
+     PadIteratorHandle2 := Board.BoardIterator_Create;
+     PadIteratorHandle2.AddFilter_ObjectSet(MkSet(ePadObject));
+     PadIteratorHandle2.AddFilter_LayerSet(AllLayers);
+     PadIteratorHandle2.AddFilter_Method(eProcessAll);
+     Pad := PadIteratorHandle2.FirstPCBObject; //первая цепь
+          While (pad <> Nil) Do // СОБСТВЕННО долгий перебор !!!!!!!!!!!!!!!!!!!!!!!!!!!
+          Begin
+            if (pad.Component = Nil) then
+            Begin//если пад не принадлежит компоненту
+              TestString := pad.Name;
+              PadSide := 'Top';
+              if pad.layer = 32 then PadSide := 'Bottom';
+              FileXMLCOB.Add(#9+#9+#9+'<FreePad side="'+PadSide+'" angle="'+IntToStr(pad.Rotation)+'" fixed="off">');
+              PadStackName := PadTemplate(Pad,Board.DisplayUnit);
+
+              PozPadstack := 0;
+              PozPadstack := Pos(PadStackName, PadStacksAllName);
+
+              if PozPadstack = 0 then // если небыло подстака до нужно его создать
+              Begin
+                     PadStacksAllName :=  PadStacksAllName +PadStackName+'&';
+                     PadstacksAdd(Padstacks,pad,PadStackName);
+              end; // конец создания подстака
+              //если такого падстака нет то его нужно создать
+
+              FileXMLCOB.Add(#9+#9+#9+#9+'<PadstackRef name="'+PadStackName+'"/>');
+              NetName := 'No_Net';
+              if pad.Net <> Nil then
+              Begin
+                NetName := Pad.Net.Name;
+              End;
+              FileXMLCOB.Add(#9+#9+#9+#9+'<NetRef name="'+NetName+'"/>');
+              FileXMLCOB.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Pad.x))+'" y="'+FloatToStr(CoordToMMs(Pad.y))+'"/>');
+              FileXMLCOB.Add(#9+#9+#9+'</FreePad>');
+            end;
+            pad := PadIteratorHandle2.NextPCBObject;
+          End;
+     Board.BoardIterator_Destroy(PadIteratorHandle2);
+
+
+     FileXMLCOB.Add(#9+#9+'</FreePads>');
 
      Padstacks.Add(#9+#9+'</Padstacks>');
      ViastacksLL.Add(#9+#9+'</Viastacks>');
      Footprints.Add(#9+#9+'</Footprints>');
      Components.Add(#9+#9+'</Components>');
-     FileXMLCOB.Add(#9+#9+'</Components>');
+
      Packages.Add(#9+#9+'</Packages>');
      XMLInL.AddStrings(Padstacks);
      XMLInL.AddStrings(ViastacksLL);
@@ -1380,14 +1441,17 @@ Begin
           pad := PadIteratorHandle.FirstPCBObject; //первая цепь
           While (pad <> Nil) Do // СОБСТВЕННО долгий перебор !!!!!!!!!!!!!!!!!!!!!!!!!!!
           Begin
-            TestString := pad.Component.Name.Text;
-            TestString := pad.Name;
-            if pad.Net <> Nil then
-            Begin
-            TestString := pad.Net.Name;
-            if pad.Net.Name = Net.Name then
-            FileXMLNList.Add(#9+#9+#9+'<PinRef compName="'+pad.Component.Name.Text+'" pinName="'+pad.Name+'"/>');
-            End;
+            if (pad.Component <> Nil) then
+            Begin//если пад принадлежит компоненту
+              TestString := pad.Component.Name.Text;
+              TestString := pad.Name;
+              if pad.Net <> Nil then
+              Begin
+                TestString := pad.Net.Name;
+                if pad.Net.Name = Net.Name then
+                FileXMLNList.Add(#9+#9+#9+'<PinRef compName="'+pad.Component.Name.Text+'" pinName="'+pad.Name+'"/>');
+              End;
+            end;
             pad := PadIteratorHandle.NextPCBObject;
           End;
           Board.BoardIterator_Destroy(PadIteratorHandle);
@@ -2066,6 +2130,7 @@ Begin
 End;
 
 //ToDo
+// исправить построение Арков и полигонов на механических слоях
 // Обработать зоны запрета
 // Обработать срезанные КП
 // Добавить Keep-Out слой в Layers
