@@ -22,7 +22,7 @@ Begin
      SaveDialog := TSaveDialog.Create(nil);
      SaveDialog.InitialDir := 'C:\';
      // Display the OpenDialog component
-     SaveDialog.Filter := 'XML Files|*.XML|All Files|*';
+     SaveDialog.Filter := 'FST Files|*.fst|All Files|*';
      SaveDialog.Execute;
      // Obtain the file name of the selected file.
      Result := SaveDialog.Filename;
@@ -552,9 +552,11 @@ Var // жуть...
    PadStackName            : String;
    PozPadstack             : Integer;
    PadStacksAllName        : String;
-   Padx                    : String;
+   X                       : String;
+   Y                       : String;
+   XCoord                  : Tcoord;
+   YCoord                  : Tcoord;
    PadxReal                : Treal;
-   PadY                    : String;
    PadYReal                : Treal;
    PadTypeSurf             : String;
    PadPlated               : String;
@@ -566,12 +568,12 @@ Var // жуть...
    TextMirror              : String;
    TextLayer               : IPCB_LayerObject;
    TextLayerType           : String;
-   TextX                   : String;
-   TextY                   : String;
    LyrTV6                  : TV6_Layer;
    lyrObj                  : PCB_LayerObject;
    I                       : Integer;
    CompFix                 : String;
+   PadFlip                 : String;
+   LayerName               : String;
 
 Begin
      TrackCount := 0;
@@ -601,6 +603,8 @@ Begin
      While (Component <> Nil) Do
      Begin
            NameComp := Component.Name.Text;                        // Имя компонента
+           PadFlip := 'off';
+           if Component.Layer = 32  then PadFlip := 'on';
            Footprints.Add(#9+#9+#9+'<Footprint name="'+Component.Pattern+'$' +NameComp + '">');
            //Component.GetState_FootprintDescription;
            Components.Add(#9+#9+#9+'<Component name="'+NameComp + '">');
@@ -628,7 +632,8 @@ Begin
            Begin
                 inc (PadNum);
                 PadAngle := IntToStr(Pad.Rotation-Component.Rotation);
-                Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'" angle="'+PadAngle+'">');
+
+                Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'" angle="'+PadAngle+'" flipped="'+PadFlip+'">');
                 Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'"/>');
                 Packages.Add(#9+#9+#9+#9+'<Pinpack pinNum="'+IntToStr(PadNum)+'" padNum="'+IntToStr(PadNum)+'"/>');
                 FileXMLCOB.Add(#9+#9+#9+#9+#9+'<Pin padNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'">');
@@ -756,11 +761,14 @@ Begin
                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<PadstackRef name="'+PadStackName+'"/>');
                 FileXMLCOB.Add(#9+#9+#9+#9+#9+#9+'<PadstackRef name="'+PadStackName+'"/>');
 
-                PadX   := FloatToStr(CoordToMMs( Pad.x - Component.x ));
-                PadY   := FloatToStr(CoordToMMs( pad.y - Component.y ));
+                XCoord := Pad.x - Component.x;
+                YCoord := Pad.y - Component.y;
+                RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                X   := FloatToStr(CoordToMMs( XCoord));
+                Y   := FloatToStr(CoordToMMs( YCoord));
 
-                FileXMLCOB.Add(#9+#9+#9+#9+#9+#9+'<Org x="'+PadX+'" y="'+PadY+'"/>');
-                Footprints.Add(#9+#9+#9+#9+#9+#9+'<Org x="'+PadX+'" y="'+PadY+'"/>');
+                FileXMLCOB.Add(#9+#9+#9+#9+#9+#9+'<Org x="'+X+'" y="'+Y+'"/>');
+                Footprints.Add(#9+#9+#9+#9+#9+#9+'<Org x="'+X+'" y="'+Y+'"/>');
                 FileXMLCOB.Add(#9+#9+#9+#9+#9+'</Pin>');
                 Footprints.Add(#9+#9+#9+#9+#9+'</Pad>');
                 Pad := PadIteratorHandle.NextPCBObject;
@@ -808,13 +816,18 @@ Begin
                 39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,
                 54                      :  TextLayerType := 'Plane';
                 end;
-
-                Footprints.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="'+TextLayerType+'" name="'+Board.LayerName(Text.Layer)+'"/>');
+                LayerName := Board.LayerName(Text.Layer);
+                if LayerName = 'Bottom Overlay' then LayerName := 'Top Overlay';
+                Footprints.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="'+TextLayerType+'" name="'+LayerName+'"/>');
                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<TextStyleRef name="'+TextStyle+'"/>');
 
-                TextX   := FloatToStr(CoordToMMs( Text.X1Location - Component.x ));
-                TextY   := FloatToStr(CoordToMMs( Text.Y1Location - Component.y ));
-                Footprints.Add(#9+#9+#9+#9+#9+#9+'<Org x="'+TextX+'" y="'+TextY+'"/>');
+                XCoord := Text.X1Location - Component.x;
+                YCoord := Text.Y1Location - Component.y;
+                RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                X   := FloatToStr(CoordToMMs( XCoord));
+                Y   := FloatToStr(CoordToMMs( YCoord));
+
+                Footprints.Add(#9+#9+#9+#9+#9+#9+'<Org x="'+X+'" y="'+Y+'"/>');
                 Footprints.Add(#9+#9+#9+#9+#9+'</Text>');
                 Text := TextIteratorHandle.NextPCBObject; //следующий текст
            End;
@@ -837,16 +850,30 @@ Begin
                 //lyrObj := Track.Layer;
                 //LyrTV6 := Track.Layer_V6;
 
+
+                LayerName := Board.LayerName(Track.Layer);
+                if Track.Layer = 34 then LayerName := Board.LayerName(33);
+
                 Footprints.Add(#9+#9+#9+#9+#9+'<Detail lineWidth="'+FloatToStr(CoordToMMs(Track.Width))+'">');
                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Track.Layer)+
-                '" name="'+Board.LayerName(Track.Layer)+'"/>');//ИМя!
+                '" name="'+LayerName+'"/>');//ИМя!
                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<Line>');
 
-                Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Track.x1 - Component.x ))+
-                '" y="'+FloatToStr(CoordToMMs( Track.y1 - Component.y ))+ '"/>');
-                Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Track.x2 - Component.x ))+
-                '" y="'+FloatToStr(CoordToMMs( Track.y2 - Component.y ))+'"/>');
+                XCoord := Track.x1 - Component.x;
+                YCoord := Track.y1 - Component.y;
+                if Component.Layer = 32 then RotateCoordsAroundXY(XCoord,YCoord,0,0,180);
+                RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                X   := FloatToStr(CoordToMMs( XCoord));
+                Y   := FloatToStr(CoordToMMs( YCoord));
+                Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
 
+                XCoord := Track.x2 - Component.x;
+                YCoord := Track.y2 - Component.y;
+                if Component.Layer = 32 then RotateCoordsAroundXY(XCoord,YCoord,0,0,180);
+                RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                X   := FloatToStr(CoordToMMs( XCoord));
+                Y   := FloatToStr(CoordToMMs( YCoord));
+                Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+'"/>');
                 Footprints.Add(#9+#9+#9+#9+#9+#9+'</Line>');
                 Footprints.Add(#9+#9+#9+#9+#9+'</Detail>');
                 Track := IteratorHandle.NextPCBObject; //следующая линия
@@ -860,26 +887,48 @@ Begin
 
            While (Arc <> Nil) Do
            Begin
+
+                LayerName := Board.LayerName(Arc.Layer);
+                if Arc.Layer = 34 then LayerName := Board.LayerName(33);
+
                 Footprints.Add(#9+#9+#9+#9+#9+'<Detail lineWidth="'+FloatToStr(CoordToMMs(Arc.LineWidth))+'">');
                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Arc.Layer)+
-                '" name="'+Board.LayerName(Arc.Layer)+'"/>');
+                '" name="'+LayerName+'"/>');
                 TestString :=  FloatToStr(Arc.EndAngle);
                 if (Arc.StartAngle = 0 & Arc.EndAngle = 360) then // Если полный круг
                 Begin
                   Footprints.Add(#9+#9+#9+#9+#9+#9+'<Circle diameter="'+FloatToStr(CoordToMMs(Arc.Radius*2))+'">');
-                  Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Center x="'+FloatToStr(CoordToMMs( Arc.XCenter - Component.x ))+
-                  '" y="'+FloatToStr(CoordToMMs( Arc.YCenter - Component.y ))+'"/>');
+                  XCoord := Arc.XCenter - Component.x;
+                  YCoord := Arc.YCenter - Component.y;
+                  RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                  X   := FloatToStr(CoordToMMs( XCoord));
+                  Y   := FloatToStr(CoordToMMs( YCoord));
+                  Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Center x="'+X+'" y="'+Y+'"/>');
                   Footprints.Add(#9+#9+#9+#9+#9+#9+'</Circle>');
                 End
                 Else  // Если разорванный круг
                 Begin
                   Footprints.Add(#9+#9+#9+#9+#9+#9+'<Arc>');
-                  Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Center x="'+FloatToStr(CoordToMMs( Arc.XCenter - Component.x ))+
-                  '" y="'+FloatToStr(CoordToMMs( Arc.YCenter - Component.y ))+'"/>');
-                  Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs( Arc.StartX - Component.x ))+
-                  '" y="'+FloatToStr(CoordToMMs( Arc.StartY - Component.y ))+'"/>');
-                  Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<End x="'+FloatToStr(CoordToMMs( Arc.EndX - Component.x ))+
-                  '" y="'+FloatToStr(CoordToMMs( Arc.EndY - Component.y ))+'"/>');
+                  XCoord := Arc.XCenter - Component.x;
+                  YCoord := Arc.YCenter - Component.y;
+                  RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                  X   := FloatToStr(CoordToMMs( XCoord));
+                  Y   := FloatToStr(CoordToMMs( YCoord));
+                  Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Center x="'+X+'" y="'+Y+'"/>');
+
+                  XCoord := Arc.StartX - Component.x;
+                  YCoord := Arc.StartY - Component.y;
+                  RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                  X   := FloatToStr(CoordToMMs( XCoord));
+                  Y   := FloatToStr(CoordToMMs( YCoord));
+                  Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Start x="'+X+'" y="'+Y+'"/>');
+
+                  XCoord := Arc.EndX - Component.x;
+                  YCoord := Arc.EndY - Component.y;
+                  RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                  X   := FloatToStr(CoordToMMs( XCoord));
+                  Y   := FloatToStr(CoordToMMs( YCoord));
+                  Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<End x="'+X+'" y="'+Y+'"/>');
                   Footprints.Add(#9+#9+#9+#9+#9+#9+'</Arc>');
                 End;
                 Footprints.Add(#9+#9+#9+#9+#9+'</Detail>');
@@ -894,16 +943,24 @@ Begin
            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
            While (Poly <> Nil) Do // Нуждается в проверке!!!!
            Begin
+
+                LayerName := Board.LayerName(Poly.Layer);
+                if Poly.Layer = 34 then LayerName := Board.LayerName(33);
                  Footprints.Add(#9+#9+#9+#9+#9+'<Detail lineWidth="0.001">');
                  Footprints.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Poly.Layer)+
-                 '" name="'+Board.LayerName(Poly.Layer)+'"/>');
+                 '" name="'+LayerName+'"/>');
                  Footprints.Add(#9+#9+#9+#9+#9+#9+'<Polygon>');
                  For I := 0 To Poly.PointCount - 1 Do
                  Begin
                       If Poly.Segments[I].Kind = ePolySegmentLine Then
                       Begin
-                      Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Poly.Segments[I].vx - Component.x ))+
-                      '" y="'+FloatToStr(CoordToMMs( Poly.Segments[I].vy - Component.y ))+'"/>');
+                      XCoord := Poly.Segments[I].vx - Component.x;
+                      YCoord := Poly.Segments[I].vy - Component.y;
+                      RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                      X   := FloatToStr(CoordToMMs( XCoord));
+                      Y   := FloatToStr(CoordToMMs( YCoord));
+
+                      Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+'"/>');
                       End
                       Else
                       Begin // нужно сделать для арков!!!!
