@@ -1627,9 +1627,9 @@ Begin
    RuleClearCompS := TStringList.Create;
    RuleNetS  := TStringList.Create;
    Viastacks := TStringList.Create;
-   RuleWidth := '';
-   RuleClear := '';
-   RuleClearComp := '';
+   RuleWidth := Nil;
+   RuleClear := Nil;
+   RuleClearComp := Nil;
 
    Stack := Board.LayerStack;
    FileXMLHSRul.Add(#9+'<HiSpeedRules version="2.1">');
@@ -1673,7 +1673,7 @@ Begin
 
      if Rule.RuleKind = eRule_MaxMinWidth Then
      Begin // если правило ширины проводников
-       if RuleWidth = '' Then
+       if RuleWidth = Nil Then
        Begin
          RuleWidth := Rule;
          RuleWidthS.Add(#9+#9+#9+'<WidthOfWires enabled="on" widthMin="'+FloatToStr(CoordToMMs(RuleWidth.MinWidth[1]))+
@@ -1688,7 +1688,7 @@ Begin
 
      if Rule.RuleKind = eRule_Clearance Then
      Begin // если правило зазора проводников
-       if RuleClear = '' Then
+       if RuleClear = Nil Then
        Begin
          RuleClear := Rule;
          RuleClearS.Add(#9+#9+#9+'<ClearanceNetToNet enabled="on" clrnMin="'+FloatToStr(CoordToMMs(RuleClear.Gap ))+
@@ -1706,7 +1706,7 @@ Begin
 
      if Rule.RuleKind = eRule_ComponentClearance Then
      Begin // если правило зазора Компонентов
-       if RuleClearComp = '' Then
+       if RuleClearComp = Nil Then
        Begin
          RuleClearComp := Rule;
          RuleClearCompS.Add(#9+#9+#9+'<ClearanceCompToComp enabled="on" clrn="'+FloatToStr(CoordToMMs(RuleClearComp.Gap))+'">');
