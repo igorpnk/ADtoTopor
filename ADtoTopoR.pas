@@ -241,15 +241,15 @@ Begin
      If Pad.IsSurfaceMount = True then
      Begin
           FirstSimbol := 'r';
-          XSize := CoordToMMs(Pad.XSizeOnLayer[1])*100;
-          YSize := CoordToMMs(Pad.YSizeOnLayer[1])*100;
+          XSize := CoordToMMs(Pad.XSizeOnLayer[Pad.Layer])*100;
+          YSize := CoordToMMs(Pad.YSizeOnLayer[Pad.Layer])*100;
           XSizeStr := floattostr(XSize);
           YSizeStr := floattostr(YSize);
 
-          Radius := CoordToMMs(Pad2.CornerRadius[1]);
+          Radius := CoordToMMs(Pad2.CornerRadius[Pad.Layer]);
           CornerPercent := Radius*2*100/XSize*100;
 
-          ShapeType := Pad.ShapeOnLayer[1];
+          ShapeType := Pad.ShapeOnLayer[Pad.Layer];
           Case ShapeType of
                eRectangular    : Shape := '';
                eOctagonal      : Shape := 'c'+'50';
@@ -262,12 +262,12 @@ Begin
      If Pad.IsSurfaceMount = False then
      Begin
           FirstSimbol := 's';
-          XSize := CoordToMMs(Pad.XSizeOnLayer[1])*100;
+          XSize := CoordToMMs(Pad.XSizeOnLayer[Pad.Layer])*100;
           XSizeStr := floattostr(XSize);
-          Radius := CoordToMMs(Pad2.CornerRadius[1]);
+          Radius := CoordToMMs(Pad2.CornerRadius[Pad.Layer]);
           CornerPercent := Radius*2*100/XSize*100;
 
-          ShapeType := Pad.ShapeOnLayer[1];
+          ShapeType := Pad.ShapeOnLayer[Pad.Layer];
           if ShapeType = eRounded then FirstSimbol := 'c';
 
           Case ShapeType of
@@ -631,6 +631,9 @@ Var // жуть...
    LayerName               : String;
    CompSide                : String;
    LyrMehPairs             : IPCB_MechanicalLayerPairs;
+   LayerPairS              : array[0..16,0..2] of Tlayer;
+   LayerType               : Tlayer;
+   LayerType2              : Tlayer;
 
 Begin
      TrackCount := 0;
@@ -649,6 +652,21 @@ Begin
      FileXMLCOB.Add(#9+#9+'<Components>');
      Packages.Add(#9+#9+'<Packages>');
      LyrMehPairs := Board.MechanicalPairs;
+
+     //находим все пары слоев перебором потому что LayerPair[I : Integer] возвращает TMechanicalLayerPair  с которой непонятно что делать.
+      i := 0;
+      for LayerType := eMechanical1 to eMechanical16 do
+        for LayerType2 := LayerType to eMechanical16 do
+        begin
+          if LyrMehPairs.PairDefined(LayerType,LayerType2) then
+          begin
+           LayerPairS[i,0] := LayerType;
+           LayerPairS[i,1] := LayerType2;
+           inc(i);
+          end;
+        end;
+
+
      //*******Инизиализация перебора всех компонентов на плате на всех слоях********//
      ComponentIteratorHandle := Board.BoardIterator_Create;
      ComponentIteratorHandle.AddFilter_ObjectSet(MkSet(eComponentObject));
@@ -661,7 +679,7 @@ Begin
      Begin
            NameComp := Component.Name.Text;                        // Имя компонента
            PadFlip := 'off';
-           if Component.Layer = 32  then PadFlip := 'on';
+
            Footprints.Add(#9+#9+#9+'<Footprint name="'+Component.Pattern+'$' +NameComp + '">');
            //Component.GetState_FootprintDescription;
            Components.Add(#9+#9+#9+'<Component name="'+NameComp + '">');
@@ -691,7 +709,7 @@ Begin
            Begin
                 inc (PadNum);
                 PadAngle := IntToStr(Pad.Rotation-Component.Rotation);
-
+                if (Component.Layer = 32 & Pad.IsSurfaceMount = false )  then PadFlip := 'on';
                 Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'" angle="'+PadAngle+'" flipped="'+PadFlip+'">');
                 Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'"/>');
                 Packages.Add(#9+#9+#9+#9+'<Pinpack pinNum="'+IntToStr(PadNum)+'" padNum="'+IntToStr(PadNum)+'"/>');
@@ -714,29 +732,29 @@ Begin
                           Padstacks.Add(#9+#9+#9+'<Padstack name="'+PadStackName+'" type="'+PadTypeSurf+'" metallized="'+PadPlated+'">');
                           Padstacks.Add(#9+#9+#9+#9+'<Thermal/>');
                           Padstacks.Add(#9+#9+#9+#9+'<Pads>');
-                          ShapeType := Pad.ShapeOnLayer[1];
+                          ShapeType := Pad.ShapeOnLayer[Pad.Layer];
                           Case ShapeType of
                                eRectangular    :
                                  Begin
                                    PadType := 'PadRect';
                                    Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[1]))+
-                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[1]))+'">');
+                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                                    Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="Top Layer"/>'); // !!! нужно вводить определение слоя
                                  End;
                                eOctagonal      : // !!! сделано как для прямоугольного хорошо бы исправить!
                                  Begin
                                    PadType := 'PadRect';
                                    Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[1]))+
-                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[1]))+'">');
+                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                                    Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="Top Layer"/>'); // !!! нужно вводить определение слоя
                                  End;
                                eRounded        :
                                  Begin
                                    PadType := 'PadOval';
-                                   PadXReal := CoordToMMs(Pad.XSizeOnLayer[1]);
-                                   PadYReal := CoordToMMs(Pad.YSizeOnLayer[1]);
+                                   PadXReal := CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]);
+                                   PadYReal := CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]);
                                    if PadXReal < PadYReal then
                                    Begin
                                      Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadXReal)+'">');
@@ -757,9 +775,9 @@ Begin
                                    Pad2 := Pad;
                                    PadType := 'PadRect';
                                    Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[1]))+
-                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[1]))+'"'+
-                                   ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[1]))+'">');
+                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
+                                   ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[Pad.Layer]))+'">');
                                    Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="Top Layer"/>'); // !!! нужно вводить определение слоя
                                  End;
                           End;
@@ -774,29 +792,29 @@ Begin
                           Padstacks.Add(#9+#9+#9+#9+'<Thermal/>');
                           Padstacks.Add(#9+#9+#9+#9+'<Pads>');
 
-                          ShapeType := Pad.ShapeOnLayer[1];
+                          ShapeType := Pad.ShapeOnLayer[Pad.Layer];
                           Case ShapeType of
                                eRectangular    :
                                  Begin
                                    PadType := 'PadRect';
                                    Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[1]))+
-                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[1]))+'">');
+                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                                    Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
                                  End;
                                eOctagonal      : // !!! сделано как для прямоугольного хорощо бы исправить!
                                  Begin
                                    PadType := 'PadRect';
                                    Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[1]))+
-                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[1]))+'">');
+                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                                    Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
                                  End;
                                eRounded        :
                                  Begin
                                    PadType := 'PadCircle';
-                                   PadXReal := CoordToMMs(Pad.XSizeOnLayer[1]);
-                                   PadYReal := CoordToMMs(Pad.YSizeOnLayer[1]);
+                                   PadXReal := CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]);
+                                   PadYReal := CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]);
                                    Padstacks.Add(#9+#9+#9+#9+#9+'<PadCircle diameter="'+floattostr(PadXReal)+'">');
                                    Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
                                  End;
@@ -804,8 +822,8 @@ Begin
                                  Begin
                                    PadType := 'PadRect';
                                    Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[1]))+
-                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[1]))+'">');
+                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                                    Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
                                  End;
                           End;// конец Case ShapeType
@@ -823,6 +841,7 @@ Begin
                 XCoord := Pad.x - Component.x;
                 YCoord := Pad.y - Component.y;
                 RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                if Component.Layer = 32 then XCoord := -XCoord;
                 X   := FloatToStr(CoordToMMs( XCoord));
                 Y   := FloatToStr(CoordToMMs( YCoord));
 
@@ -868,21 +887,23 @@ Begin
                 +'" align="LB" angle="'+inttostr(Text.Rotation-Component.Rotation)+'" mirror="'+TextMirror+'">'); // !!! не получена информация о align="LB"
                 // Информация о текстовом слое
 
-                Case Text.Layer of
-                1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
-                25,26,27,28,29,30,31,32 :  TextLayerType := 'Signal';
-                33,34                   :  TextLayerType := 'Silk';
-                39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,
-                54                      :  TextLayerType := 'Plane';
-                end;
+                TextLayerType := LayerIDtoStr(Text.Layer);
                 LayerName := Board.LayerName(Text.Layer);
                 if LayerName = 'Bottom Overlay' then LayerName := 'Top Overlay';
+
+                //если парный слой то ренейминг!
+                if TextLayerType = 'Mechanical' then
+                  For i := 0 To LyrMehPairs.Count - 1 Do
+                     if Text.Layer = LayerPairS[i,1] then
+                      LayerName := Board.LayerName(LayerPairS[i,0]);
+
                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="'+TextLayerType+'" name="'+LayerName+'"/>');
                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<TextStyleRef name="'+TextStyle+'"/>');
 
                 XCoord := Text.X1Location - Component.x;
                 YCoord := Text.Y1Location - Component.y;
                 RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                if Component.Layer = 32 then XCoord := -XCoord;
                 X   := FloatToStr(CoordToMMs( XCoord+Text.Size/2));
                 Y   := FloatToStr(CoordToMMs( YCoord-Text.Size));
 
@@ -913,6 +934,13 @@ Begin
                 LayerName := Board.LayerName(Track.Layer);
                 if Track.Layer = 34 then LayerName := Board.LayerName(33);
 
+                //если парный слой то ренейминг!
+                if LayerIDtoStr(Track.Layer) = 'Mechanical' then
+                  For i := 0 To LyrMehPairs.Count - 1 Do
+                     if Track.Layer = LayerPairS[i,1] then
+                      LayerName := Board.LayerName(LayerPairS[i,0]);
+
+
                 Footprints.Add(#9+#9+#9+#9+#9+'<Detail lineWidth="'+FloatToStr(CoordToMMs(Track.Width))+'">');
                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Track.Layer)+
                 '" name="'+LayerName+'"/>');//ИМя!
@@ -920,16 +948,16 @@ Begin
 
                 XCoord := Track.x1 - Component.x;
                 YCoord := Track.y1 - Component.y;
-                if Component.Layer = 32 then RotateCoordsAroundXY(XCoord,YCoord,0,0,180);
                 RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                if Component.Layer = 32 then XCoord := -XCoord;
                 X   := FloatToStr(CoordToMMs( XCoord));
                 Y   := FloatToStr(CoordToMMs( YCoord));
                 Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
 
                 XCoord := Track.x2 - Component.x;
                 YCoord := Track.y2 - Component.y;
-                if Component.Layer = 32 then RotateCoordsAroundXY(XCoord,YCoord,0,0,180);
                 RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                if Component.Layer = 32 then XCoord := -XCoord;
                 X   := FloatToStr(CoordToMMs( XCoord));
                 Y   := FloatToStr(CoordToMMs( YCoord));
                 Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+'"/>');
@@ -949,6 +977,12 @@ Begin
 
                 LayerName := Board.LayerName(Arc.Layer);
                 if Arc.Layer = 34 then LayerName := Board.LayerName(33);
+                //если парный слой то ренейминг!
+                if LayerIDtoStr(Arc.Layer) = 'Mechanical' then
+                  For i := 0 To LyrMehPairs.Count - 1 Do
+                     if Arc.Layer = LayerPairS[i,1] then
+                      LayerName := Board.LayerName(LayerPairS[i,0]);
+
 
                 Footprints.Add(#9+#9+#9+#9+#9+'<Detail lineWidth="'+FloatToStr(CoordToMMs(Arc.LineWidth))+'">');
                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Arc.Layer)+
@@ -960,6 +994,7 @@ Begin
                   XCoord := Arc.XCenter - Component.x;
                   YCoord := Arc.YCenter - Component.y;
                   RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                  if Component.Layer = 32 then XCoord := -XCoord;
                   X   := FloatToStr(CoordToMMs( XCoord));
                   Y   := FloatToStr(CoordToMMs( YCoord));
                   Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Center x="'+X+'" y="'+Y+'"/>');
@@ -970,20 +1005,35 @@ Begin
                   Footprints.Add(#9+#9+#9+#9+#9+#9+'<Arc>');
                   XCoord := Arc.XCenter - Component.x;
                   YCoord := Arc.YCenter - Component.y;
+                  if Component.Layer = 32 then XCoord := -XCoord;
                   RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
                   X   := FloatToStr(CoordToMMs( XCoord));
                   Y   := FloatToStr(CoordToMMs( YCoord));
                   Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Center x="'+X+'" y="'+Y+'"/>');
 
+
                   XCoord := Arc.StartX - Component.x;
                   YCoord := Arc.StartY - Component.y;
+                  if Component.Layer = 32 then
+                  Begin
+                    XCoord := Arc.EndX - Component.x;
+                    YCoord := Arc.EndY - Component.y;
+                    XCoord := -XCoord;
+                  end;
                   RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
                   X   := FloatToStr(CoordToMMs( XCoord));
                   Y   := FloatToStr(CoordToMMs( YCoord));
                   Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Start x="'+X+'" y="'+Y+'"/>');
 
+
                   XCoord := Arc.EndX - Component.x;
                   YCoord := Arc.EndY - Component.y;
+                  if Component.Layer = 32 then
+                  Begin
+                    XCoord := Arc.StartX - Component.x;
+                    YCoord := Arc.StartY - Component.y;
+                    XCoord := -XCoord;
+                  end;
                   RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
                   X   := FloatToStr(CoordToMMs( XCoord));
                   Y   := FloatToStr(CoordToMMs( YCoord));
@@ -1005,6 +1055,12 @@ Begin
 
                 LayerName := Board.LayerName(Poly.Layer);
                 if Poly.Layer = 34 then LayerName := Board.LayerName(33);
+                //если парный слой то ренейминг!
+                if LayerIDtoStr(Poly.Layer) = 'Mechanical' then
+                  For i := 0 To LyrMehPairs.Count - 1 Do
+                     if Poly.Layer = LayerPairS[i,1] then
+                      LayerName := Board.LayerName(LayerPairS[i,0]);
+
                  Footprints.Add(#9+#9+#9+#9+#9+'<Detail lineWidth="0.001">');
                  Footprints.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Poly.Layer)+
                  '" name="'+LayerName+'"/>');
@@ -1016,6 +1072,7 @@ Begin
                       XCoord := Poly.Segments[I].vx - Component.x;
                       YCoord := Poly.Segments[I].vy - Component.y;
                       RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                      if Component.Layer = 32 then XCoord := -XCoord;
                       X   := FloatToStr(CoordToMMs( XCoord));
                       Y   := FloatToStr(CoordToMMs( YCoord));
 

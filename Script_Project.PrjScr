@@ -96,6 +96,7 @@ StartProcName=ADtoTopoR.pas>Main
 1=ViaName
 2=LayerName
 3=LyrPair
+4=PadStackName
 
 [OutputGroup1]
 Name=Netlist Outputs
