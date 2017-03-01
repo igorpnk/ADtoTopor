@@ -574,6 +574,7 @@ Var // жуть...
    CompFix                 : String;
    PadFlip                 : String;
    LayerName               : String;
+   CompSide                : String;
 
 Begin
      TrackCount := 0;
@@ -613,9 +614,11 @@ Begin
            Packages.Add(#9+#9+#9+#9+'<ComponentRef name="'+NameComp+'"/>');
            Packages.Add(#9+#9+#9+#9+'<FootprintRef name="'+Component.Pattern+'$' +NameComp +'"/>');
            CompFix := 'on';
-           if component.Moveable = true then CompFix := 'off';
+           if Component.Moveable = true then CompFix := 'off';
 
-           FileXMLCOB.Add(#9+#9+#9+'<CompInstance name="'+NameComp+'" side="'+LayerIDtoStr(Component.Layer)+
+           if Component.Layer = 1 then begin CompSide := 'Top'; end else begin CompSide := 'Bottom'; end;
+
+           FileXMLCOB.Add(#9+#9+#9+'<CompInstance name="'+NameComp+'" side="'+CompSide+
                                     '" angle="'+inttostr(Component.Rotation)+'" fixed="'+CompFix+'">');
            FileXMLCOB.Add(#9+#9+#9+#9+'<ComponentRef name="'+NameComp+'"/>');
            FileXMLCOB.Add(#9+#9+#9+#9+'<FootprintRef name="'+Component.Pattern+'$' +NameComp +'"/>');
@@ -1121,10 +1124,14 @@ Begin
      MechIterH.AddFilter_Method(eProcessAll);
      Track := MechIterH.FirstPCBObject; //первый трэк на механическом слое
 
+
      While (Track <> Nil) Do
      Begin
-       Constructive.AddStrings(TrackToXML(Board,Track,3));
-       LID := Track.Layer;
+       if Track.Component = Nil then
+       Begin
+         Constructive.AddStrings(TrackToXML(Board,Track,3));
+         LID := Track.Layer;
+       End;
        Track := MechIterH.NextPCBObject;
      End;
      Board.BoardIterator_Destroy(MechIterH);
@@ -1138,7 +1145,10 @@ Begin
 
      While (Arc <> Nil) Do
      Begin
-       Constructive.AddStrings(ArcToXML(Board,Arc,3));
+       if Arc.Component = Nil then
+       Begin
+         Constructive.AddStrings(ArcToXML(Board,Arc,3));
+       End;
        Arc := MechIterH.NextPCBObject;
      End;
      Board.BoardIterator_Destroy(MechIterH);
@@ -1152,7 +1162,10 @@ Begin
 
      While (Fill <> Nil) Do
      Begin
+       if Fill.Component = Nil then
+       Begin
        Constructive.AddStrings(FillToXML(Board,Fill,3));
+       End;
        Fill := MechIterH.NextPCBObject;
      End;
      Board.BoardIterator_Destroy(MechIterH);
@@ -1166,7 +1179,10 @@ Begin
 
      While (Poly <> Nil) Do
      Begin
-       Constructive.AddStrings(PolygonToXML(Board,Poly,3));
+       if Poly.Component = Nil then
+       Begin
+         Constructive.AddStrings(PolygonToXML(Board,Poly,3));
+       End;
        Poly := MechIterH.NextPCBObject;
      End;
      Board.BoardIterator_Destroy(MechIterH);
@@ -1200,7 +1216,9 @@ Begin
      While (Text <> Nil) Do
      Begin
        if Text.Component = Nil then
-       Constructive.AddStrings(TextToXML(Board,Text,3,FileXmlTSt));
+       Begin
+         Constructive.AddStrings(TextToXML(Board,Text,3,FileXmlTSt));
+       End;
        Text := MechIterH.NextPCBObject;
      End;
      Board.BoardIterator_Destroy(MechIterH);
@@ -1278,6 +1296,7 @@ var
    NetGroups  : TStringList;
    CompGroups : TStringList;
    TestString : String;
+   LyrGrName  : String;
    I          : integer;
    LyrObj     : IPCB_LayerObject;
    LyrID      : Integer;
@@ -1334,7 +1353,7 @@ Begin
            IterObj.AddFilter_LayerSet(AllLayers);
            IterObj.AddFilter_Method(eProcessAll);
            Component := IterObj.FirstPCBObject;
-           TestString := Component.Name.Text;
+
            While Component <> NIl Do
            Begin
               If c.IsMember(Component) Then
@@ -1367,7 +1386,9 @@ Begin
      //LyrID := LyrIter.Layer;
      If LyrSet.IsEmpty = false then
      Begin
-     LayerGroups.Add(#9+#9+#9+'<LayerGroup name="'+BoardSet.Name+'">');
+     LyrGrName := BoardSet.Name;
+     Delete(LyrGrName,Pos('&',LyrGrName),1); // топор не поддерживает в названиях символ '&'
+     LayerGroups.Add(#9+#9+#9+'<LayerGroup name="'+LyrGrName+'">');
      LyrObj := Board.LayerStack.LayerObject(LyrIter.Layer);
      TestString := LyrObj.Name;
        Repeat
@@ -1905,7 +1926,7 @@ Begin
 
      //*******Сохранение XML Файла********//
      FileName := SaveAFile();
-     FileXml.SaveToFile(FileName + '.xml');
+     FileXml.SaveToFile(FileName + '.fst');
 
 
      //*******Уборка********//
@@ -1925,6 +1946,8 @@ End;
 
 //ToDo
 // Обработать компоненты расположенные на Bottom Слое
+// Добавить Keep-Out слой в Layers
+// Добавить правило зазора до края платы
 // Обработать все варианты падстаков  IPCB_PadTemplate!!!
 // Добавить Plane слои
 // Обработать правила проектирования
