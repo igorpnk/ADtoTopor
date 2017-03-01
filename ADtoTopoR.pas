@@ -273,7 +273,7 @@ Begin
           Case ShapeType of
                eRectangular    : Shape := 'h90';
                eOctagonal      : Shape := 'h90c50';
-               eRounded        : Shape := 'h90';
+               eRounded        : Shape := 'r90'; // заменил h на r
                eRoundedRectangular : Shape := 'h90r'+IntToStr(CornerPercent);
           End;
 
@@ -881,7 +881,12 @@ Begin
 
                 //заполняем текстовую информацию
                 TextMirror := 'off';
-                if Text.MirrorFlag = true then TextMirror := 'on';
+                if Text.MirrorFlag = true then
+                  Begin
+                    TextMirror := 'on';
+                    if Component.Layer = 32 then TextMirror := 'off';;
+                  end;
+
 
                 Footprints.Add(#9+#9+#9+#9+#9+'<Text text="'+ Text.text
                 +'" align="LB" angle="'+inttostr(Text.Rotation-Component.Rotation)+'" mirror="'+TextMirror+'">'); // !!! не получена информация о align="LB"
@@ -900,12 +905,12 @@ Begin
                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="'+TextLayerType+'" name="'+LayerName+'"/>');
                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<TextStyleRef name="'+TextStyle+'"/>');
 
-                XCoord := Text.X1Location - Component.x;
-                YCoord := Text.Y1Location - Component.y;
+                XCoord := Text.XLocation - Component.x;
+                YCoord := Text.YLocation - Component.y;
                 RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
                 if Component.Layer = 32 then XCoord := -XCoord;
-                X   := FloatToStr(CoordToMMs( XCoord+Text.Size/2));
-                Y   := FloatToStr(CoordToMMs( YCoord-Text.Size));
+                X   := FloatToStr(CoordToMMs( XCoord));
+                Y   := FloatToStr(CoordToMMs( YCoord));
 
                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<Org x="'+X+'" y="'+Y+'"/>');
                 Footprints.Add(#9+#9+#9+#9+#9+'</Text>');
@@ -1005,8 +1010,8 @@ Begin
                   Footprints.Add(#9+#9+#9+#9+#9+#9+'<Arc>');
                   XCoord := Arc.XCenter - Component.x;
                   YCoord := Arc.YCenter - Component.y;
-                  if Component.Layer = 32 then XCoord := -XCoord;
                   RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                  if Component.Layer = 32 then XCoord := -XCoord;
                   X   := FloatToStr(CoordToMMs( XCoord));
                   Y   := FloatToStr(CoordToMMs( YCoord));
                   Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Center x="'+X+'" y="'+Y+'"/>');
@@ -1018,9 +1023,9 @@ Begin
                   Begin
                     XCoord := Arc.EndX - Component.x;
                     YCoord := Arc.EndY - Component.y;
-                    XCoord := -XCoord;
                   end;
                   RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                  if Component.Layer = 32 then XCoord := -XCoord;
                   X   := FloatToStr(CoordToMMs( XCoord));
                   Y   := FloatToStr(CoordToMMs( YCoord));
                   Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Start x="'+X+'" y="'+Y+'"/>');
@@ -1032,9 +1037,9 @@ Begin
                   Begin
                     XCoord := Arc.StartX - Component.x;
                     YCoord := Arc.StartY - Component.y;
-                    XCoord := -XCoord;
                   end;
                   RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                   if Component.Layer = 32 then XCoord := -XCoord;
                   X   := FloatToStr(CoordToMMs( XCoord));
                   Y   := FloatToStr(CoordToMMs( YCoord));
                   Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<End x="'+X+'" y="'+Y+'"/>');
@@ -2059,13 +2064,14 @@ Begin
 End;
 
 //ToDo
-// Обработать компоненты расположенные на Bottom Слое
+// Обработать компоненты с КП на обоих слоях
 // Обработать срезанные КП
 // Добавить Keep-Out слой в Layers
 // Добавить правило зазора до края платы
 // Обработать все варианты падстаков  IPCB_PadTemplate!!!
 // Добавить Plane слои
 // Обработать правила проектирования
+// Обработать слои маски и пасты для КП и сами по себе
 
 //*****Приятные мелочи****//
 // Мб добавить не метрическую систему измерения
