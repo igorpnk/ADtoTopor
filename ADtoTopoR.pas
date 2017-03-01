@@ -78,6 +78,8 @@ Begin
 End;
 
 Function LayerIDtoStr(LayerID : TLayer;) : String;    // преобразование типа слоя в текстовый формат
+var
+LyrMehPairs              : IPCB_MechanicalLayerPairs;
 begin
            Result := 'Doc';
            Case LayerID of
@@ -90,9 +92,13 @@ begin
                 39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,
                 54                      :  Result := 'Plane';
            end;
+
+           LyrMehPairs := PCBServer.GetCurrentPCBBoard.MechanicalPairs;
+           if LyrMehPairs.LayerUsed(LayerID) = true then Result := 'Mechanical';
+
 end;
 
-Procedure AddLayers(XMLIn : TStringList;  Stack : IPCB_LayerStack; Units: String;);    //формирование слоев
+Procedure AddLayers(XMLIn : TStringList;  Board : IPCB_Board; Units: String;);    //формирование слоев
 uses SysUtils;
 var
  LyrObj                   : IPCB_LayerObject;
@@ -105,9 +111,18 @@ var
  LayerThickness           : String;
  LayerTypeStr             : String;
  LayerType                : Tlayer;
+ LayerType2               : Tlayer;
+ LyrMehPairs              : IPCB_MechanicalLayerPairs;
+ i                        : Integer;
+ Stack                    : IPCB_LayerStack;
+ LayerPairS               : array[0..16,0..2] of Tlayer;
+
+
+
 Begin
+     Stack := Board.LayerStack;
      LyrClass := eLayerClass_Physical;        // задаем тип слоя
-     LyrObj := Stack.First(LyrClass);         // получаем первый слой
+     LyrMehPairs := Board.MechanicalPairs;
 
 
      XMLIn.Add(#9+'<Layers version="1.1">');
@@ -117,11 +132,38 @@ Begin
           ShowError('Отсутствуют слои типа: ' + FloatToStr(LyrClass));
           exit;
      End;
-     //*******Получаем все физические слои********//
+
+     //*******Получаем все физические и парные механические слои********//
+
+     //находим все пары слоев перебором потому что LayerPair[I : Integer] возвращает TMechanicalLayerPair  с которой непонятно что делать.
+      i := 0;
+      for LayerType := eMechanical1 to eMechanical16 do
+        for LayerType2 := LayerType to eMechanical16 do
+        begin
+          if LyrMehPairs.PairDefined(LayerType,LayerType2) then
+          begin
+           LayerPairS[i,0] := LayerType;
+           LayerPairS[i,1] := LayerType2;
+           inc(i);
+          end;
+        end;
+
+     //механические Топ
+     For i := 0 To LyrMehPairs.Count - 1 Do
+     Begin
+       LyrObj := Stack.LayerObject[LayerPairS[LyrMehPairs.Count - 1 -i,0]];
+       LayerName := LyrObj.Name;
+       LayerTypeStr := 'Mechanical';
+       LayerThickness := FloatToStrF(0,ffFixed,3,3);
+       XMLIn.Add(#9+#9+#9+'<Layer name="'+LayerName+'" type="'+LayerTypeStr+'" thickness="'+LayerThickness+'"/>');
+     end;
+     LyrObj := Stack.First(LyrClass);         // получаем первый слой
+
+     //сигнальные
      Repeat
            LayerName := LyrObj.Name;
 
-           LayerThickness := FloatToStrF(0,ffFixed,3,3);;
+           LayerThickness := FloatToStrF(0,ffFixed,3,3);
            LayerTypeStr := LayerIDtoStr(LyrObj.LayerID);
 
            if ((LayerTypeStr =  'Signal') or (LayerTypeStr =  'Plane')) then
@@ -150,16 +192,29 @@ Begin
            XMLIn.Add(#9+#9+#9+'<Layer name="'+LayerName+'" type="'+LayerTypeStr+'" thickness="'+LayerThickness+'"/>');
            LyrObj := Stack.Next(LyrClass, LyrObj)
      Until LyrObj = Nil;
-     XMLIn.Add(#9+#9+'</StackUpLayers>');
 
+     //механические Боттом
+     For i := 0 To LyrMehPairs.Count - 1 Do
+     Begin
+       LyrObj := Stack.LayerObject[LayerPairS[i,1]];
+       LayerName := LyrObj.Name;
+       LayerTypeStr := 'Mechanical';
+       LayerThickness := FloatToStrF(0,ffFixed,3,3);
+       XMLIn.Add(#9+#9+#9+'<Layer name="'+LayerName+'" type="'+LayerTypeStr+'" thickness="'+LayerThickness+'"/>');
+     end;
+
+     XMLIn.Add(#9+#9+'</StackUpLayers>');
      //*******Получаем все механические слои********//
      XMLIn.Add(#9+#9+'<UnStackLayers>');
 
      for LayerType := eMechanical1 to eMechanical16 do
      begin
         LyrMeh := Stack.LayerObject[LayerType];
-        If LyrMeh.MechanicalLayerEnabled  then
-        XMLIn.Add(#9+#9+#9+'<Layer name="'+LyrMeh.Name+'" type="Doc"/>');
+        if LyrMehPairs.LayerUsed(LyrMeh.LayerID) = false then
+        Begin
+          If LyrMeh.MechanicalLayerEnabled  then
+          XMLIn.Add(#9+#9+#9+'<Layer name="'+LyrMeh.Name+'" type="Doc"/>');
+        end;
      end;
      XMLIn.Add(#9+#9+'</UnStackLayers>');
      XMLIn.Add(#9+'</Layers>');
@@ -575,6 +630,7 @@ Var // жуть...
    PadFlip                 : String;
    LayerName               : String;
    CompSide                : String;
+   LyrMehPairs             : IPCB_MechanicalLayerPairs;
 
 Begin
      TrackCount := 0;
@@ -592,7 +648,7 @@ Begin
      Components.Add(#9+#9+'<Components>');
      FileXMLCOB.Add(#9+#9+'<Components>');
      Packages.Add(#9+#9+'<Packages>');
-
+     LyrMehPairs := Board.MechanicalPairs;
      //*******Инизиализация перебора всех компонентов на плате на всех слоях********//
      ComponentIteratorHandle := Board.BoardIterator_Create;
      ComponentIteratorHandle.AddFilter_ObjectSet(MkSet(eComponentObject));
@@ -827,8 +883,8 @@ Begin
                 XCoord := Text.X1Location - Component.x;
                 YCoord := Text.Y1Location - Component.y;
                 RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
-                X   := FloatToStr(CoordToMMs( XCoord));
-                Y   := FloatToStr(CoordToMMs( YCoord));
+                X   := FloatToStr(CoordToMMs( XCoord+Text.Size/2));
+                Y   := FloatToStr(CoordToMMs( YCoord-Text.Size));
 
                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<Org x="'+X+'" y="'+Y+'"/>');
                 Footprints.Add(#9+#9+#9+#9+#9+'</Text>');
@@ -1884,7 +1940,8 @@ Begin
      AddHeader(FileXml,Board.FileName,UnitsDist);
 
      //*******Создаем список слоев********//
-     AddLayers(FileXML,Board.LayerStack,UnitsDist);
+     AddLayers(FileXML,Board,UnitsDist);
+
 
      //*******Создаем текстовые стили********//
      FileXmlTSt.Add(#9+'<TextStyles version="1.0">');
@@ -1946,6 +2003,7 @@ End;
 
 //ToDo
 // Обработать компоненты расположенные на Bottom Слое
+// Обработать срезанные КП
 // Добавить Keep-Out слой в Layers
 // Добавить правило зазора до края платы
 // Обработать все варианты падстаков  IPCB_PadTemplate!!!
