@@ -1421,6 +1421,8 @@ var
    PadIteratorHandle : IPCB_BoardIterator;
    I : integer;
    TestString : string;
+   FintString : String;
+   indexString: integer;
 Begin
      FileXMLNList.Add(#9+'<NetList version="1.0">');
      //*******Перебираем неты********//
@@ -1429,36 +1431,33 @@ Begin
      IteratorHandle.AddFilter_LayerSet(AllLayers);
      IteratorHandle.AddFilter_Method(eProcessAll);
      Net := IteratorHandle.FirstPCBObject; //первая цепь
-
-     //Неэффективно!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     While (Net <> Nil) Do //Принадлежность цепи проверяем перебором всех пинов платы!
+     While (Net <> Nil) Do
      Begin
        FileXMLNList.Add(#9+#9+'<Net name="'+Net.Name+'">');
-          /// необходимо получить информацию о пинах принадлежащих цепи.
-          PadIteratorHandle := Board.BoardIterator_Create;
-          PadIteratorHandle.AddFilter_ObjectSet(MkSet(ePadObject));
-          PadIteratorHandle.AddFilter_LayerSet(AllLayers);
-          PadIteratorHandle.AddFilter_Method(eProcessAll);
-          pad := PadIteratorHandle.FirstPCBObject; //первая цепь
-          While (pad <> Nil) Do // СОБСТВЕННО долгий перебор !!!!!!!!!!!!!!!!!!!!!!!!!!!
-          Begin
-            if (pad.Component <> Nil) then
-            Begin//если пад принадлежит компоненту
-              TestString := pad.Component.Name.Text;
-              TestString := pad.Name;
-              if pad.Net <> Nil then
-              Begin
-                TestString := pad.Net.Name;
-                if pad.Net.Name = Net.Name then
-                FileXMLNList.Add(#9+#9+#9+'<PinRef compName="'+pad.Component.Name.Text+'" pinName="'+pad.Name+'"/>');
-              End;
-            end;
-            pad := PadIteratorHandle.NextPCBObject;
-          End;
-          Board.BoardIterator_Destroy(PadIteratorHandle);
        FileXMLNList.Add(#9+#9+'</Net>');
        Net := IteratorHandle.NextPCBObject;
      End;
+
+
+     /// необходимо получить информацию о пинах принадлежащих цепи.
+     PadIteratorHandle := Board.BoardIterator_Create;
+     PadIteratorHandle.AddFilter_ObjectSet(MkSet(ePadObject));
+     PadIteratorHandle.AddFilter_LayerSet(AllLayers);
+     PadIteratorHandle.AddFilter_Method(eProcessAll);
+     pad := PadIteratorHandle.FirstPCBObject; //первая цепь
+     //Принадлежность цепи проверяем перебором всех пинов платы!
+     While (pad <> Nil) Do
+          Begin
+            if (pad.Component <> Nil & pad.Net <> Nil) then //если пад принадлежит компоненту и имеет цепь
+              Begin
+                FintString := (#9+#9+'<Net name="'+pad.Net.Name+'">');
+                indexString := FileXMLNList.IndexOf(FintString)+1;
+                FileXMLNList.Insert(indexString,(#9+#9+#9+'<PinRef compName="'+pad.Component.Name.Text+'" pinName="'+pad.Name+'"/>'));
+              End;
+          pad := PadIteratorHandle.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(PadIteratorHandle);
+
      Board.BoardIterator_Destroy(IteratorHandle);
      FileXMLNList.Add(#9+'</NetList>');
 End;
@@ -2035,6 +2034,7 @@ Var
    FileXMLDispC: TStringList; // Ветвь отображения <DisplayControl version="1.3">
    ViastacksLL : TStringList; // группа переходных отверстий  Библиотеки
    TextStyleAll: String;
+   StartTime   : String;
    //
 
 Begin
@@ -2052,6 +2052,8 @@ Begin
      FileXMLDispC := TStringList.Create;
      FileXMLCon   := TStringList.Create;
      ViastacksLL.Add(#9+#9+'<Viastacks>');
+
+     //StartTime := GetCurrentTimeString();
 
      Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
      TextStyleAll := '';
@@ -2071,7 +2073,6 @@ Begin
      //*******Создаем список слоев********//
      AddLayers(FileXML,Board,UnitsDist);
 
-
      //*******Создаем текстовые стили********//
      FileXmlTSt.Add(#9+'<TextStyles version="1.0">');
      FileXmlTSt.Add(#9+#9+'<TextStyle name="(Default)" fontName="QUALITY" height="2.5"/>'); // дефолтный текстовый стиль
@@ -2079,8 +2080,10 @@ Begin
      //*******Создаем конструктив платы********//
      AddContruct(FileXMLContr,Board,FileXmlTSt);
 
+
      //*******Создаем Соединения********//
      AddConnectivity(FileXMLCon,Board,ViastacksLL);
+
 
      //*******Создаем локальную билблиотеку FileXmlLL********//
      //*******Дополняются текстовые стили********//
@@ -2088,11 +2091,14 @@ Begin
      AddLL(FileXmlLL,Board,UnitsDist,FileXmlTSt, FileXMLCOB, ViastacksLL);
       FileXmlTSt.Add(#9+'</TextStyles>');
 
+
      //*******Создаем Нетлист********//
      AddNetList(FileXMLNList,Board);
 
+
      //*******Создаем Группы********//
      AddGroups(FileXMLGroup,Board);
+
 
      //*******Создаем Правила********//
      AddRules(FileXMLRul,FileXMLHSRul,Board);
@@ -2110,6 +2116,8 @@ Begin
      FileXml.AddStrings(FileXMLDispC); // подгружаем  контроль отображения
      FileXml.Add('</TopoR_PCB_File>'); // закрываем тег формата данных
 
+
+     //ShowMessage('AddNetList: ' +StartTime +' - '+ GetCurrentTimeString());
      //*******Сохранение XML Файла********//
      FileName := SaveAFile();
      FileXml.SaveToFile(FileName + '.fst');
