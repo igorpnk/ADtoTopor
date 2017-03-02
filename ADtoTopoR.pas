@@ -204,7 +204,7 @@ Begin
      end;
 
      XMLIn.Add(#9+#9+'</StackUpLayers>');
-     //*******Получаем все механические слои********//
+     //*******Получаем все документирующие слои********//
      XMLIn.Add(#9+#9+'<UnStackLayers>');
 
      for LayerType := eMechanical1 to eMechanical16 do
@@ -216,6 +216,7 @@ Begin
           XMLIn.Add(#9+#9+#9+'<Layer name="'+LyrMeh.Name+'" type="Doc"/>');
         end;
      end;
+     XMLIn.Add(#9+#9+#9+'<Layer name="'+Board.LayerName(56)+'" type="Doc"/>');
      XMLIn.Add(#9+#9+'</UnStackLayers>');
      XMLIn.Add(#9+'</Layers>');
 End;
@@ -1283,7 +1284,7 @@ Begin
 
      //*******Перебираем трэки********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
      MechIterH.AddFilter_ObjectSet(MkSet(eTrackObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Track := MechIterH.FirstPCBObject; //первый трэк на механическом слое
@@ -1302,7 +1303,7 @@ Begin
 
      //*******Перебираем окружности********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
      MechIterH.AddFilter_ObjectSet(MkSet(eArcObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Arc := MechIterH.FirstPCBObject; //первый трэк на механическом слое
@@ -1319,7 +1320,7 @@ Begin
 
      //*******Перебираем Филы********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
      MechIterH.AddFilter_ObjectSet(MkSet(eFillObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Fill := MechIterH.FirstPCBObject; //первый трэк на механическом слое
@@ -1336,7 +1337,7 @@ Begin
 
      //*******Перебираем Полигоны********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
      MechIterH.AddFilter_ObjectSet(MkSet(ePolyObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Poly := MechIterH.FirstPCBObject; //первый полигон на механическом слое
@@ -1355,7 +1356,7 @@ Begin
      //******* !!!!!!!!!!!!!!!!!!!!!!!!!!!! Отложено********//
      //*******Перебираем Регионы********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
      MechIterH.AddFilter_ObjectSet(MkSet(eRegionObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Region := MechIterH.FirstPCBObject; //первый регион на механическом слое
@@ -2121,7 +2122,6 @@ Begin
 End;
 
 //ToDo
-// Обработать ситуацию с компонентами одного и того же наименования
 // Обработать зоны запрета
 // Добавить Keep-Out слой в Layers
 // Добавить правило зазора до края платы
