@@ -589,7 +589,7 @@ Begin
                                    '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                                    Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="Top Layer"/>'); // !!! нужно вводить определение слоя
                                  End;
-                               eOctagonal      : // !!! сделано как для прямоугольного хорошо бы исправить!
+                               eOctagonal      : // !!! сделано как для прямоугольного в версии 1,1,4 можно будет исправить!
                                  Begin
                                    PadType := 'PadRect';
                                    Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
@@ -739,6 +739,7 @@ Var // жуть...
    LayerType2              : Tlayer;
    PadIteratorHandle2      : IPCB_BoardIterator;
    NetName                 : string;
+   IDcomp                  : string;
 
 Begin
      TrackCount := 0;
@@ -783,15 +784,19 @@ Begin
      While (Component <> Nil) Do
      Begin
            NameComp := Component.Name.Text;                        // Имя компонента
+           IDcomp := Component.UniqueId;                           // вместо имени уникальный ID
            PadFlip := 'off';
 
-           Footprints.Add(#9+#9+#9+'<Footprint name="'+Component.Pattern+'$' +NameComp + '">');
+           if pos('"'+NameComp+'"',Components.Text) <> 0 then
+           NameComp := NameComp +'$' +IDcomp;
+
+           Footprints.Add(#9+#9+#9+'<Footprint name="'+Component.Pattern+'$' +NameComp +'$' +IDcomp+ '">');
            //Component.GetState_FootprintDescription;
            Components.Add(#9+#9+#9+'<Component name="'+NameComp + '">');
            Components.Add(#9+#9+#9+#9+'<Pins>');
            Packages.Add(#9+#9+#9+'<Package>');
            Packages.Add(#9+#9+#9+#9+'<ComponentRef name="'+NameComp+'"/>');
-           Packages.Add(#9+#9+#9+#9+'<FootprintRef name="'+Component.Pattern+'$' +NameComp +'"/>');
+           Packages.Add(#9+#9+#9+#9+'<FootprintRef name="'+Component.Pattern+'$' +NameComp +'$' +IDcomp+ '"/>');
            CompFix := 'on';
            if Component.Moveable = true then CompFix := 'off';
 
@@ -800,7 +805,7 @@ Begin
            FileXMLCOB.Add(#9+#9+#9+'<CompInstance name="'+NameComp+'" side="'+CompSide+
                                     '" angle="'+inttostr(Component.Rotation)+'" fixed="'+CompFix+'">');
            FileXMLCOB.Add(#9+#9+#9+#9+'<ComponentRef name="'+NameComp+'"/>');
-           FileXMLCOB.Add(#9+#9+#9+#9+'<FootprintRef name="'+Component.Pattern+'$' +NameComp +'"/>');
+           FileXMLCOB.Add(#9+#9+#9+#9+'<FootprintRef name="'+Component.Pattern+'$' +NameComp +'$' +IDcomp+ '"/>');
            FileXMLCOB.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Component.x))+'" y="'+FloatToStr(CoordToMMs(Component.y))+'"/>');
            FileXMLCOB.Add(#9+#9+#9+#9+'<Pins>');
 
@@ -823,7 +828,7 @@ Begin
                 // проверяем был ли ранее пад такого же типа
                 PadStackName := PadTemplate(Pad,Board.DisplayUnit);
                 PozPadstack := 0;
-                PozPadstack := Pos(PadStackName, PadStacksAllName);
+                PozPadstack := Pos(PadStackName+'&', PadStacksAllName);
 
                 if PozPadstack = 0 then // если небыло подстака до нужно его создать
                 Begin
@@ -2116,12 +2121,10 @@ Begin
 End;
 
 //ToDo
-// исправить построение Арков и полигонов на механических слоях
+// Обработать ситуацию с компонентами одного и того же наименования
 // Обработать зоны запрета
-// Обработать срезанные КП
 // Добавить Keep-Out слой в Layers
 // Добавить правило зазора до края платы
-// Обработать все варианты падстаков  IPCB_PadTemplate!!!
 // Добавить Plane слои
 // Обработать правила проектирования
 // Обработать слои маски и пасты для КП и сами по себе
@@ -2129,5 +2132,8 @@ End;
 //*****Приятные мелочи****//
 // Мб добавить не метрическую систему измерения
 // Мб сделать красивую шапку
+
+//для 1.1.4
+// Обработать срезанные КП
 
 
