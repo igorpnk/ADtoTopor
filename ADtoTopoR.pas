@@ -545,7 +545,8 @@ Begin
   ResultString.Add(StringTab+'<Text text="'+Text.Text+'" align="LB" angle="'+inttostr(Text.Rotation)+'" mirror="'+TextMirror+'">');
   ResultString.Add(StringTab+#9+'<LayerRef type="'+LayerIDtoStr(Text.Layer)+'" name="'+Board.LayerName(Text.Layer)+'"/>');//ÈÌÿ!
   ResultString.Add(StringTab+#9+'<TextStyleRef name="'+TextStyle+'"/>');
-  ResultString.Add(StringTab+#9+'<Org x="'+FloatToStr(CoordToMMs(Text.X1Location))+'" y="'+FloatToStr(CoordToMMs(Text.X1Location))+'"/>');
+
+  ResultString.Add(StringTab+#9+'<Org x="'+FloatToStr(CoordToMMs(Text.XLocation))+'" y="'+FloatToStr(CoordToMMs(Text.YLocation))+'"/>');
   ResultString.Add(StringTab+'</Text>');
   Result := ResultString;
 End;
