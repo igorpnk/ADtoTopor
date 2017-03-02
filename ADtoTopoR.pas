@@ -359,18 +359,18 @@ Begin
       AMidY := Poly.Segments[I].cy;
       RotateCoordsAroundXY(AStartX,AStartY,Poly.Segments[I].cx,Poly.Segments[I].cy,Poly.Segments[I].Angle1);
       RotateCoordsAroundXY(AEndX,AEndY,Poly.Segments[I].cx,Poly.Segments[I].cy,Poly.Segments[I].Angle2);
-      RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*1/4));
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AStartX ))+'" y="'+FloatToStr(CoordToMMs( AStartY))+ '"/>'); // “очка в начале дуги
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX ))+'" y="'+FloatToStr(CoordToMMs( AMidY))+ '"/>'); // точка в 1/4 дуги
+      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AEndX ))+'" y="'+FloatToStr(CoordToMMs( AEndY))+ '"/>'); // точка в конце дуги
+      RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*3/4));
+      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX ))+'" y="'+FloatToStr(CoordToMMs( AMidY))+ '"/>'); // точка в 3/4 дуги
       AMidX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
       AMidY := Poly.Segments[I].cy;
       RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*1/2));
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AEndX ))+'" y="'+FloatToStr(CoordToMMs( AEndY))+ '"/>'); // точка в 1/2 дуги
+      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX ))+'" y="'+FloatToStr(CoordToMMs( AMidY))+ '"/>'); // точка в 1/2 дуги
       AMidX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
       AMidY := Poly.Segments[I].cy;
-      RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*3/4));
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AEndX ))+'" y="'+FloatToStr(CoordToMMs( AEndY))+ '"/>'); // точка в 3/4 дуги
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AEndX ))+'" y="'+FloatToStr(CoordToMMs( AEndY))+ '"/>'); // точка в конце дуги
+      RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*1/4));
+      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX ))+'" y="'+FloatToStr(CoordToMMs( AMidY))+ '"/>'); // точка в 1/4 дуги
+      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AStartX ))+'" y="'+FloatToStr(CoordToMMs( AStartY))+ '"/>'); // “очка в начале дуги
     End;
   End;
   ResultString.Add(StringTab+#9+'</Polygon>');
@@ -459,7 +459,7 @@ Begin
   ResultString.Add(StringTab+'</Copper>');
   Result := ResultString;
 End;
-
+ // конвертирование региона в механических сло€х
 Function RegionToXML(Board :IPCB_Board; Region : IPCB_Region; TabCount: integer;) : TStringList;  // пока не работает.. нужно разобратьс€
 Var
  ResultString : TStringList;
@@ -473,45 +473,22 @@ Var
  AMidY     : TCoord;
  Temp      : float;
  Poly      : IPCB_Polygon;
+ PolyGeom  : IPCB_GeometricPolygon;
+ Contour   : IPCB_Contour;
 
 Begin
   StringTab := '';
   For I:=0 to TabCount-1 do StringTab := StringTab + #9;
-  Poly := Region.Polygon;
-  I := Region.Polygon.PointCount;  // ѕо какой то причине дл€ региона не передаетс€ свойство полигон!
+  PolyGeom := Region.GeometricPolygon;
+  Contour := PolyGeom.Contour[0];
+
   ResultString := TStringList.Create;
   ResultString.Add(StringTab+'<Detail lineWidth="0.001">');
   ResultString.Add(StringTab+#9+'<LayerRef type="'+LayerIDtoStr(Region.Layer)+'" name="'+Board.LayerName(Region.Layer)+'"/>');//»ћ€!
   ResultString.Add(StringTab+#9+'<Polygon>');
-  For I := 0 To Poly.PointCount - 1 Do //перебор всех примитивов
+  For I := 0 To Contour.Count - 1 Do //перебор всех примитивов
   Begin
-    If Poly.Segments[I].Kind = ePolySegmentLine Then  // ≈сли сегмент представл€ет собой линию
-    Begin
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Poly.Segments[I].vx ))+'" y="'+FloatToStr(CoordToMMs( Poly.Segments[I].vy))+ '"/>');
-    End
-    Else  // если дуга то описываем ее через 5 точек
-    Begin
-      AStartX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
-      AStartY := Poly.Segments[I].cy;
-      AEndX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
-      AEndY := Poly.Segments[I].cy;
-      AMidX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
-      AMidY := Poly.Segments[I].cy;
-      RotateCoordsAroundXY(AStartX,AStartY,Poly.Segments[I].cx,Poly.Segments[I].cy,Poly.Segments[I].Angle1);
-      RotateCoordsAroundXY(AEndX,AEndY,Poly.Segments[I].cx,Poly.Segments[I].cy,Poly.Segments[I].Angle2);
-      RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*1/4));
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AStartX ))+'" y="'+FloatToStr(CoordToMMs( AStartY))+ '"/>'); // “очка в начале дуги
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX ))+'" y="'+FloatToStr(CoordToMMs( AMidY))+ '"/>'); // точка в 1/4 дуги
-      AMidX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
-      AMidY := Poly.Segments[I].cy;
-      RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*1/2));
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AEndX ))+'" y="'+FloatToStr(CoordToMMs( AEndY))+ '"/>'); // точка в 1/2 дуги
-      AMidX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
-      AMidY := Poly.Segments[I].cy;
-      RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*3/4));
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AEndX ))+'" y="'+FloatToStr(CoordToMMs( AEndY))+ '"/>'); // точка в 3/4 дуги
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AEndX ))+'" y="'+FloatToStr(CoordToMMs( AEndY))+ '"/>'); // точка в конце дуги
-    End;
+    ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Contour.x[I] ))+'" y="'+FloatToStr(CoordToMMs( Contour.y[I]))+ '"/>');
   End;
   ResultString.Add(StringTab+#9+'</Polygon>');
   ResultString.Add(StringTab+'</Detail>');
@@ -1372,18 +1349,18 @@ Begin
      //******* !!!!!!!!!!!!!!!!!!!!!!!!!!!! –егионы пока не получились********//
      //******* !!!!!!!!!!!!!!!!!!!!!!!!!!!! ќтложено********//
      //*******ѕеребираем –егионы********//
-     //MechIterH := Board.BoardIterator_Create;
-     //MechIterH.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
-     //MechIterH.AddFilter_ObjectSet(MkSet(eRegionObject));
-     //MechIterH.AddFilter_Method(eProcessAll);
-     //Region := MechIterH.FirstPCBObject; //первый регион на механическом слое
+     MechIterH := Board.BoardIterator_Create;
+     MechIterH.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_ObjectSet(MkSet(eRegionObject));
+     MechIterH.AddFilter_Method(eProcessAll);
+     Region := MechIterH.FirstPCBObject; //первый регион на механическом слое
 
-     //While (Region <> Nil) Do
-     //Begin
-     //  Constructive.AddStrings(RegionToXML(Board,Region,3));
-     //  Region := MechIterH.NextPCBObject;
-     //End;
-     //Board.BoardIterator_Destroy(MechIterH);
+     While (Region <> Nil) Do
+     Begin
+       Constructive.AddStrings(RegionToXML(Board,Region,3));
+       Region := MechIterH.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(MechIterH);
      Constructive.Add(#9+#9+'</MechLayerObjects>');
 
      //*******ѕеребираем “екстовую информацию********//
