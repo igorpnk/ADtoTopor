@@ -9,4 +9,4 @@ Start procedure Main!
 
 2) Open in Altium Designer Your PCB.
 
-3) DXP -> Run Script... -> Target "Main" -> Click Button"OK". 
+3) DXP -> Run Script... -> Target "StartScript" -> Click Button"OK". 

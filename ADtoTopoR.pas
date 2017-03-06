@@ -1,4 +1,3 @@
-
 Function LoadAFile : String;
 Var
    OpenDialog : TOpenDialog;
@@ -8,6 +7,36 @@ Begin
      OpenDialog.InitialDir := 'C:\';
      // Display the OpenDialog component
      OpenDialog.Filter := 'XML Files|*.XML|All Files|*';
+     OpenDialog.Execute;
+     // Obtain the file name of the selected file.
+     Result := OpenDialog.Filename;
+     OpenDialog.Free;
+End;
+
+Function LoadAFileExe : String;
+Var
+   OpenDialog : TOpenDialog;
+Begin
+     Result := '';
+     OpenDialog := TOpenDialog.Create(nil);
+     OpenDialog.InitialDir := 'C:\';
+     // Display the OpenDialog component
+     OpenDialog.Filter := 'EXE Files|*.exe|All Files|*';
+     OpenDialog.Execute;
+     // Obtain the file name of the selected file.
+     Result := OpenDialog.Filename;
+     OpenDialog.Free;
+End;
+
+Function LoadAFilePrj : String;
+Var
+   OpenDialog : TOpenDialog;
+Begin
+     Result := '';
+     OpenDialog := TOpenDialog.Create(nil);
+     OpenDialog.InitialDir := 'C:\';
+     // Display the OpenDialog component
+     OpenDialog.Filter := 'TopoR Project Files|*.fsproj|All Files|*';
      OpenDialog.Execute;
      // Obtain the file name of the selected file.
      Result := OpenDialog.Filename;
@@ -39,7 +68,6 @@ Begin
 End;
 
 Procedure AddHeader(XMLIn : TStringList; FileS : String; UnitsDist : String;); // Форимрование заголовка
-uses  DateUtils,SysUtils;
 Var
    Times                : String;
    Date                 : String;
@@ -302,6 +330,29 @@ Begin
   Result := ResultString;
 End;
 
+Function TrackKeepoutToXML(Board :IPCB_Board; Track : IPCB_Track; TabCount: integer;) : TStringList;
+Var
+ ResultString : TStringList;
+ StringTab    : String;
+ I            : integer;
+Begin
+  StringTab := '';
+  For I:=0 to TabCount-1 do StringTab := StringTab + #9;
+  ResultString := TStringList.Create;
+  ResultString.Add(StringTab+'<Keepout>');
+  ResultString.Add(StringTab+#9+'<Role>');
+  ResultString.Add(StringTab+#9+#9+'<Trace>');
+  ResultString.Add(StringTab+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Track.Layer)+'" name="'+Board.LayerName(Track.Layer)+'"/>');//ИМя!
+  ResultString.Add(StringTab+#9+#9+'</Trace>');
+  ResultString.Add(StringTab+#9+'</Role>');
+  ResultString.Add(StringTab+#9+'<Line>');
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Track.x1 ))+'" y="'+FloatToStr(CoordToMMs( Track.y1))+ '"/>');
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Track.x2 ))+'" y="'+FloatToStr(CoordToMMs( Track.y2))+'"/>');
+  ResultString.Add(StringTab+#9+'</Line>');
+  ResultString.Add(StringTab+'</Keepout>');
+  Result := ResultString;
+End;
+
 Function FillToXML(Board :IPCB_Board; Fill : IPCB_Fill; TabCount: integer;) : TStringList;
 Var
  ResultString : TStringList;
@@ -320,6 +371,66 @@ Begin
   ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X2Location ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y1Location))+ '"/>');
   ResultString.Add(StringTab+#9+'</Polygon>');
   ResultString.Add(StringTab+'</Detail>');
+  Result := ResultString;
+End;
+
+Function FillKeepoutToXML(Board :IPCB_Board; Fill : IPCB_Fill; TabCount: integer;) : TStringList;
+Var
+ ResultString : TStringList;
+ StringTab    : String;
+ I            : integer;
+ X1           : String;
+ Y1           : String;
+ X1Coord      : Tcoord;
+ Y1Coord      : Tcoord;
+ X            : String;
+ Y            : String;
+ XCoord       : Tcoord;
+ YCoord       : Tcoord;
+Begin
+  StringTab := '';
+  For I:=0 to TabCount-1 do StringTab := StringTab + #9;
+  ResultString := TStringList.Create;
+  ResultString.Add(StringTab+'<Keepout>');
+  ResultString.Add(StringTab+#9+'<Role>');
+  ResultString.Add(StringTab+#9+#9+'<Trace>');
+  ResultString.Add(StringTab+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Fill.Layer)+'" name="'+Board.LayerName(Fill.Layer)+'"/>');//ИМя!
+  ResultString.Add(StringTab+#9+#9+'</Trace>');
+  ResultString.Add(StringTab+#9+'</Role>');
+
+
+  ResultString.Add(StringTab+#9+'<Polygon>');
+  XCoord := Fill.X1Location;
+  YCoord := Fill.Y1Location;
+  RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
+  X   := FloatToStr(CoordToMMs( XCoord));
+  Y   := FloatToStr(CoordToMMs( YCoord));
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+
+
+  XCoord := Fill.X1Location;
+  YCoord := Fill.Y2Location;
+  RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
+  X   := FloatToStr(CoordToMMs( XCoord));
+  Y   := FloatToStr(CoordToMMs( YCoord));
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+
+  XCoord := Fill.X2Location;
+  YCoord := Fill.Y2Location;
+  RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
+  X   := FloatToStr(CoordToMMs( XCoord));
+  Y   := FloatToStr(CoordToMMs( YCoord));
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+
+  XCoord := Fill.X2Location;
+  YCoord := Fill.Y1Location;
+  RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
+  X   := FloatToStr(CoordToMMs( XCoord));
+  Y   := FloatToStr(CoordToMMs( YCoord));
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+  ResultString.Add(StringTab+#9+'</Polygon>');
+
+  ResultString.Add(StringTab+'</Keepout>');
   Result := ResultString;
 End;
 
@@ -460,7 +571,8 @@ Begin
   ResultString.Add(StringTab+'</Copper>');
   Result := ResultString;
 End;
- // конвертирование региона в механических слоях
+
+// конвертирование региона в механических слоях
 Function RegionToXML(Board :IPCB_Board; Region : IPCB_Region; TabCount: integer;) : TStringList;  // пока не работает.. нужно разобраться
 Var
  ResultString : TStringList;
@@ -495,7 +607,49 @@ Begin
   ResultString.Add(StringTab+'</Detail>');
   Result := ResultString;
 End;
- //нужно отфильтровать текст принадлижащий компонентам!
+
+// конвертирование региона в виде запрета
+Function RegionKeepoutToXML(Board :IPCB_Board; Region : IPCB_Region; TabCount: integer;) : TStringList;  // пока не работает.. нужно разобраться
+Var
+ ResultString : TStringList;
+ StringTab    : String;
+ I            : integer;
+ AStartX   : TCoord;
+ AStartY   : TCoord;
+ AEndX     : TCoord;
+ AEndY     : TCoord;
+ AMidX     : TCoord;
+ AMidY     : TCoord;
+ Temp      : float;
+ Poly      : IPCB_Polygon;
+ PolyGeom  : IPCB_GeometricPolygon;
+ Contour   : IPCB_Contour;
+
+Begin
+  StringTab := '';
+  For I:=0 to TabCount-1 do StringTab := StringTab + #9;
+  PolyGeom := Region.GeometricPolygon;
+  Contour := PolyGeom.Contour[0];
+  ResultString := TStringList.Create;
+
+  ResultString.Add(StringTab+'<Keepout>');
+  ResultString.Add(StringTab+#9+'<Role>');
+  ResultString.Add(StringTab+#9+#9+'<Trace>');
+  ResultString.Add(StringTab+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Region.Layer)+'" name="'+Board.LayerName(Region.Layer)+'"/>');//ИМя!
+  ResultString.Add(StringTab+#9+#9+'</Trace>');
+  ResultString.Add(StringTab+#9+'</Role>');
+
+  ResultString.Add(StringTab+#9+'<Polygon>');
+  For I := 0 To Contour.Count - 1 Do //перебор всех примитивов
+  Begin
+    ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Contour.x[I] ))+'" y="'+FloatToStr(CoordToMMs( Contour.y[I]))+ '"/>');
+  End;
+  ResultString.Add(StringTab+#9+'</Polygon>');
+  ResultString.Add(StringTab+'</Keepout>');
+  Result := ResultString;
+End;
+
+//нужно отфильтровать текст принадлижащий компонентам!
 Function TextToXML(Board :IPCB_Board; Text : IPCB_Text; TabCount: integer; FileXmlTSt : TStringList;)  : TStringList;
 Var
  ResultString : TStringList;
@@ -557,6 +711,42 @@ Begin
   ResultString.Add(StringTab+#9+'</Arc>');
   End;
   ResultString.Add(StringTab+'</Detail>');
+  Result := ResultString;
+End;
+
+Function ArcKeepoutToXML(Board :IPCB_Board; Arc : IPCB_Arc; TabCount: integer;) : TStringList;
+Var
+ ResultString : TStringList;
+ StringTab    : String;
+ I            : integer;
+Begin
+  StringTab := '';
+  For I:=0 to TabCount-1 do StringTab := StringTab + #9;
+
+  ResultString := TStringList.Create;
+  ResultString.Add(StringTab+'<Keepout>');
+  ResultString.Add(StringTab+#9+'<Role>');
+  ResultString.Add(StringTab+#9+#9+'<Trace>');
+  ResultString.Add(StringTab+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Arc.Layer)+'" name="'+Board.LayerName(Arc.Layer)+'"/>');//ИМя!
+  ResultString.Add(StringTab+#9+#9+'</Trace>');
+  ResultString.Add(StringTab+#9+'</Role>');
+
+
+  if (Arc.StartAngle = 0 & Arc.EndAngle = 360) then // Если полный круг
+  Begin
+  ResultString.Add(StringTab+#9+'<Circle diameter="'+FloatToStr(CoordToMMs(Arc.Radius*2))+'">');
+  ResultString.Add(StringTab+#9+#9+'<Center x="'+FloatToStr(CoordToMMs(Arc.XCenter))+'" y="'+FloatToStr(CoordToMMs( Arc.YCenter))+'"/>');
+  ResultString.Add(StringTab+#9+'</Circle>');
+  End
+  Else  // Если разорванный круг
+  Begin
+  ResultString.Add(StringTab+#9+'<Arc>');
+  ResultString.Add(StringTab+#9+#9+'<Center x="'+FloatToStr(CoordToMMs( Arc.XCenter))+'" y="'+FloatToStr(CoordToMMs( Arc.YCenter))+'"/>');
+  ResultString.Add(StringTab+#9+#9+'<Start x="'+FloatToStr(CoordToMMs( Arc.StartX ))+'" y="'+FloatToStr(CoordToMMs( Arc.StartY))+'"/>');
+  ResultString.Add(StringTab+#9+#9+'<End x="'+FloatToStr(CoordToMMs( Arc.EndX))+'" y="'+FloatToStr(CoordToMMs( Arc.EndY ))+'"/>');
+  ResultString.Add(StringTab+#9+'</Arc>');
+  End;
+  ResultString.Add(StringTab+'</Keepout>');
   Result := ResultString;
 
 End;
@@ -701,6 +891,8 @@ Var // жуть...
    Poly                    : IPCB_Polygon;
    Text                    : IPCB_Text;
    Pad                     : IPCB_Pad;
+   Fill                    : IPCB_Fill;
+   Region                  : IPCB_Region;
    PadSide                 : String;
    IteratorHandle          : IPCB_GroupIterator;
    PadIteratorHandle       : IPCB_GroupIterator;
@@ -741,6 +933,9 @@ Var // жуть...
    PadIteratorHandle2      : IPCB_BoardIterator;
    NetName                 : string;
    IDcomp                  : string;
+   PolyGeom                : IPCB_GeometricPolygon;
+   Contour                 : IPCB_Contour;
+
 
 Begin
      TrackCount := 0;
@@ -927,7 +1122,8 @@ Begin
            Component.GroupIterator_Destroy(TextIteratorHandle);
 
            Footprints.Add(#9+#9+#9+#9+'<Details>');// Дополнительные справочные слои посадочного
-           //*******Начинаем перебор всех линий, окружностей, полигонов********//
+
+           //*******Начинаем перебор всех линий, окружностей********//
             //*******линии ********//
            IteratorHandle := Component.GroupIterator_Create;
            IteratorHandle.AddFilter_ObjectSet(MkSet(eTrackObject));
@@ -1053,55 +1249,114 @@ Begin
            End;
            Component.GroupIterator_Destroy(IteratorHandle);
 
-           //*******Полигоны ********//
+
+           Footprints.Add(#9+#9+#9+#9+'</Details>');
+           //*******Заканчиваем перебор всех линий,окружностей ********//
+
+
+           //*******Добавляем запреты ********//
+           Footprints.Add(#9+#9+#9+#9+'<KeepoutsTrace>');
+           //*******Филы ********//
            IteratorHandle := Component.GroupIterator_Create;
-           IteratorHandle.AddFilter_ObjectSet(MkSet(ePolyObject));
-           Poly :=  IteratorHandle.FirstPCBObject;
-           //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-           While (Poly <> Nil) Do // Нуждается в проверке!!!!
+           IteratorHandle.AddFilter_ObjectSet(MkSet(eFillObject));
+           Fill :=  IteratorHandle.FirstPCBObject;
+
+           While (Fill <> Nil) Do
            Begin
-
-                LayerName := Board.LayerName(Poly.Layer);
-                if Poly.Layer = 34 then LayerName := Board.LayerName(33);
-                //если парный слой то ренейминг!
-                if LayerIDtoStr(Poly.Layer) = 'Mechanical' then
-                  For i := 0 To LyrMehPairs.Count - 1 Do
-                     if Poly.Layer = LayerPairS[i,1] then
-                      LayerName := Board.LayerName(LayerPairS[i,0]);
-
-                 Footprints.Add(#9+#9+#9+#9+#9+'<Detail lineWidth="0.001">');
-                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Poly.Layer)+
+             if Fill.IsKeepout = true then // если филл зона запрета
+             begin
+                LayerName := Board.LayerName(Fill.Layer);
+                if Fill.Layer = 32 then LayerName := Board.LayerName(1);
+                //если парный слой то переносим с боттом на топ!
+                //if LayerIDtoStr(Fill.Layer) = 'Mechanical' then
+                //  For i := 0 To LyrMehPairs.Count - 1 Do
+                //     if Fill.Layer = LayerPairS[i,1] then
+                //      LayerName := Board.LayerName(LayerPairS[i,0]);
+                 Footprints.Add(#9+#9+#9+#9+#9+'<Keepout>');
+                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Fill.Layer)+
                  '" name="'+LayerName+'"/>');
                  Footprints.Add(#9+#9+#9+#9+#9+#9+'<Polygon>');
-                 For I := 0 To Poly.PointCount - 1 Do
-                 Begin
-                      If Poly.Segments[I].Kind = ePolySegmentLine Then
-                      Begin
-                      XCoord := Poly.Segments[I].vx - Component.x;
-                      YCoord := Poly.Segments[I].vy - Component.y;
-                      RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
-                      if Component.Layer = 32 then XCoord := -XCoord;
-                      X   := FloatToStr(CoordToMMs( XCoord));
-                      Y   := FloatToStr(CoordToMMs( YCoord));
 
-                      Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+'"/>');
-                      End
-                      Else
-                      Begin // нужно сделать для арков!!!!
-                      //PolygonRpt.Add(' Polygon Segment Arc 1  : ' + FloatToStr(Polygon.Segments[I].Angle1));
-                      //PolygonRpt.Add(' Polygon Segment Arc 2  : ' + FloatToStr(Polygon.Segments[I].Angle2));
-                      //PolygonRpt.Add(' Polygon Segment Radius : ' + FloatToStr(Polygon.Segments[I].Radius));
-                      End;
-                 End;
+                 XCoord := Fill.X1Location - Component.x;
+                 YCoord := Fill.Y1Location - Component.y;
+
+                 //RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                 if Component.Layer = 32 then XCoord := -XCoord;
+                 X   := FloatToStr(CoordToMMs( XCoord));
+                 Y   := FloatToStr(CoordToMMs( YCoord));
+                 Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+
+                 XCoord := Fill.X1Location - Component.x;
+                 YCoord := Fill.Y2Location - Component.y;
+                 //RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                 if Component.Layer = 32 then XCoord := -XCoord;
+                 X   := FloatToStr(CoordToMMs( XCoord));
+                 Y   := FloatToStr(CoordToMMs( YCoord));
+                 Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+
+                 XCoord := Fill.X2Location - Component.x;
+                 YCoord := Fill.Y2Location - Component.y;
+                // RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                 if Component.Layer = 32 then XCoord := -XCoord;
+                 X   := FloatToStr(CoordToMMs( XCoord));
+                 Y   := FloatToStr(CoordToMMs( YCoord));
+                 Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+
+                 XCoord := Fill.X2Location - Component.x;
+                 YCoord := Fill.Y1Location - Component.y;
+                // RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                 if Component.Layer = 32 then XCoord := -XCoord;
+                 X   := FloatToStr(CoordToMMs( XCoord));
+                 Y   := FloatToStr(CoordToMMs( YCoord));
+                 Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
                  Footprints.Add(#9+#9+#9+#9+#9+#9+'</Polygon>');
-                 Footprints.Add(#9+#9+#9+#9+#9+'</Detail>');
-                 Poly := IteratorHandle.NextPCBObject; //следующий полигон
+                 Footprints.Add(#9+#9+#9+#9+#9+'</Keepout>');
+             end;
+             Fill := IteratorHandle.NextPCBObject; //следующий филл
            End;
            Component.GroupIterator_Destroy(IteratorHandle);
 
-           Footprints.Add(#9+#9+#9+#9+'</Details>');
-           //*******Заканчиваем перебор всех линий,окружностей,полигонов ********//
+           //*******Регионы ********//
+           IteratorHandle := Component.GroupIterator_Create;
+           IteratorHandle.AddFilter_ObjectSet(MkSet(eRegionObject));
+           Region :=  IteratorHandle.FirstPCBObject;
 
+           While (Region <> Nil) Do
+           Begin
+             if Region.IsKeepout = true then // если регион зона запрета
+             begin
+                LayerName := Board.LayerName(Region.Layer);
+                if Region.Layer = 32 then LayerName := Board.LayerName(1);
+                //если парный слой то переносим с боттом на топ!
+                //if LayerIDtoStr(Region.Layer) = 'Mechanical' then
+                //  For i := 0 To LyrMehPairs.Count - 1 Do
+                //     if Region.Layer = LayerPairS[i,1] then
+                //      LayerName := Board.LayerName(LayerPairS[i,0]);
+                 Footprints.Add(#9+#9+#9+#9+#9+'<Keepout>');
+                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Region.Layer)+
+                 '" name="'+LayerName+'"/>');
+                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<Polygon>');
+                 PolyGeom := Region.GeometricPolygon;
+                 Contour := PolyGeom.Contour[0];
+
+                 For I := 0 To Contour.Count - 1 Do //перебор всех примитивов
+                 Begin
+                   XCoord := Contour.x[I] - Component.x;
+                   YCoord := Contour.y[I] - Component.y;
+                   RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                   if Component.Layer = 32 then XCoord := -XCoord;
+                   X   := FloatToStr(CoordToMMs( XCoord));
+                   Y   := FloatToStr(CoordToMMs( YCoord));
+                   Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+                 End;
+                 Footprints.Add(#9+#9+#9+#9+#9+#9+'</Polygon>');
+                 Footprints.Add(#9+#9+#9+#9+#9+'</Keepout>');
+             end;
+             Region := IteratorHandle.NextPCBObject; //следующий регион
+           End;
+           Component.GroupIterator_Destroy(IteratorHandle);
+
+           Footprints.Add(#9+#9+#9+#9+'</KeepoutsTrace>');
 
            // следующий компонент
            Component := ComponentIteratorHandle.NextPCBObject;
@@ -1197,6 +1452,7 @@ Region    : IPCB_Region;
 Poly      : IPCB_Polygon;
 Fill      : IPCB_Fill;
 LID       : Integer;
+NetName   : String;
 
 BoardOutline: IPCB_BoardOutline;
 Begin
@@ -1306,7 +1562,7 @@ Begin
      MechIterH.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
      MechIterH.AddFilter_ObjectSet(MkSet(eArcObject));
      MechIterH.AddFilter_Method(eProcessAll);
-     Arc := MechIterH.FirstPCBObject; //первый трэк на механическом слое
+     Arc := MechIterH.FirstPCBObject; //первая окружность на механическом слое
 
      While (Arc <> Nil) Do
      Begin
@@ -1323,7 +1579,7 @@ Begin
      MechIterH.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
      MechIterH.AddFilter_ObjectSet(MkSet(eFillObject));
      MechIterH.AddFilter_Method(eProcessAll);
-     Fill := MechIterH.FirstPCBObject; //первый трэк на механическом слое
+     Fill := MechIterH.FirstPCBObject; //первый филл на механическом слое
 
      While (Fill <> Nil) Do
      Begin
@@ -1352,8 +1608,6 @@ Begin
      End;
      Board.BoardIterator_Destroy(MechIterH);
 
-     //******* !!!!!!!!!!!!!!!!!!!!!!!!!!!! Регионы пока не получились********//
-     //******* !!!!!!!!!!!!!!!!!!!!!!!!!!!! Отложено********//
      //*******Перебираем Регионы********//
      MechIterH := Board.BoardIterator_Create;
      MechIterH.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
@@ -1368,6 +1622,82 @@ Begin
      End;
      Board.BoardIterator_Destroy(MechIterH);
      Constructive.Add(#9+#9+'</MechLayerObjects>');
+
+
+      //*******Перебираем Запреты********//
+     Constructive.Add(#9+#9+'<Keepouts>');
+
+     // филы
+     MechIterH := Board.BoardIterator_Create;
+     MechIterH.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
+     MechIterH.AddFilter_ObjectSet(MkSet(eFillObject));
+     MechIterH.AddFilter_Method(eProcessAll);
+     Fill := MechIterH.FirstPCBObject; //первый филл
+
+     While (Fill <> Nil) Do
+     Begin
+       if (Fill.Component = Nil & Fill.IsKeepout = true) then
+       Begin
+         Constructive.AddStrings(FillKeepoutToXML(Board,Fill,3));
+       End;
+       Fill := MechIterH.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(MechIterH);
+
+     // регионы
+     MechIterH := Board.BoardIterator_Create;
+     MechIterH.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
+     MechIterH.AddFilter_ObjectSet(MkSet(eRegionObject));
+     MechIterH.AddFilter_Method(eProcessAll);
+     Region := MechIterH.FirstPCBObject; //первый регион
+
+     While (Region <> Nil) Do
+     Begin
+       if (Region.Component = Nil & Region.IsKeepout = true) then
+       Begin
+         Constructive.AddStrings(RegionKeepoutToXML(Board,Region,3));
+       End;
+       Region := MechIterH.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(MechIterH);
+
+     //линии
+     MechIterH := Board.BoardIterator_Create;
+     MechIterH.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
+     MechIterH.AddFilter_ObjectSet(MkSet(eTrackObject));
+     MechIterH.AddFilter_Method(eProcessAll);
+     Track := MechIterH.FirstPCBObject; //первая линия
+
+     While (Track <> Nil) Do
+     Begin
+       if (Track.Component = Nil & Track.IsKeepout = true) then
+       Begin
+         Constructive.AddStrings(TrackKeepoutToXML(Board,Track,3));
+         LID := Track.Layer;
+       End;
+       Track := MechIterH.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(MechIterH);
+
+     //окружности
+     MechIterH := Board.BoardIterator_Create;
+     MechIterH.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
+     MechIterH.AddFilter_ObjectSet(MkSet(eArcObject));
+     MechIterH.AddFilter_Method(eProcessAll);
+     Arc := MechIterH.FirstPCBObject; //первая окружность
+
+     While (Arc <> Nil) Do
+     Begin
+       if (Arc.Component = Nil & Arc.IsKeepout = true) then
+       Begin
+         Constructive.AddStrings(ArcKeepoutToXML(Board,Arc,3));
+       End;
+       Arc := MechIterH.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(MechIterH);
+
+
+     Constructive.Add(#9+#9+'</Keepouts>');
 
      //*******Перебираем Текстовую информацию********//
      Constructive.Add(#9+#9+'<Texts>');
@@ -1790,6 +2120,7 @@ var
   oldSize       : TCoord;
   ViaStart      : Boolean;
   TestString    : String;
+  NetName       : String;
 
   Begin
     FileXMLCon.Add(#9+'<Connectivity version="1.2">');
@@ -1920,11 +2251,19 @@ var
 
     While (Track <> Nil) Do
      Begin
+       if Track.IsKeepout <> true then
+       begin // если линия не киипаут
        FileXMLCon.Add(#9+#9+#9+'<Wire>');
        LyrObj := Board.LayerStack.LayerObject(Track.Layer);
        TestString := LyrObj.Name;
+
+       if Track.Net = nil then       begin
+         NetName := 'No_Net';
+       end        else       begin
+        NetName := Track.Net.Name;
+       end;
        FileXMLCon.Add(#9+#9+#9+#9+'<LayerRef type="Signal" name="'+LyrObj.Name+'"/>');
-       FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+Track.Net.Name+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+NetName+'"/>');
        FileXMLCon.Add(#9+#9+#9+#9+'<Subwire width="'+FloatToStr(CoordToMMs(Track.Width))+'">');
        FileXMLCon.Add(#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs(Track.x1))+
                                           '" y="'+FloatToStr(CoordToMMs(Track.y1))+'"/>');
@@ -1934,6 +2273,7 @@ var
        FileXMLCon.Add(#9+#9+#9+#9+#9+'</TrackLine>');
        FileXMLCon.Add(#9+#9+#9+#9+'</Subwire>');
        FileXMLCon.Add(#9+#9+#9+'</Wire>');
+       end;//если линия не кипаут то следующая линия
        Track := BoardIterator.NextPCBObject;
      End;
      Board.BoardIterator_Destroy(BoardIterator);
@@ -1948,10 +2288,18 @@ var
 
     While (Arc <> Nil) Do
      Begin
+       if Arc.IsKeepout <> true then
+       begin // если арк не киипаут
        FileXMLCon.Add(#9+#9+#9+'<Wire>');
        LyrObj := Board.LayerStack.LayerObject(Arc.Layer);
        FileXMLCon.Add(#9+#9+#9+#9+'<LayerRef type="Signal" name="'+LyrObj.Name+'"/>');
-       FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+Arc.Net.Name+'"/>');
+       if Arc.Net = nil then       begin
+         NetName := 'No_Net';
+       end        else       begin
+        NetName := Arc.Net.Name;
+       end;
+
+       FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+NetName+'"/>');
        FileXMLCon.Add(#9+#9+#9+#9+'<Subwire width="'+FloatToStr(CoordToMMs(Arc.LineWidth))+'">');
        FileXMLCon.Add(#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs(Arc.StartX))+
                                           '" y="'+FloatToStr(CoordToMMs(Arc.StartY))+'"/>');
@@ -1963,6 +2311,7 @@ var
        FileXMLCon.Add(#9+#9+#9+#9+#9+'</TrackArc>');
        FileXMLCon.Add(#9+#9+#9+#9+'</Subwire>');
        FileXMLCon.Add(#9+#9+#9+'</Wire>');
+       end; //если арк кипаут то следующий арк
        Arc := BoardIterator.NextPCBObject;
      End;
      Board.BoardIterator_Destroy(BoardIterator);
@@ -1985,15 +2334,12 @@ var
      End;
      Board.BoardIterator_Destroy(BoardIterator);
 
-
     FileXMLCon.Add(#9+#9+'</Coppers>');
 
     FileXMLCon.Add(#9+'</Connectivity>');
   End;
 
-Procedure Main;
-uses
- Classes, SysUtils, Dos;
+Procedure ADtoTopoR;
 Var
    Board       : IPCB_Board;
    Track       : IPCB_Track;
@@ -2016,10 +2362,9 @@ Var
    FileXMLCon  : TStringList; // Ветвь соединений <Connectivity version="1.1">
    FileXMLDispC: TStringList; // Ветвь отображения <DisplayControl version="1.3">
    ViastacksLL : TStringList; // группа переходных отверстий  Библиотеки
+   TopoRCommand : TStringList; // командный файл Топор!
    TextStyleAll: String;
    StartTime   : String;
-   //
-
 Begin
      //*******Подготовка********//
      FileXml := TStringList.Create;                      // Создание обьекта класса
@@ -2034,6 +2379,7 @@ Begin
      ViastacksLL := TStringList.Create;
      FileXMLDispC := TStringList.Create;
      FileXMLCon   := TStringList.Create;
+     TopoRCommand := TStringList.Create;
      ViastacksLL.Add(#9+#9+'<Viastacks>');
 
      //StartTime := GetCurrentTimeString();
@@ -2101,9 +2447,33 @@ Begin
 
 
      //ShowMessage('AddNetList: ' +StartTime +' - '+ GetCurrentTimeString());
+
      //*******Сохранение XML Файла********//
-     FileName := SaveAFile();
-     FileXml.SaveToFile(FileName + '.fst');
+     // из скрипта похоже невозможно открыть другое приложение
+     if cbStartTopoR.Checked then   // если нужно то сразу запускаем топор и импортируем
+     begin
+       FileName := Board.FileName+'.fst';
+       FileXml.SaveToFile(FileName);
+       TopoRCommand.Add('<?xml version="1.0" encoding="UTF-8"?>');
+       TopoRCommand.Add('<Version>1.0</Version>');
+       TopoRCommand.Add('<Commands>');
+       if tProject.Text ='' then begin
+         TopoRCommand.Add(#9+'<Import name="'+FileName+'"/> '); end
+       else     begin
+         topoRCommand.Add(#9+'<Import name="'+FileName+'" project="'+tProject.Text+'"/> ');
+       end;
+       TopoRCommand.Add(#9+'<Enable logging="off" messagecompletion="off"/>');
+       TopoRCommand.Add('</Commands>');
+       TopoRCommand.SaveToFile(Board.FileName+'.fsa');
+
+     end
+     else // просто сохраняем файл
+     begin
+       FileName := SaveAFile();
+       if FileName <> '' then
+       FileXml.SaveToFile(FileName + '.fst');
+
+     end;
 
 
      //*******Уборка********//
@@ -2119,7 +2489,67 @@ Begin
      ViastacksLL.Free;
      FileXMLDispC.Free;
      FileXMLCon.Free;
+     TopoRCommand.Free;
 End;
+
+Procedure SaveConfig ();
+var
+  Board       : IPCB_Board;
+  TopoRFile   :TStringList;
+
+begin
+  Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
+  TopoRFile := TStringList.Create;
+  TopoRFile.Add(tTopor.Text);
+  TopoRFile.Add(tProject.Text);
+  TopoRFile.SaveToFile(Board.FileName+'.scon');
+  TopoRFile.Free;
+end;
+
+Procedure StartScript ();
+var
+  Board       : IPCB_Board;
+  TopoRFile   :TStringList;
+  FS: TFileStream;
+
+Begin
+  //FS := TFileStream.Create(tTopor.Text, fmOpenRead or fmShareDenyWrite);
+
+  //TopoRFile := TStringList.Create;
+  //Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
+  //If Board = nil then Begin ShowError('Open board!'); Exit; End; // Если платы нет то выходим
+
+  //if FileExists(Board.FileName+'.scon') then begin
+   // TopoRFile.LoadFromFile(Board.FileName+'.scon');
+ // end else begin
+  //  SaveConfig;
+  //  TopoRFile.LoadFromFile(Board.FileName+'.scon');
+  //end;
+  //tTopor.Text := TopoRFile.Get(0);
+  //tProject.Text := TopoRFile.Get(1);
+  //Form1.Show;
+  //TopoRFile.Free;
+   ADtoTopoR;
+End;
+
+procedure TForm1.b_GOClick(Sender: TObject);
+begin
+ ADtoTopoR;
+ SaveConfig;
+
+end;
+
+procedure TForm1.bTopoRClick(Sender: TObject);
+begin
+  tTopor.Text :=  LoadAFileEXE;
+  SaveConfig;
+end;
+
+procedure TForm1.bProjectClick(Sender: TObject);
+begin
+  tProject.Text :=  LoadAFilePrj;
+  SaveConfig;
+end;
 
 //ToDo
 // Обработать зоны запрета
