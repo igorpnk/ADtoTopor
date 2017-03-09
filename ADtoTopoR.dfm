@@ -19,6 +19,7 @@ object Form1: TForm1
     Width = 53
     Height = 19
     Caption = 'TopoR:'
+    Enabled = False
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -16
@@ -32,6 +33,7 @@ object Form1: TForm1
     Width = 55
     Height = 19
     Caption = 'Project:'
+    Enabled = False
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -16
@@ -107,6 +109,7 @@ object Form1: TForm1
     Width = 75
     Height = 21
     Caption = 'Open'
+    Enabled = False
     TabOrder = 0
     OnClick = bTopoRClick
   end
@@ -115,6 +118,7 @@ object Form1: TForm1
     Top = 16
     Width = 360
     Height = 21
+    Enabled = False
     TabOrder = 1
     Text = 'C:\Program Files\TopoR Lite\BIN\topor.exe'
   end
@@ -132,6 +136,7 @@ object Form1: TForm1
     Top = 48
     Width = 360
     Height = 21
+    Enabled = False
     TabOrder = 3
   end
   object bProject: TButton
@@ -140,6 +145,7 @@ object Form1: TForm1
     Width = 75
     Height = 25
     Caption = 'Open'
+    Enabled = False
     TabOrder = 4
     OnClick = bProjectClick
   end
@@ -199,7 +205,7 @@ object Form1: TForm1
     Top = 112
     Width = 75
     Height = 25
-    Caption = 'Open'
+    Caption = 'Browse..'
     TabOrder = 10
     OnClick = b_ExportFolderClick
   end
@@ -208,7 +214,7 @@ object Form1: TForm1
     Top = 144
     Width = 75
     Height = 25
-    Caption = 'Open'
+    Caption = 'Browse..'
     TabOrder = 11
     OnClick = b_ImportFolderClick
   end
