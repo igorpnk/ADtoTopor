@@ -59,6 +59,21 @@ Begin
      OpenDialog.Free;
 End;
 
+Function LoadAFileFST : String;
+Var
+   OpenDialog : TOpenDialog;
+Begin
+     Result := '';
+     OpenDialog := TOpenDialog.Create(nil);
+     OpenDialog.InitialDir := 'C:\';
+     // Display the OpenDialog component
+     OpenDialog.Filter := 'TopoR Text Files|*.fst|All Files|*';
+     OpenDialog.Execute;
+     // Obtain the file name of the selected file.
+     Result := OpenDialog.Filename;
+     OpenDialog.Free;
+End;
+
 Function SaveAFile : String;
 Var
    SaveDialog : TSaveDialog;
@@ -2500,7 +2515,7 @@ Begin
      else // просто сохраняем файл
      begin
        if tExport.Text = '' then begin
-         FileName := SaveAFile();
+         FileName := SaveAFile()+'.fst';
        end else begin
          FileName := tExport.Text;
        end;
@@ -2895,7 +2910,7 @@ begin
             for ii:=0 to FileXML.Count - 1 do
             if pos('<Viastack name="'+VStackName, FileXML.Strings[ii]) > 0 then begin StartStInd := ii; break; end;
               Repeat // перебираем стек переходного отверстия
-                CurrentStrSt := FileXML.Get(ii);  
+                CurrentStrSt := FileXML.Get(ii);
                 if  pos('<LayerRange',CurrentStrSt) >0 then
                 begin
                   inc(ii);
@@ -3127,5 +3142,19 @@ end;
 procedure TForm1.b_ImportClick(Sender: TObject);
 begin
   TopoRtoAD;
+end;
+
+procedure TForm1.b_ExportFolderClick(Sender: TObject);
+begin
+  tExport.Text := LoadAFileFST;
+  if pos('.fst',tExport.Text) = nil then tExport.Text := tExport.Text + '.fst';
+  SaveConfig;
+end;
+
+procedure TForm1.b_ImportFolderClick(Sender: TObject);
+begin
+  tImport.Text := LoadAFileFST;
+  if pos('.fst',tImport.Text) = nil then tImport.Text := tImport.Text + '.fst';
+  SaveConfig;
 end;
 

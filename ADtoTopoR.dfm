@@ -53,50 +53,50 @@ object Form1: TForm1
     ParentFont = False
   end
   object l_H: TLabel
-    Left = 465
-    Top = 112
+    Left = 369
+    Top = 88
     Width = 7
     Height = 13
     Caption = 'H'
   end
   object l_L: TLabel
-    Left = 475
-    Top = 112
+    Left = 379
+    Top = 88
     Width = 5
     Height = 13
     Caption = 'L'
   end
   object l_C: TLabel
-    Left = 485
-    Top = 112
+    Left = 389
+    Top = 88
     Width = 7
     Height = 13
     Caption = 'C'
   end
   object l_LL: TLabel
-    Left = 495
-    Top = 112
+    Left = 399
+    Top = 88
     Width = 10
     Height = 13
     Caption = 'LL'
   end
   object l_N: TLabel
-    Left = 510
-    Top = 112
+    Left = 414
+    Top = 88
     Width = 7
     Height = 13
     Caption = 'N'
   end
   object l_G: TLabel
-    Left = 520
-    Top = 112
+    Left = 424
+    Top = 88
     Width = 7
     Height = 13
     Caption = 'G'
   end
   object l_R: TLabel
-    Left = 536
-    Top = 112
+    Left = 440
+    Top = 88
     Width = 7
     Height = 13
     Caption = 'R'
@@ -193,5 +193,23 @@ object Form1: TForm1
     Width = 360
     Height = 21
     TabOrder = 9
+  end
+  object b_ExportFolder: TButton
+    Left = 464
+    Top = 112
+    Width = 75
+    Height = 25
+    Caption = 'Open'
+    TabOrder = 10
+    OnClick = b_ExportFolderClick
+  end
+  object b_ImportFolder: TButton
+    Left = 464
+    Top = 144
+    Width = 75
+    Height = 25
+    Caption = 'Open'
+    TabOrder = 11
+    OnClick = b_ImportFolderClick
   end
 end
