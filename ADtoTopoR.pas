@@ -3117,8 +3117,6 @@ begin
 
     //*******переносим компоненты*******//
   MoveComponents(Board,FileXml);
-  PCBserver.RefreshDocumentView();
-
 
   //*******Удаляем переходники*******//
   RemoveViainSignal(Board);
@@ -3129,6 +3127,7 @@ begin
   //*******Добавляем переходники*******//
   AddViainSignal(Board,FileXml);
 
+  Client.SendMessage('PCB:Zoom', 'Action=Redraw' , 255, Client.CurrentView);
 
 
   //*******Уборка********//
