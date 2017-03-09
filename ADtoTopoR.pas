@@ -2629,6 +2629,7 @@ ResultS: String;
 Begin
  WriteS := false;
  ResultS:= '';
+ if pos(AttrName,InputStr) >0 then
  For i := pos(AttrName,InputStr)+length(AttrName) to length(InputStr) do
  begin
    s := InputStr[i];
@@ -3025,9 +3026,59 @@ begin
   except
     ShowMessage('Ошибка при попытке чтения строки: №'+IntToStr(i));
   end;
+end;
 
+Procedure MoveComponents(Board : IPCB_Board; FileXml : TStringList;);
+var
+ Component               : IPCB_Component;
+ ComponentIteratorHandle : IPCB_BoardIterator;
+ NameComp                : String;
+ StartInd                : integer;
+ i                       : integer;
+ angle                   : double;
+ side                    : string;
+ currStr                 : string;
+begin
+     for i:=0 to FileXML.Count - 1 do
+     if pos('<ComponentsOnBoard', FileXML.Strings[i]) > 0 then begin StartInd := i; break; end;
 
+     ComponentIteratorHandle := Board.BoardIterator_Create;
+     ComponentIteratorHandle.AddFilter_ObjectSet(MkSet(eComponentObject));
+     ComponentIteratorHandle.AddFilter_LayerSet(AllLayers);
+     ComponentIteratorHandle.AddFilter_Method(eProcessAll);
+     Component := ComponentIteratorHandle.FirstPCBObject; // получаем первый компонент
 
+     While (Component <> Nil) Do
+     Begin
+       NameComp := Component.Name.Text;                        // Имя компонента
+       For i:= StartInd to FileXML.Count - 1 do
+       begin
+         if pos('<CompInstance name="'+NameComp, FileXML.Strings[i]) > 0 then
+         begin
+           angle := XMLGetAttrValue(FileXML.Strings[i],'angle');
+           if angle <> '' then
+            Component.Rotation := StrToInt(angle);
+
+           side := XMLGetAttrValue(FileXML.Strings[i],'side');
+           if side = 'Top' then
+           begin
+             Component.Layer := 1;
+           end  else
+           begin
+             Component.Layer := 32;
+           end;
+           i := i+3;
+           currStr := FileXML.Strings[i];
+           Component.x := MMsToCoord(StrToFloatDot(XMLGetAttrValue(FileXML.Strings[i],'x')));
+           Component.y := MMsToCoord(StrToFloatDot(XMLGetAttrValue(FileXML.Strings[i],'y')));
+         break;
+         end;
+
+       end;
+
+       Component := ComponentIteratorHandle.NextPCBObject;
+     end;
+     Board.BoardIterator_Destroy(ComponentIteratorHandle);
 end;
 
 Procedure TopoRtoAD;
@@ -3060,8 +3111,14 @@ begin
     ShowMessage('Присвойте имя FST файла!');
   end;
 
-  //*******Удаляем проводники*******//
+    //*******Удаляем проводники*******//
   RemoveTrackinSignal(Board);
+  RemoveTrackinSignal(Board);
+
+    //*******переносим компоненты*******//
+  MoveComponents(Board,FileXml);
+  PCBserver.RefreshDocumentView();
+
 
   //*******Удаляем переходники*******//
   RemoveViainSignal(Board);
@@ -3071,6 +3128,8 @@ begin
 
   //*******Добавляем переходники*******//
   AddViainSignal(Board,FileXml);
+
+
 
   //*******Уборка********//
   FileXml.Free;
@@ -3123,22 +3182,6 @@ begin
   SaveConfig;
 end;
 
-//ToDo
-//  добавить дифф пары
-// Проверить двусторонние компоненты
-// Добавить правило зазора до края платы
-// Добавить Plane слои
-// Обработать правила проектирования
-// Обработать слои маски и пасты для КП и сами по себе
-
-//*****Приятные мелочи****//
-// Мб добавить не метрическую систему измерения
-// Мб сделать красивую шапку
-
-//для 1.1.4
-// Обработать срезанные КП
-
-
 procedure TForm1.b_ImportClick(Sender: TObject);
 begin
   TopoRtoAD;
@@ -3158,3 +3201,17 @@ begin
   SaveConfig;
 end;
 
+//ToDo
+//  добавить дифф пары
+// Проверить двусторонние компоненты
+// Добавить правило зазора до края платы
+// Добавить Plane слои
+// Обработать правила проектирования
+// Обработать слои маски и пасты для КП и сами по себе
+
+//*****Приятные мелочи****//
+// Мб добавить не метрическую систему измерения
+// Мб сделать красивую шапку
+
+//для 1.1.4
+// Обработать срезанные КП
