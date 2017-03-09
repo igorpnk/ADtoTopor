@@ -109,10 +109,13 @@ DocumentUniqueId=PFFIGXIY
 StartProcName=ADtoTopoR.pas>Main
 
 [Generic_Watches]
-5=X
-6=Y
-7=X1
-8=Y1
+0=CurrentStr
+1=i
+2=NetName
+3=width
+4=StartX
+9=StartY
+10=i2
 
 [OutputGroup1]
 Name=Netlist Outputs

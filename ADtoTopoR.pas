@@ -13,6 +13,22 @@ Begin
      OpenDialog.Free;
 End;
 
+Procedure SaveConfig ();
+var
+  Board       : IPCB_Board;
+  TopoRFile   :TStringList;
+
+begin
+  Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
+  TopoRFile := TStringList.Create;
+  TopoRFile.Add(tTopor.Text);     // 0 - Путь к топору
+  TopoRFile.Add(tProject.Text);   // 1 - путь к проекту топора
+  TopoRFile.Add(tExport.Text);    // 2 - путь к файлу fst экспорта
+  TopoRFile.Add(tImport.Text);    // 3 - путь к файлу fst Импорта
+  TopoRFile.SaveToFile(Board.FileName+'.scon');
+  TopoRFile.Free;
+end;
+
 Function LoadAFileExe : String;
 Var
    OpenDialog : TOpenDialog;
@@ -105,7 +121,7 @@ Begin
      XMLIn.Add(#9+'</Header>');
 End;
 
-Function LayerIDtoStr(LayerID : TLayer;) : String;    // преобразование типа слоя в текстовый формат
+Function LayerIDtoStr(LayerID : TLayer;) : String;    // Возвращает тип слоя по его ID
 var
 LyrMehPairs              : IPCB_MechanicalLayerPairs;
 begin
@@ -185,8 +201,8 @@ Begin
        LayerThickness := FloatToStrF(0,ffFixed,3,3);
        XMLIn.Add(#9+#9+#9+'<Layer name="'+LayerName+'" type="'+LayerTypeStr+'" thickness="'+LayerThickness+'"/>');
      end;
-     LyrObj := Stack.First(LyrClass);         // получаем первый слой
 
+     LyrObj := Stack.First(LyrClass);         // получаем первый слой
      //сигнальные
      Repeat
            LayerName := LyrObj.Name;
@@ -954,7 +970,7 @@ Begin
      FileXMLCOB.Add(#9+#9+'<Components>');
      Packages.Add(#9+#9+'<Packages>');
      LyrMehPairs := Board.MechanicalPairs;
-
+     LyrMehPairs.LayerPair[0];
      //находим все пары слоев перебором потому что LayerPair[I : Integer] возвращает TMechanicalLayerPair  с которой непонятно что делать.
       i := 0;
       for LayerType := eMechanical1 to eMechanical16 do
@@ -2381,6 +2397,13 @@ Begin
      FileXMLCon   := TStringList.Create;
      TopoRCommand := TStringList.Create;
      ViastacksLL.Add(#9+#9+'<Viastacks>');
+     l_H.Font.Color := clRed;
+     l_L.Font.Color := clRed;
+     l_C.Font.Color := clRed;
+     l_LL.Font.Color := clRed;
+     l_N.Font.Color := clRed;
+     l_G.Font.Color := clRed;
+     l_R.Font.Color := clRed;
 
      //StartTime := GetCurrentTimeString();
 
@@ -2398,10 +2421,10 @@ Begin
 
      //*******Создаем Шапку (Header)********//
      AddHeader(FileXml,Board.FileName,UnitsDist);
-
+     l_H.Font.Color := clGreen;
      //*******Создаем список слоев********//
      AddLayers(FileXML,Board,UnitsDist);
-
+     l_L.Font.Color := clGreen;
      //*******Создаем текстовые стили********//
      FileXmlTSt.Add(#9+'<TextStyles version="1.0">');
      FileXmlTSt.Add(#9+#9+'<TextStyle name="(Default)" fontName="QUALITY" height="2.5"/>'); // дефолтный текстовый стиль
@@ -2412,26 +2435,26 @@ Begin
 
      //*******Создаем Соединения********//
      AddConnectivity(FileXMLCon,Board,ViastacksLL);
-
+     l_C.Font.Color := clGreen;
 
      //*******Создаем локальную билблиотеку FileXmlLL********//
      //*******Дополняются текстовые стили********//
      //*******Создается информация о установке компонентов на плату********//
      AddLL(FileXmlLL,Board,UnitsDist,FileXmlTSt, FileXMLCOB, ViastacksLL);
-      FileXmlTSt.Add(#9+'</TextStyles>');
-
+     FileXmlTSt.Add(#9+'</TextStyles>');
+     l_LL.Font.Color := clGreen;
 
      //*******Создаем Нетлист********//
      AddNetList(FileXMLNList,Board);
-
+     l_N.Font.Color := clGreen;
 
      //*******Создаем Группы********//
      AddGroups(FileXMLGroup,Board);
-
+     l_G.Font.Color := clGreen;
 
      //*******Создаем Правила********//
      AddRules(FileXMLRul,FileXMLHSRul,Board);
-
+     l_R.Font.Color := clGreen;
      //*******Объединяем все в 1 файл********//
      FileXml.AddStrings(FileXmlTSt);   // подгружаем итоговый список текстовых стилей
      FileXml.AddStrings(FileXmlLL);    // подгружаем локальную библиотеку компонентов
@@ -2449,10 +2472,15 @@ Begin
      //ShowMessage('AddNetList: ' +StartTime +' - '+ GetCurrentTimeString());
 
      //*******Сохранение XML Файла********//
+     //!!!!!!!!!!Не работает
      // из скрипта похоже невозможно открыть другое приложение
      if cbStartTopoR.Checked then   // если нужно то сразу запускаем топор и импортируем
      begin
-       FileName := Board.FileName+'.fst';
+       if tExport.Text = '' then begin
+         FileName := StringReplace(Board.FileName,'.PcbDoc','_exp.fst',rfReplaceAll);
+       end else begin
+         FileName := tExport.Text;
+       end;
        FileXml.SaveToFile(FileName);
        TopoRCommand.Add('<?xml version="1.0" encoding="UTF-8"?>');
        TopoRCommand.Add('<Version>1.0</Version>');
@@ -2465,13 +2493,21 @@ Begin
        TopoRCommand.Add(#9+'<Enable logging="off" messagecompletion="off"/>');
        TopoRCommand.Add('</Commands>');
        TopoRCommand.SaveToFile(Board.FileName+'.fsa');
-
+       // Тут нужно каким то образом запустить топор
      end
      else // просто сохраняем файл
      begin
-       FileName := SaveAFile();
-       if FileName <> '' then
-       FileXml.SaveToFile(FileName + '.fst');
+       if tExport.Text = '' then begin
+         FileName := SaveAFile();
+       end else begin
+         FileName := tExport.Text;
+       end;
+       if FileName <> '' then begin
+         FileXml.SaveToFile(FileName);
+         ShowMessage('FST Файл: '+FileName+' - Создан! И состоит из ' +IntToStr(FileXml.Count) + ' строк.');
+       end else begin
+         ShowMessage('Присвойте имя FST файла!');
+       end;
 
      end;
 
@@ -2492,51 +2528,404 @@ Begin
      TopoRCommand.Free;
 End;
 
-Procedure SaveConfig ();
+// Удаляем все проводники с сигнальных слоев
+Procedure RemoveTrackinSignal(Board       : IPCB_Board;);
 var
-  Board       : IPCB_Board;
-  TopoRFile   :TStringList;
+  BoardIterator : IPCB_BoardIterator;
+  LyrObj        : IPCB_LayerObject;
+  Via           : IPCB_Via;
+  Track         : IPCB_Track;
+  Arc           : IPCB_Arc;
+  Prim          : IPCB_Primitive;
+begin
+
+    // Создаем итератор перебора Проводников
+    BoardIterator        := Board.BoardIterator_Create;
+    BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                         16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
+    BoardIterator.AddFilter_ObjectSet(MkSet(eTrackObject));
+    BoardIterator.AddFilter_Method(eProcessAll);
+    Track := BoardIterator.FirstPCBObject;
+
+    While (Track <> Nil) Do
+     Begin
+       if Track.IsKeepout <> true then
+       begin // если линия не киипаут
+        Board.RemovePCBObject(Track);
+       end;//если линия не кипаут то следующая линия
+       Track := BoardIterator.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(BoardIterator);
+
+    // Создаем итератор перебора дуг
+    BoardIterator        := Board.BoardIterator_Create;
+    BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                         16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
+    BoardIterator.AddFilter_ObjectSet(MkSet(eArcObject));
+    BoardIterator.AddFilter_Method(eProcessAll);
+    Arc := BoardIterator.FirstPCBObject;
+
+    While (Arc <> Nil) Do
+     Begin
+       if Arc.IsKeepout <> true then
+       begin // если дуга не киипаут
+        Board.RemovePCBObject(Arc);
+       end;//если дуга не кипаут то следующая дуга
+       Arc := BoardIterator.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(BoardIterator);
+end;
+
+// Удаляем все переходники с сигнальных слоев
+Procedure RemoveViainSignal(Board       : IPCB_Board;);
+var
+  BoardIterator : IPCB_BoardIterator;
+  LyrObj        : IPCB_LayerObject;
+  Via           : IPCB_Via;
+  Track         : IPCB_Track;
+  Arc           : IPCB_Arc;
+  Prim          : IPCB_Primitive;
+begin
+
+    // Создаем итератор перебора Проводников
+    BoardIterator        := Board.BoardIterator_Create;
+    BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                         16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
+    BoardIterator.AddFilter_ObjectSet(MkSet(eViaObject));
+    BoardIterator.AddFilter_Method(eProcessAll);
+    Via := BoardIterator.FirstPCBObject;
+
+    While (Via <> Nil) Do
+     Begin
+       if Via.IsKeepout <> true then
+       begin // если переходник не киипаут
+        Board.RemovePCBObject(Via);
+       end;//если переходник не кипаут то следующий переходник
+       Via := BoardIterator.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(BoardIterator);
+end;
+
+// получить значение аттрибута
+Function XMLGetAttrValue (InputStr : String; AttrName : String) : String;
+Var
+i      : integer;
+WriteS : bolean;
+s      : String;
+ResultS: String;
+Begin
+ WriteS := false;
+ ResultS:= '';
+ For i := pos(AttrName,InputStr)+length(AttrName) to length(InputStr) do
+ begin
+   s := InputStr[i];
+   if writeS then
+   begin
+     if InputStr[i] = '"' then break;
+     Results := Results + InputStr[i];
+   end;
+   if InputStr[i] = '"'  then WriteS := true;
+ end;
+ Result := ResultS;
+end;
+
+// получить ID слоя по имени
+Function GetLyrId (InLyrName : String; Stack : IPCB_LayerStack) : integer;
+var
+LyrObj     : IPCB_LayerObject;
+LayerName  : String;
+LyrClass   : TlayerClassID;
+begin
+     result := Nil;
+     LyrClass := eLayerClass_Physical;
+     LyrObj := Stack.First(LyrClass);         // получаем первый слой
+     //сигнальные
+     Repeat
+           LayerName := LyrObj.Name;
+           if LayerName = InLyrName then begin result := LyrObj.layerID; break; end;
+           LyrObj := Stack.Next(LyrClass, LyrObj);
+     Until LyrObj = Nil;
+end;
+
+//импорт проводников
+Procedure AddTrackinSignal(Board : IPCB_Board; FileXml : TStringList;);
+var
+
+IteratorHandle : IPCB_BoardIterator;
+i           : integer;
+StartInd    : integer;
+EndInd      : integer;
+CurrentStr  : String;
+bWires      : Boolean;
+Track       : IPCB_Track;
+Arc         : IPCB_Arc;
+Net         : IPCB_Net;
+layerID     : TLayer;
+NetName     : String;
+StartX      : Double;
+StartY      : Double;
+EndX        : Double;
+EndY        : Double;
+CenterX     : Double;
+CenterY     : Double;
+Width       : Double;
+i2          : integer;
+r           : Double;
+d           : Double;
+angle       : Double;
+testDouble  : Double;
 
 begin
-  Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
-  TopoRFile := TStringList.Create;
-  TopoRFile.Add(tTopor.Text);
-  TopoRFile.Add(tProject.Text);
-  TopoRFile.SaveToFile(Board.FileName+'.scon');
-  TopoRFile.Free;
+
+  CurrentStr :=  FileXML.Strings[0];
+
+  for i:=0 to FileXML.Count - 1 do
+  if pos('<Connectivity', FileXML.Strings[i]) > 0 then begin StartInd := i; break; end;
+
+  for i:=StartInd to FileXML.Count - 1 do
+  if pos('</Connectivity>', FileXML.Strings[i]) > 0 then begin EndInd := i; break; end;
+
+  //For i := StartInd to EndInd do FileXMLCon.Add(FileXml.Get(i));
+
+  //******** Импортируем Проводники *********//
+  bWires := false;
+
+  i:=StartInd;
+  try
+  Repeat
+    CurrentStr := FileXML.Get(i);
+    if pos('<Wires>',CurrentStr) >0 then  bWires := true;
+    if pos('</Wires>',CurrentStr) >0 then begin  i := -2; bWires := false;  end;
+
+    if bWires then //обрабатываем проводники
+    Begin
+     if pos('<Wire>',CurrentStr)>0 then   // обрабатываем одну ветку
+     begin
+       Repeat
+         CurrentStr := FileXML.Get(i);
+
+         if pos('<LayerRef',CurrentStr) >0 then
+         layerID := GetLyrId(XMLGetAttrValue(CurrentStr,'name'),Board.LayerStack);
+
+         if pos('<NetRef',CurrentStr) >0 then Begin
+         NetName := XMLGetAttrValue(CurrentStr,'name');
+
+         //*******Перебираем неты********//
+         IteratorHandle := Board.BoardIterator_Create;
+         IteratorHandle.AddFilter_ObjectSet(MkSet(eNetObject));
+         IteratorHandle.AddFilter_LayerSet(AllLayers);
+         IteratorHandle.AddFilter_Method(eProcessAll);
+         Net := IteratorHandle.FirstPCBObject; //первая цепь
+         While (Net <> Nil) Do
+         Begin
+         if Net.Name = NetName then break;
+         Net := IteratorHandle.NextPCBObject;
+         End;
+         Board.BoardIterator_Destroy(IteratorHandle);
+         end;
+
+
+         if pos('<Subwire',CurrentStr) >0 then
+         width := StrToFloatDot(XMLGetAttrValue(CurrentStr,'width'));
+
+         if pos('<Start',CurrentStr) >0 then
+         Begin
+           StartX := StrToFloatDot(XMLGetAttrValue(CurrentStr,'x'));
+           StartY := StrToFloatDot(XMLGetAttrValue(CurrentStr,'y'));
+         end;
+
+         if pos('<End',CurrentStr) >0 then
+         Begin
+           EndX := StrToFloatDot(XMLGetAttrValue(CurrentStr,'x'));
+           EndY := StrToFloatDot(XMLGetAttrValue(CurrentStr,'y'));
+         end;
+
+         if pos('<Center',CurrentStr) >0 then
+         Begin
+           CenterX := StrToFloatDot(XMLGetAttrValue(CurrentStr,'x'));
+           CenterY := StrToFloatDot(XMLGetAttrValue(CurrentStr,'y'));
+         end;
+
+         if pos ('</TrackLine>',CurrentStr) >0 then
+         begin
+           Track := PCBServer.PCBObjectFactory(eTrackObject, eNoDimension, eCreate_Default);
+           Track.Layer := LayerID;
+           Track.Net := Net;
+           Track.x1 := MMsToCoord(StartX);
+           Track.y1 := MMsToCoord(StartY);
+           Track.x2 := MMsToCoord(EndX);
+           Track.y2 := MMsToCoord(EndY);
+           Track.Width := MMsToCoord(Width);
+           Board.AddPCBObject(Track);
+           StartX := EndX;
+           StartY := EndY;
+         end;
+
+         if pos('</TrackArc>',CurrentStr) >0 then
+         begin
+           Arc := PCBServer.PCBObjectFactory(eArcObject, eNoDimension, eCreate_Default);
+           Arc.Layer := LayerID;
+           Arc.Net := Net;
+           Arc.LineWidth  := MMsToCoord(Width);
+           Arc.XCenter := MMsToCoord(CenterX);
+           Arc.YCenter := MMsToCoord(CenterY);
+           r := abs(Sqrt((CenterX - StartX)*(CenterX - StartX) + (CenterY - StartY)*(CenterY - StartY))); // находим радиус
+           // находим расстояние от точки старта до точки равному углу 0.
+           d := abs(Sqrt((CenterX+r - StartX)*(CenterX+r - StartX) + (CenterY - StartY)*(CenterY - StartY)));
+           angle := (d*d)/(2*r*r);
+           if angle >2 then angle := 2;
+           angle := RadToDeg(ArcCos(1-angle));
+           if StartY < CenterY then angle := 360-angle;
+           Arc.StartAngle := angle;
+
+           // находим расстояние от точки конца до точки равному углу 0.
+           d := abs(Sqrt((CenterX+r - EndX)*(CenterX+r - EndX) + (CenterY - EndY)*(CenterY - EndY)));
+
+           angle := (d*d)/(2*r*r);
+           if angle >2 then angle := 2;
+           angle := RadToDeg(ArcCos(1-angle));
+           if EndY < CenterY then angle := 360-angle;
+           Arc.EndAngle := angle;
+
+           Arc.Radius := MMsToCoord(r);
+           //Arc.StartAngle :=
+           Board.AddPCBObject(Arc);
+           StartX := EndX;
+           StartY := EndY;
+         end;
+
+         if pos('</TrackArcCW>',CurrentStr) >0 then
+         begin
+           Arc := PCBServer.PCBObjectFactory(eArcObject, eNoDimension, eCreate_Default);
+           Arc.Layer := LayerID;
+           Arc.Net := Net;
+           Arc.LineWidth  := MMsToCoord(Width);
+           Arc.XCenter := MMsToCoord(CenterX);
+           Arc.YCenter := MMsToCoord(CenterY);
+           r := abs(Sqrt((CenterX - StartX)*(CenterX - StartX) + (CenterY - StartY)*(CenterY - StartY))); // находим радиус
+           // находим расстояние от точки старта до точки равному углу 0.
+           d := abs(Sqrt((CenterX+r - StartX)*(CenterX+r - StartX) + (CenterY - StartY)*(CenterY - StartY)));
+           angle := (d*d)/(2*r*r);
+           if angle >2 then angle := 2;
+           angle := RadToDeg(ArcCos(1-angle));
+           if StartY < CenterY then angle := 360-angle;
+
+           Arc.EndAngle := angle;
+
+           // находим расстояние от точки конца до точки равному углу 0.
+           d := abs(Sqrt((CenterX+r - EndX)*(CenterX+r - EndX) + (CenterY - EndY)*(CenterY - EndY)));
+           angle := (d*d)/(2*r*r);
+           if angle >2 then angle := 2;
+           angle := RadToDeg(ArcCos(1-angle));
+           if EndY < CenterY then angle := 360-angle;
+           Arc.StartAngle := angle;
+
+           Arc.Radius := MMsToCoord(r);
+           //Arc.StartAngle :=
+           Board.AddPCBObject(Arc);
+           StartX := EndX;
+           StartY := EndY;
+         end;
+
+         if pos ('</Wire>',CurrentStr) >0 then
+         break;
+         inc(i);
+       Until i = -1;
+     end;
+    end;
+
+    inc(i);
+  Until i = -1;
+  except
+    ShowMessage('Ошибка при попытке чтения строки: №'+IntToStr(i));
+  end;
+
+  
+end;
+
+Procedure AddViainSignal(Board : IPCB_Board; FileXml : TStringList;);
+var
+begin
+end;
+
+Procedure TopoRtoAD;
+var
+Board       : IPCB_Board;
+FileXml     : TStringList; // Входной файл fst в формате xml <TopoR_PCB_File>
+FileName    : String;
+
+
+begin
+  FileXml := TStringList.Create;
+
+  Board := PCBServer.GetCurrentPCBBoard;
+  If Board = nil then Begin ShowError('Open board!'); Exit; End; // Если платы нет то выходим
+
+  //*******Открытие XML Файла********//
+  if tImport.Text = '' then begin
+    FileName := LoadAFile();
+  end else begin
+    FileName := tImport.Text;
+  end;
+
+  if FileName <> '' then begin
+    if FileExists(FileName) then begin
+      FileXml.LoadFromFile((FileName));
+    end else begin
+      ShowMessage('FST файл: '+FileName+'- отсутствует!');
+    end;
+  end else begin
+    ShowMessage('Присвойте имя FST файла!');
+  end;
+
+  //*******Удаляем проводники*******//
+  RemoveTrackinSignal(Board);
+
+  //*******Удаляем переходники*******//
+  RemoveViainSignal(Board);
+
+  //*******Добавляем проводники*******//
+  AddTrackinSignal(Board,FileXml);
+
+
+
+  //*******Уборка********//
+  FileXml.Free;
+
 end;
 
 Procedure StartScript ();
 var
   Board       : IPCB_Board;
   TopoRFile   :TStringList;
-  FS: TFileStream;
 
 Begin
-  //FS := TFileStream.Create(tTopor.Text, fmOpenRead or fmShareDenyWrite);
 
-  //TopoRFile := TStringList.Create;
-  //Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
-  //If Board = nil then Begin ShowError('Open board!'); Exit; End; // Если платы нет то выходим
+  TopoRFile := TStringList.Create;
+  Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
+  If Board = nil then Begin ShowError('Open board!'); Exit; End; // Если платы нет то выходим
 
-  //if FileExists(Board.FileName+'.scon') then begin
-   // TopoRFile.LoadFromFile(Board.FileName+'.scon');
- // end else begin
-  //  SaveConfig;
-  //  TopoRFile.LoadFromFile(Board.FileName+'.scon');
-  //end;
-  //tTopor.Text := TopoRFile.Get(0);
-  //tProject.Text := TopoRFile.Get(1);
-  //Form1.Show;
-  //TopoRFile.Free;
-   ADtoTopoR;
+  if FileExists(Board.FileName+'.scon') then begin
+    TopoRFile.LoadFromFile(Board.FileName+'.scon');
+  end else begin
+    tExport.Text :=StringReplace(Board.FileName,'.PcbDoc','_exp.fst',rfReplaceAll);
+    tImport.Text :=StringReplace(Board.FileName,'.PcbDoc','_imp.fst',rfReplaceAll);
+    SaveConfig;
+    TopoRFile.LoadFromFile(Board.FileName+'.scon');
+  end;
+  tTopor.Text := TopoRFile.Get(0);
+  tProject.Text := TopoRFile.Get(1);
+  tExport.Text :=  TopoRFile.Get(2);
+  tImport.Text :=  TopoRFile.Get(3);
+  Form1.Show;
+  TopoRFile.Free;
 End;
+
 
 procedure TForm1.b_GOClick(Sender: TObject);
 begin
  ADtoTopoR;
  SaveConfig;
-
 end;
 
 procedure TForm1.bTopoRClick(Sender: TObject);
@@ -2552,8 +2941,8 @@ begin
 end;
 
 //ToDo
-// Обработать зоны запрета
-// Добавить Keep-Out слой в Layers
+//  добавить дифф пары
+// Проверить двусторонние компоненты
 // Добавить правило зазора до края платы
 // Добавить Plane слои
 // Обработать правила проектирования
@@ -2566,4 +2955,9 @@ end;
 //для 1.1.4
 // Обработать срезанные КП
 
+
+procedure TForm1.b_ImportClick(Sender: TObject);
+begin
+  TopoRtoAD;
+end;
 
