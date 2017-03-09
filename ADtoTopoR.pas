@@ -2472,9 +2472,11 @@ Begin
      //ShowMessage('AddNetList: ' +StartTime +' - '+ GetCurrentTimeString());
 
      //*******Сохранение XML Файла********//
+
+
+     if cbStartTopoR.Checked then   // если нужно то сразу запускаем топор и импортируем
      //!!!!!!!!!!Не работает
      // из скрипта похоже невозможно открыть другое приложение
-     if cbStartTopoR.Checked then   // если нужно то сразу запускаем топор и импортируем
      begin
        if tExport.Text = '' then begin
          FileName := StringReplace(Board.FileName,'.PcbDoc','_exp.fst',rfReplaceAll);
@@ -2589,18 +2591,14 @@ begin
 
     // Создаем итератор перебора Проводников
     BoardIterator        := Board.BoardIterator_Create;
-    BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
-                         16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
+    BoardIterator.AddFilter_LayerSet(AllLayers);
     BoardIterator.AddFilter_ObjectSet(MkSet(eViaObject));
     BoardIterator.AddFilter_Method(eProcessAll);
     Via := BoardIterator.FirstPCBObject;
 
     While (Via <> Nil) Do
      Begin
-       if Via.IsKeepout <> true then
-       begin // если переходник не киипаут
-        Board.RemovePCBObject(Via);
-       end;//если переходник не кипаут то следующий переходник
+       Board.RemovePCBObject(Via);
        Via := BoardIterator.NextPCBObject;
      End;
      Board.BoardIterator_Destroy(BoardIterator);
@@ -2707,7 +2705,8 @@ begin
          if pos('<LayerRef',CurrentStr) >0 then
          layerID := GetLyrId(XMLGetAttrValue(CurrentStr,'name'),Board.LayerStack);
 
-         if pos('<NetRef',CurrentStr) >0 then Begin
+         if pos('<NetRef',CurrentStr) >0 then
+         begin
          NetName := XMLGetAttrValue(CurrentStr,'name');
 
          //*******Перебираем неты********//
@@ -2827,8 +2826,7 @@ begin
            StartY := EndY;
          end;
 
-         if pos ('</Wire>',CurrentStr) >0 then
-         break;
+         if pos ('</Wire>',CurrentStr) >0 then  break;
          inc(i);
        Until i = -1;
      end;
@@ -2840,12 +2838,181 @@ begin
     ShowMessage('Ошибка при попытке чтения строки: №'+IntToStr(i));
   end;
 
-  
+
 end;
 
 Procedure AddViainSignal(Board : IPCB_Board; FileXml : TStringList;);
 var
+Via       : IPCB_Via;
+PadDiam   : Double;
+IteratorHandle : IPCB_BoardIterator;
+i           : integer;
+ii          : integer;
+iii         : integer;
+StartInd    : integer;
+StartStInd  : integer;
+EndInd      : integer;
+CurrentStr  : String;
+CurrentStrSt: String;
+bVias       : Boolean;
+VStackName  : String;
+NetName     : String;
+Net         : IPCB_Net;
+OrgX        : Double;
+OrgY        : Double;
+TSDiam      : Double;
+BSDiam      : Double;
+HoleDiam    : Double;
+StartLayer  : TLayer;
+EndLayer    : TLayer;
+DiamLayers  : array [0..31] of Double;
+test        : String;
+
 begin
+  TSDiam := 0;
+  BSDiam := 0;
+  bVias := false;
+  for i:=0 to FileXML.Count - 1 do
+  if pos('<Connectivity', FileXML.Strings[i]) > 0 then begin StartInd := i; break; end;
+  for i:=StartInd to FileXML.Count - 1 do
+  if pos('</Connectivity>', FileXML.Strings[i]) > 0 then begin EndInd := i; break; end;
+  i:=StartInd;
+  try
+  Repeat //начинаем перебор всего коннективити
+    CurrentStr := FileXML.Get(i);
+    if pos('<Vias>',CurrentStr) >0 then  bVias := true;
+    if pos('</Vias>',CurrentStr) >0 then begin  i := -2; bVias := false;  end;
+
+    if bVias then //обрабатываем переходники
+    Begin
+      if pos('<Via>',CurrentStr)>0 then   // обрабатываем один переходник
+      begin
+        Repeat
+          CurrentStr := FileXML.Get(i);
+          if pos('<ViastackRef',CurrentStr) >0 then
+          begin
+            VStackName := XMLGetAttrValue(CurrentStr,'name');
+            for ii:=0 to FileXML.Count - 1 do
+            if pos('<Viastack name="'+VStackName, FileXML.Strings[ii]) > 0 then begin StartStInd := ii; break; end;
+              Repeat // перебираем стек переходного отверстия
+                CurrentStrSt := FileXML.Get(ii);  
+                if  pos('<LayerRange',CurrentStrSt) >0 then
+                begin
+                  inc(ii);
+                  CurrentStrSt := FileXML.Get(ii);
+                  if pos('<AllLayers/>',CurrentStrSt) >0 then
+                  Begin
+                     StartLayer := 1;
+                     EndLayer := 32;
+                  end;
+                  if pos ('<LayerRef',CurrentStrSt) >0 then
+                  begin
+                     StartLayer := GetLyrId(XMLGetAttrValue(CurrentStrSt,'name'),Board.LayerStack);
+                     inc(ii);
+                     CurrentStrSt := FileXML.Get(ii);
+                     EndLayer := GetLyrId(XMLGetAttrValue(CurrentStrSt,'name'),Board.LayerStack);
+                  end;
+
+                end;
+
+                if pos('<Viastack', CurrentStrSt) > 0 then
+                HoleDiam :=  StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'holeDiameter'));
+
+                if pos('<PadCircle',CurrentStrSt) >0  then
+                PadDiam :=  StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'diameter'));
+
+                if pos ('<LayerTypeRef',CurrentStrSt) >0  then
+                begin
+                  if XMLGetAttrValue(CurrentStrSt,'type') =  'Signal' then
+                  begin
+                     for iii :=0 to 31 do
+                     DiamLayers[iii] := PadDiam;
+                  end;
+                end;
+
+                if pos ('<LayerRef',CurrentStrSt) >0 then
+                begin
+
+                  if XMLGetAttrValue(CurrentStrSt,'name') =  board.LayerName(37) then
+                  TSDiam := PadDiam;
+                  if XMLGetAttrValue(CurrentStrSt,'name') =  board.LayerName(38) then
+                  BSDiam := PadDiam;
+
+                  for iii :=0 to 31 do
+                  Begin
+                    if XMLGetAttrValue(CurrentStrSt,'name') =  board.LayerName(iii+1) then
+                    DiamLayers[iii] := PadDiam;
+                  end;
+
+                end;
+                if  pos('</Viastack>',CurrentStrSt) >0 then  break;
+                inc(ii);
+              Until ii = -1;
+          end;
+
+          if pos('<NetRef',CurrentStr) >0 then
+          begin
+          NetName := XMLGetAttrValue(CurrentStr,'name');
+
+          //*******Перебираем неты********//
+          IteratorHandle := Board.BoardIterator_Create;
+          IteratorHandle.AddFilter_ObjectSet(MkSet(eNetObject));
+          IteratorHandle.AddFilter_LayerSet(AllLayers);
+          IteratorHandle.AddFilter_Method(eProcessAll);
+          Net := IteratorHandle.FirstPCBObject; //первая цепь
+          While (Net <> Nil) Do
+          Begin
+          if Net.Name = NetName then break;
+          Net := IteratorHandle.NextPCBObject;
+          End;
+          Board.BoardIterator_Destroy(IteratorHandle);
+          end;
+
+          if pos('<Org',CurrentStr) >0 then
+          Begin
+           OrgX := StrToFloatDot(XMLGetAttrValue(CurrentStr,'x'));
+           OrgY := StrToFloatDot(XMLGetAttrValue(CurrentStr,'y'));
+          end;
+
+          if pos ('</Via>',CurrentStr) >0 then
+          begin
+           Via := PCBServer.PCBObjectFactory(eViaObject, eNoDimension, eCreate_Default);
+           Via.Net := Net;
+           For ii:= 1 to 32 do
+           begin
+           Via.SizeOnLayer[ii]:= MMsToCoord(DiamLayers[ii-1]);
+           if ii = EndLayer then break;
+           end;
+           Via.HighLayer  := StartLayer;
+
+           Via.LowLayer   := EndLayer;
+
+           if TSDiam >0 then begin Via.SizeOnLayer[37] := MMsToCoord(TSDiam); Via.IsTenting_Top := false; end
+           else begin Via.IsTenting_Top := true;  end;
+           if BSDiam >0 then begin Via.SizeOnLayer[38] := MMsToCoord(TSDiam); Via.IsTenting_Bottom := false; end
+           else begin Via.IsTenting_Bottom := true;  end;
+           Via.HoleSize := MMsToCoord(HoleDiam);
+           Via.x := MMsToCoord(OrgX);
+           Via.y := MMsToCoord(OrgY);
+           Board.AddPCBObject(Via);
+           break;
+          end;
+
+
+          inc(i);
+        Until i = -1;
+
+      end; //заканчиваем обработку переходника
+
+    end; // заканчиваем обработку переходников
+  inc(i);
+  Until i = -1;  //Заканчиваем перебор всего коннективити
+  except
+    ShowMessage('Ошибка при попытке чтения строки: №'+IntToStr(i));
+  end;
+
+
+
 end;
 
 Procedure TopoRtoAD;
@@ -2887,7 +3054,8 @@ begin
   //*******Добавляем проводники*******//
   AddTrackinSignal(Board,FileXml);
 
-
+  //*******Добавляем переходники*******//
+  AddViainSignal(Board,FileXml);
 
   //*******Уборка********//
   FileXml.Free;

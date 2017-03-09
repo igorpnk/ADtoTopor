@@ -109,10 +109,10 @@ DocumentUniqueId=PFFIGXIY
 StartProcName=ADtoTopoR.pas>Main
 
 [Generic_Watches]
-0=CurrentStr
-1=i
-2=NetName
-3=width
+0=i
+1=CurrentStr
+2=CurrentStrSt
+3=ii
 4=StartX
 9=StartY
 10=i2
