@@ -103,6 +103,9 @@ Var
    Times                : String;
    Date                 : String;
    Version              : String;
+   ch                   : char;
+   BOM                  : String;
+
 Begin
      Version := '1.1.3';
      Date := 'dd.mm.yyyy';
@@ -110,7 +113,7 @@ Begin
      Times := GetCurrentTimeString();
 
      //*******Заголовок XML Файла********//
-     XMLIn.Add('<?xml version="1.0" encoding="UTF-8"?>');
+     XMLIn.Add(   '<?xml version="1.0" encoding="UTF-8"?>');
      XMLIn.Add('');
      XMLIn.Add('<!--**********************************************************************-->');
      XMLIn.Add('<!--   File    :' + FileS +' -->');
@@ -2352,7 +2355,7 @@ var
 
      //*******Перебираем Полигоны********//
      BoardIterator := Board.BoardIterator_Create;
-    BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+     BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
                          16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
      BoardIterator.AddFilter_ObjectSet(MkSet(ePolyObject));
      BoardIterator.AddFilter_Method(eProcessAll);
@@ -2396,8 +2399,12 @@ Var
    TopoRCommand : TStringList; // командный файл Топор!
    TextStyleAll: String;
    StartTime   : String;
+   i           : integer;
+   wBOM        : integer;
+   fs          : TFileStream;
 Begin
      //*******Подготовка********//
+
      FileXml := TStringList.Create;                      // Создание обьекта класса
      FileXmlTSt := TStringList.Create;
      FileXmlLL := TStringList.Create;
@@ -2487,8 +2494,6 @@ Begin
      //ShowMessage('AddNetList: ' +StartTime +' - '+ GetCurrentTimeString());
 
      //*******Сохранение XML Файла********//
-
-
      if cbStartTopoR.Checked then   // если нужно то сразу запускаем топор и импортируем
      //!!!!!!!!!!Не работает
      // из скрипта похоже невозможно открыть другое приложение
@@ -3081,6 +3086,29 @@ begin
      Board.BoardIterator_Destroy(ComponentIteratorHandle);
 end;
 
+Procedure PolygonsRepour(Board);
+var
+poly           : IPCB_Polygon;
+BoardIterator  : IPCB_BoardIterator;
+begin
+      //*******Перебираем Полигоны********//
+     BoardIterator := Board.BoardIterator_Create;
+     BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                         16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
+     BoardIterator.AddFilter_ObjectSet(MkSet(ePolyObject));
+     BoardIterator.AddFilter_Method(eProcessAll);
+     Poly := BoardIterator.FirstPCBObject; //первый полигон
+
+     While (Poly <> Nil) Do
+     Begin
+       if poly.Poured then
+       Poly.Rebuild;
+
+       Poly := BoardIterator.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(BoardIterator);
+end;
+
 Procedure TopoRtoAD;
 var
 Board       : IPCB_Board;
@@ -3127,6 +3155,8 @@ begin
   //*******Добавляем переходники*******//
   AddViainSignal(Board,FileXml);
 
+  PolygonsRepour(Board);
+
   Client.SendMessage('PCB:Zoom', 'Action=Redraw' , 255, Client.CurrentView);
 
 
@@ -3149,8 +3179,8 @@ Begin
   if FileExists(Board.FileName+'.scon') then begin
     TopoRFile.LoadFromFile(Board.FileName+'.scon');
   end else begin
-    tExport.Text :=StringReplace(Board.FileName,'.PcbDoc','_exp.fst',rfReplaceAll);
-    tImport.Text :=StringReplace(Board.FileName,'.PcbDoc','_imp.fst',rfReplaceAll);
+    tExport.Text :=StringReplace(Board.FileName,'.PcbDoc','.fst',rfReplaceAll);
+    tImport.Text :=StringReplace(Board.FileName,'.PcbDoc','.fst',rfReplaceAll);
     SaveConfig;
     TopoRFile.LoadFromFile(Board.FileName+'.scon');
   end;
@@ -3161,7 +3191,6 @@ Begin
   Form1.Show;
   TopoRFile.Free;
 End;
-
 
 procedure TForm1.b_GOClick(Sender: TObject);
 begin
@@ -3201,6 +3230,8 @@ begin
 end;
 
 //ToDo
+// импорт кипаутов
+// импорт свободных КП
 //  добавить дифф пары
 // Проверить двусторонние компоненты
 // Добавить правило зазора до края платы
@@ -3213,4 +3244,4 @@ end;
 // Мб сделать красивую шапку
 
 //для 1.1.4
-// Обработать срезанные КП
+// Обработать срезанные и скругленные КП
