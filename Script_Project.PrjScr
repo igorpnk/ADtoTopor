@@ -117,12 +117,6 @@ StartProcName=ADtoTopoR.pas>Main
 9=StartY
 10=i2
 
-[Generic_ScriptingSystemBreakpoints]
-ModuleName1=C:\AD to Topor Script - Video\Script_Project\ADtoTopoR.pas
-Line1=411
-Condition1=
-Enabled1=True
-
 [OutputGroup1]
 Name=Netlist Outputs
 Description=

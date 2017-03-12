@@ -607,7 +607,7 @@ Begin
 End;
 
 // конвертирование региона в механических слоях
-Function RegionToXML(Board :IPCB_Board; Region : IPCB_Region; TabCount: integer;) : TStringList;  // пока не работает.. нужно разобраться
+Function RegionToXML(Board :IPCB_Board; Region : IPCB_Region; TabCount: integer;) : TStringList;
 Var
  ResultString : TStringList;
  StringTab    : String;
@@ -1017,8 +1017,10 @@ Begin
            IDcomp := Component.UniqueId;                           // вместо имени уникальный ID
            PadFlip := 'off';
 
-           if pos('"'+NameComp+'"',Components.Text) <> 0 then
+           if pos('"'+NameComp+'"',Components.Text) <> 0 then begin
+           ShowMessage('Components with the same name: '+NameComp);
            NameComp := NameComp +'$' +IDcomp;
+           end;
 
            Footprints.Add(#9+#9+#9+'<Footprint name="'+Component.Pattern+'$' +NameComp +'$' +IDcomp+ '">');
            //Component.GetState_FootprintDescription;
@@ -1401,13 +1403,13 @@ Begin
      Board.BoardIterator_Destroy(ComponentIteratorHandle);
      FileXMLCOB.Add(#9+#9+'</Components>');
      FileXMLCOB.Add(#9+#9+'<FreePads>');
-
+     //*******перебор всех Падов********//
      PadIteratorHandle2 := Board.BoardIterator_Create;
      PadIteratorHandle2.AddFilter_ObjectSet(MkSet(ePadObject));
      PadIteratorHandle2.AddFilter_LayerSet(AllLayers);
      PadIteratorHandle2.AddFilter_Method(eProcessAll);
      Pad := PadIteratorHandle2.FirstPCBObject; //первая цепь
-          While (pad <> Nil) Do // СОБСТВЕННО долгий перебор !!!!!!!!!!!!!!!!!!!!!!!!!!!
+          While (pad <> Nil) Do
           Begin
             if (pad.Component = Nil) then
             Begin//если пад не принадлежит компоненту
@@ -2624,6 +2626,27 @@ begin
      Board.BoardIterator_Destroy(BoardIterator);
 end;
 
+// Удаляем все FreePads с сигнальных слоев
+Procedure RemoveFreePadinSignal(Board : IPCB_Board;);
+Var
+PadIteratorHandle : IPCB_BoardIterator;
+Pad               : IPCB_Pad;
+Begin
+  PadIteratorHandle := Board.BoardIterator_Create;
+  PadIteratorHandle.AddFilter_ObjectSet(MkSet(ePadObject));
+  PadIteratorHandle.AddFilter_LayerSet(AllLayers);
+  PadIteratorHandle.AddFilter_Method(eProcessAll);
+  Pad := PadIteratorHandle.FirstPCBObject; //первая цепь
+    While (pad <> Nil) Do
+    Begin
+      if (pad.Component = Nil) then
+      Begin//если пад не принадлежит компоненту
+        Board.RemovePCBObject(Pad);
+      end;
+      Pad := PadIteratorHandle.NextPCBObject;
+    end;
+end;
+
 // получить значение аттрибута
 Function XMLGetAttrValue (InputStr : String; AttrName : String) : String;
 Var
@@ -3139,26 +3162,30 @@ begin
     ShowMessage('Присвойте имя FST файла!');
   end;
 
-    //*******Удаляем проводники*******//
-  RemoveTrackinSignal(Board);
-  RemoveTrackinSignal(Board);
 
-    //*******переносим компоненты*******//
-  MoveComponents(Board,FileXml);
+
+  //*******Удаляем проводники*******//
+  if cbTrack.Checked then begin
+  RemoveTrackinSignal(Board); RemoveTrackinSignal(Board); end;
 
   //*******Удаляем переходники*******//
-  RemoveViainSignal(Board);
+  if cbVia.Checked then  RemoveViainSignal(Board);
+
+  //*******Удаляем FreePad*******//
+   if cbFreePad.Checked then RemoveFreePadinSignal(Board);
+
+  //*******переносим компоненты*******//
+   if cbComponent.Checked then MoveComponents(Board,FileXml);
 
   //*******Добавляем проводники*******//
-  AddTrackinSignal(Board,FileXml);
+  if cbTrack.Checked then AddTrackinSignal(Board,FileXml);
 
   //*******Добавляем переходники*******//
-  AddViainSignal(Board,FileXml);
+   if cbVia.Checked then  AddViainSignal(Board,FileXml);
 
+  //*******отображаем все что изменили*******//
   PolygonsRepour(Board);
-
   Client.SendMessage('PCB:Zoom', 'Action=Redraw' , 255, Client.CurrentView);
-
 
   //*******Уборка********//
   FileXml.Free;
@@ -3245,3 +3272,6 @@ end;
 
 //для 1.1.4
 // Обработать срезанные и скругленные КП
+
+
+
