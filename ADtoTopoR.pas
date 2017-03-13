@@ -1,4 +1,4 @@
-ADFunction LoadAFile : String;
+Function LoadAFile : String;
 Var
    OpenDialog : TOpenDialog;
 Begin
