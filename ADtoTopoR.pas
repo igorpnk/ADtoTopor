@@ -1,4 +1,4 @@
-Function LoadAFile : String;
+ADFunction LoadAFile : String;
 Var
    OpenDialog : TOpenDialog;
 Begin
@@ -708,6 +708,7 @@ Begin
   //заполняем текстовую информацию
   TextMirror := 'off';
   if Text.MirrorFlag = true then TextMirror := 'on';
+
   ResultString.Add(StringTab+'<Text text="'+Text.Text+'" align="LB" angle="'+inttostr(Text.Rotation)+'" mirror="'+TextMirror+'">');
   ResultString.Add(StringTab+#9+'<LayerRef type="'+LayerIDtoStr(Text.Layer)+'" name="'+Board.LayerName(Text.Layer)+'"/>');//ИМя!
   ResultString.Add(StringTab+#9+'<TextStyleRef name="'+TextStyle+'"/>');
@@ -794,7 +795,9 @@ var
    padType                 : String;
    PadxReal                : Treal;
    PadYReal                : Treal;
+   Board                   : IPCB_Board;
 Begin
+                     Board := PCBServer.GetCurrentPCBBoard;
                      Pad2 := Pad;
                      PadPlated := 'off';
                      if Pad2.plated then PadPlated := 'on';
@@ -812,7 +815,7 @@ Begin
                                    Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
                                    floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
                                    '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
-                                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="Top Layer"/>'); // !!! нужно вводить определение слоя
+                                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>'); // !!! нужно вводить определение слоя
                                  End;
                                eOctagonal      : // !!! сделано как для прямоугольного в версии 1,1,4 можно будет исправить!
                                  Begin
@@ -820,7 +823,7 @@ Begin
                                    Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
                                    floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
                                    '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
-                                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="Top Layer"/>'); // !!! нужно вводить определение слоя
+                                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>'); // !!! нужно вводить определение слоя
                                  End;
                                eRounded        :
                                  Begin
@@ -830,14 +833,14 @@ Begin
                                    if PadXReal < PadYReal then
                                    Begin
                                      Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadXReal)+'">');
-                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="Top Layer"/>');
+                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
                                      Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="0.000" y="'+floattostr(PadYReal-PadXReal)+'"/>');
                                      Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
                                    End
                                    Else
                                    Begin
                                      Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadYReal)+'">');
-                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="Top Layer"/>');
+                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
                                      Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="'+floattostr(PadXReal - PadYReal)+'" y="0.000"/>');
                                      Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
                                    End;
@@ -850,7 +853,7 @@ Begin
                                    floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
                                    '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
                                    ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[Pad.Layer]))+'">');
-                                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="Top Layer"/>'); // !!! нужно вводить определение слоя
+                                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(eTopLayer)+'"/>'); // !!! нужно вводить определение слоя
                                  End;
                           End;
                      End; // конец поверхностномонтируемых
@@ -2377,6 +2380,7 @@ var
 
 Procedure ADtoTopoR;
 Var
+   UTF8Str     : UTF8String;
    Board       : IPCB_Board;
    Track       : IPCB_Track;
    Pad         : IPCB_Pad;
@@ -2387,6 +2391,7 @@ Var
    BoardName   : String;
    UnitsDist   : String;
    FileXml     : TStringList; // Итоговый файл fst в формате xml <TopoR_PCB_File>
+   FileXml2    : TStringList;
    FileXmlTSt  : TStringList; // Ветвь текстовых стилей  <TextStyles version="1.0">
    FileXmlLL   : TStringList; // Ветвь Локальной библиотеки <LocalLibrary version="1.1">
    FileXMLContr: TStringList; // Ветвь конструктива платы <Constructive version="1.0">
@@ -2403,11 +2408,16 @@ Var
    StartTime   : String;
    i           : integer;
    wBOM        : integer;
-   fs          : TFileStream;
+   FS          : TFileStream;
+   UTF8BOM     : array[0..2] of Byte;
 Begin
      //*******Подготовка********//
-
+     UTF8BOM[0] := $EF;
+     UTF8BOM[1] := $BB;
+     UTF8BOM[2] := $BF;
      FileXml := TStringList.Create;                      // Создание обьекта класса
+     FileXml.DefaultEncoding := TEncoding.UTF8;
+     FileXml2:= TStringList.Create;
      FileXmlTSt := TStringList.Create;
      FileXmlLL := TStringList.Create;
      FileXMLContr := TStringList.Create;
@@ -2444,6 +2454,7 @@ Begin
      Else Begin ShowError('Switch to metric units!'); Exit; End; // Пока поддерживается только метрическая система
 
      //*******Создаем Шапку (Header)********//
+
      AddHeader(FileXml,Board.FileName,UnitsDist);
      l_H.Font.Color := clGreen;
      //*******Создаем список слоев********//
@@ -2506,6 +2517,8 @@ Begin
          FileName := tExport.Text;
        end;
        FileXml.SaveToFile(FileName);
+
+
        TopoRCommand.Add('<?xml version="1.0" encoding="UTF-8"?>');
        TopoRCommand.Add('<Version>1.0</Version>');
        TopoRCommand.Add('<Commands>');
@@ -2516,7 +2529,9 @@ Begin
        end;
        TopoRCommand.Add(#9+'<Enable logging="off" messagecompletion="off"/>');
        TopoRCommand.Add('</Commands>');
+
        TopoRCommand.SaveToFile(Board.FileName+'.fsa');
+
        // Тут нужно каким то образом запустить топор
      end
      else // просто сохраняем файл
@@ -2532,7 +2547,6 @@ Begin
        end else begin
          ShowMessage('Присвойте имя FST файла!');
        end;
-
      end;
 
 
@@ -2913,6 +2927,7 @@ DiamLayers  : array [0..31] of Double;
 test        : String;
 
 begin
+  Net := Nil;
   TSDiam := 0;
   BSDiam := 0;
   bVias := false;
@@ -3054,6 +3069,140 @@ begin
   except
     ShowMessage('Ошибка при попытке чтения строки: №'+IntToStr(i));
   end;
+end;
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Еще не сделано
+Procedure AddFreePadinSignal(Board : IPCB_Board; FileXml : TStringList;);
+var
+Pad            : IPCB_Pad;
+IteratorHandle : IPCB_BoardIterator;
+i,ii,iii       : integer;
+StartInd       : integer;
+CurrentStr     : String;
+Side           : String;
+Net            : IPCB_Net;
+Angle          : Double;
+NetName        : String;
+OrgX           : Double;
+OrgY           : Double;
+PStackName     : String;
+StartStInd     : String;
+CurrentStrSt   : String;
+PadType        : String;
+Metallized     : String;
+
+begin
+  Net := Nil;
+  for i:=0 to FileXML.Count - 1 do
+  if pos('<FreePads>', FileXML.Strings[i]) > 0 then begin StartInd := i; break; end;
+  i:=StartInd;
+
+  Repeat //начинаем перебор всех FreePads
+    CurrentStr := FileXML.Get(i);
+
+    if pos('<FreePad',CurrentStr)>0 then
+    begin
+      Side := XMLGetAttrValue(CurrentStr,'side');
+      angle := StrToFloat(XMLGetAttrValue(CurrentStr,'angle'));
+    end;
+
+    if pos('<NetRef',CurrentStr)>0 then
+    begin
+      NetName := XMLGetAttrValue(CurrentStr,'name');
+
+      //*******Перебираем неты********//
+      IteratorHandle := Board.BoardIterator_Create;
+      IteratorHandle.AddFilter_ObjectSet(MkSet(eNetObject));
+      IteratorHandle.AddFilter_LayerSet(AllLayers);
+      IteratorHandle.AddFilter_Method(eProcessAll);
+      Net := IteratorHandle.FirstPCBObject; //первая цепь
+      While (Net <> Nil) Do
+      Begin
+          if Net.Name = NetName then break;
+          Net := IteratorHandle.NextPCBObject;
+      End;
+      Board.BoardIterator_Destroy(IteratorHandle);
+    end;
+
+    if pos('<Org',CurrentStr) >0 then
+      Begin
+           OrgX := StrToFloatDot(XMLGetAttrValue(CurrentStr,'x'));
+           OrgY := StrToFloatDot(XMLGetAttrValue(CurrentStr,'y'));
+      end;
+
+    if pos('<PadstackRef',CurrentStr) >0 then
+          begin
+            PStackName := XMLGetAttrValue(CurrentStr,'name');
+            for ii:=0 to FileXML.Count - 1 do
+            if pos('<Padstack name="'+PStackName, FileXML.Strings[ii]) > 0 then begin StartStInd := ii; break; end;
+
+              Repeat // перебираем стек
+                CurrentStrSt := FileXML.Get(ii);
+                if  pos('<LayerRange',CurrentStrSt) >0 then
+                begin
+                  inc(ii);
+                  CurrentStrSt := FileXML.Get(ii);
+                  if pos('<AllLayers/>',CurrentStrSt) >0 then
+                  Begin
+                     StartLayer := 1;
+                     EndLayer := 32;
+                  end;
+                  if pos ('<LayerRef',CurrentStrSt) >0 then
+                  begin
+                     StartLayer := GetLyrId(XMLGetAttrValue(CurrentStrSt,'name'),Board.LayerStack);
+                     inc(ii);
+                     CurrentStrSt := FileXML.Get(ii);
+                     EndLayer := GetLyrId(XMLGetAttrValue(CurrentStrSt,'name'),Board.LayerStack);
+                  end;
+
+                end;
+
+                //+
+                if pos('<Padstack', CurrentStrSt) > 0 then
+                Begin
+                  PadType :=  StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'type'));
+                  Metallized :=  StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'metallized'));
+                end;
+
+                if pos('<PadCircle',CurrentStrSt) >0  then
+                PadDiam :=  StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'diameter'));
+
+                if pos ('<LayerTypeRef',CurrentStrSt) >0  then
+                begin
+                  if XMLGetAttrValue(CurrentStrSt,'type') =  'Signal' then
+                  begin
+                     //for iii :=0 to 31 do
+                     //DiamLayers[iii] := PadDiam;
+                  end;
+                end;
+
+                if pos ('<LayerRef',CurrentStrSt) >0 then
+                begin
+
+                  if XMLGetAttrValue(CurrentStrSt,'name') =  board.LayerName(37) then
+                  TSDiam := PadDiam;
+                  if XMLGetAttrValue(CurrentStrSt,'name') =  board.LayerName(38) then
+                  BSDiam := PadDiam;
+
+                  for iii :=0 to 31 do
+                  Begin
+                    if XMLGetAttrValue(CurrentStrSt,'name') =  board.LayerName(iii+1) then
+                    DiamLayers[iii] := PadDiam;
+                  end;
+
+                end;
+                if  pos('</Viastack>',CurrentStrSt) >0 then  break;
+                inc(ii);
+              Until ii = -1;
+          end;
+
+
+    if pos('<PadstackRef',CurrentStr) >0 then
+    Begin
+    end;
+
+    if pos('</FreePads>',CurrentStr) >0 then begin  i := -2; end;
+    inc(i);
+  Until i = -1;
 end;
 
 Procedure MoveComponents(Board : IPCB_Board; FileXml : TStringList;);

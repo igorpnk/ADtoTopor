@@ -5,7 +5,7 @@ On development stage!
 
 Start procedure Main!
 
-1) Open in Altium Designer Script_Project.
+1) Open in Altium Designer "ADtoToporScript.PrjScr".
 
 2) Open in Altium Designer Your PCB.
 
