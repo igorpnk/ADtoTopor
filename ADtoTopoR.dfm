@@ -55,49 +55,49 @@ object Form1: TForm1
     ParentFont = False
   end
   object l_H: TLabel
-    Left = 97
+    Left = 9
     Top = 176
     Width = 7
     Height = 13
     Caption = 'H'
   end
   object l_L: TLabel
-    Left = 107
+    Left = 19
     Top = 176
     Width = 5
     Height = 13
     Caption = 'L'
   end
   object l_C: TLabel
-    Left = 117
+    Left = 29
     Top = 176
     Width = 7
     Height = 13
     Caption = 'C'
   end
   object l_LL: TLabel
-    Left = 127
+    Left = 39
     Top = 176
     Width = 10
     Height = 13
     Caption = 'LL'
   end
   object l_N: TLabel
-    Left = 142
+    Left = 54
     Top = 176
     Width = 7
     Height = 13
     Caption = 'N'
   end
   object l_G: TLabel
-    Left = 152
+    Left = 64
     Top = 176
     Width = 7
     Height = 13
     Caption = 'G'
   end
   object l_R: TLabel
-    Left = 168
+    Left = 80
     Top = 176
     Width = 7
     Height = 13
@@ -152,6 +152,32 @@ object Form1: TForm1
     Font.Color = clWhite
     Font.Height = -12
     Font.Name = 'Arial Black'
+    Font.Style = []
+    ParentFont = False
+  end
+  object lbProcess: TLabel
+    Left = 152
+    Top = 174
+    Width = 21
+    Height = 16
+    Caption = 'Go?'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
+  object Label6: TLabel
+    Left = 96
+    Top = 174
+    Width = 49
+    Height = 16
+    Caption = 'Process:'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
   end
@@ -276,7 +302,8 @@ object Form1: TForm1
     Width = 97
     Height = 17
     Caption = 'Free Pad'
-    Enabled = False
+    Checked = True
+    State = cbChecked
     TabOrder = 12
   end
   object cbTrack: TCheckBox
