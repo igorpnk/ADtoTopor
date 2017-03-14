@@ -954,6 +954,12 @@ Var // жуть...
    Y                       : String;
    XCoord                  : Tcoord;
    YCoord                  : Tcoord;
+   X1Coord                 : Tcoord;
+   Y1Coord                 : Tcoord;
+   X2Coord                 : Tcoord;
+   Y2Coord                 : Tcoord;
+   X3Coord                 : Tcoord;
+   Y3Coord                 : Tcoord;
    PadxReal                : Treal;
    PadYReal                : Treal;
    PadTypeSurf             : String;
@@ -982,6 +988,10 @@ Var // жуть...
    IDcomp                  : string;
    PolyGeom                : IPCB_GeometricPolygon;
    Contour                 : IPCB_Contour;
+   Compcoord               : String;
+   FillCoord               : String;
+   Width                   : String;
+   Height                  : String;
 
 
 Begin
@@ -1329,38 +1339,55 @@ Begin
                  '" name="'+LayerName+'"/>');
                  Footprints.Add(#9+#9+#9+#9+#9+#9+'<Polygon>');
 
-                 XCoord := Fill.X1Location - Component.x;
-                 YCoord := Fill.Y1Location - Component.y;
+                 Width := Fill.X2Location - Fill.X1Location;
+                 Height := Fill.Y2Location - Fill.Y1Location;
+                 XCoord := Fill.XLocation;
+                 YCoord := Fill.YLocation;
+                 X1Coord := XCoord + Width;
+                 Y1Coord := YCoord;
+                 X2Coord := XCoord + Width;
+                 Y2Coord := YCoord + Height;
+                 X3Coord := XCoord;
+                 Y3Coord := YCoord + Height;
+                 RotateCoordsAroundXY(X1Coord,Y1Coord,XCoord,YCoord,Fill.Rotation);
+                 RotateCoordsAroundXY(X2Coord,Y2Coord,XCoord,YCoord,Fill.Rotation);
+                 RotateCoordsAroundXY(X3Coord,Y3Coord,XCoord,YCoord,Fill.Rotation);
+                 XCoord := XCoord - Component.x;
+                 YCoord := YCoord - Component.y;
+                 X1Coord := X1Coord - Component.x;
+                 Y1Coord := Y1Coord - Component.y;
+                 X2Coord := X2Coord - Component.x;
+                 Y2Coord := Y2Coord - Component.y;
+                 X3Coord := X3Coord - Component.x;
+                 Y3Coord := Y3Coord - Component.y;
 
-                 //RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
-                 if Component.Layer = 32 then XCoord := -XCoord;
+                 RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                 RotateCoordsAroundXY(X1Coord,Y1Coord,0,0,-Component.Rotation);
+                 RotateCoordsAroundXY(X2Coord,Y2Coord,0,0,-Component.Rotation);
+                 RotateCoordsAroundXY(X3Coord,Y3Coord,0,0,-Component.Rotation);
+                 if Component.Layer = 32 then begin
+                   XCoord := -XCoord;
+                   X1Coord := -X1Coord;
+                   X2Coord := -X2Coord;
+                   X3Coord := -X3Coord;
+                 end;
+
+
+
                  X   := FloatToStr(CoordToMMs( XCoord));
                  Y   := FloatToStr(CoordToMMs( YCoord));
                  Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
-
-                 XCoord := Fill.X1Location - Component.x;
-                 YCoord := Fill.Y2Location - Component.y;
-                 //RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
-                 if Component.Layer = 32 then XCoord := -XCoord;
-                 X   := FloatToStr(CoordToMMs( XCoord));
-                 Y   := FloatToStr(CoordToMMs( YCoord));
+                 X   := FloatToStr(CoordToMMs( X1Coord));
+                 Y   := FloatToStr(CoordToMMs( Y1Coord));
+                 Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+                 X   := FloatToStr(CoordToMMs( X2Coord));
+                 Y   := FloatToStr(CoordToMMs( Y2Coord));
+                 Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+                 X   := FloatToStr(CoordToMMs( X3Coord));
+                 Y   := FloatToStr(CoordToMMs( Y3Coord));
                  Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
 
-                 XCoord := Fill.X2Location - Component.x;
-                 YCoord := Fill.Y2Location - Component.y;
-                // RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
-                 if Component.Layer = 32 then XCoord := -XCoord;
-                 X   := FloatToStr(CoordToMMs( XCoord));
-                 Y   := FloatToStr(CoordToMMs( YCoord));
-                 Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
 
-                 XCoord := Fill.X2Location - Component.x;
-                 YCoord := Fill.Y1Location - Component.y;
-                // RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
-                 if Component.Layer = 32 then XCoord := -XCoord;
-                 X   := FloatToStr(CoordToMMs( XCoord));
-                 Y   := FloatToStr(CoordToMMs( YCoord));
-                 Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
                  Footprints.Add(#9+#9+#9+#9+#9+#9+'</Polygon>');
                  Footprints.Add(#9+#9+#9+#9+#9+'</Keepout>');
              end;
@@ -2293,7 +2320,9 @@ var
 
       FileXMLCon.Add(#9+#9+#9+'<Via>');
       FileXMLCon.Add(#9+#9+#9+#9+'<ViastackRef name="'+ViaName+'"/>');
-      FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+Via.Net.Name+'"/>');
+      if Via.Net <> nil then NetName := Via.Net.Name;
+      if Via.Net = nil then NetName := 'No_Net';
+      FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+NetName+'"/>');
       FileXMLCon.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Via.x))+
                                     '" y="'+FloatToStr(CoordToMMs(Via.y))+'"/>');
       FileXMLCon.Add(#9+#9+#9+'</Via>');
@@ -3498,8 +3527,7 @@ begin
 end;
 
 //ToDo
-// импорт кипаутов
-// импорт свободных КП
+// Экспорт филов
 //  добавить дифф пары
 // Проверить двусторонние компоненты
 // Добавить правило зазора до края платы
