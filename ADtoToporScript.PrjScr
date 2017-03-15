@@ -55,7 +55,7 @@ GenerateClassCluster=0
 DocumentUniqueId=
 
 [Generic_ScriptingSystem]
-StartProcName=ADtoTopoR.pas>Main
+StartProcName=ADtoTopoR.pas>StartScript
 
 [Generic_Watches]
 6=compcoord
