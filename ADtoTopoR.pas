@@ -2607,7 +2607,20 @@ begin
  b := a div $10000;
  g := (a mod $10000) div $100;
  r := a mod $100;
- Result := IntToHex(r,2) + IntToHex(g,2) + IntToHex(b,2);
+ Result := IntToHex(r,2) + IntToHex(g,2) + IntToHex(b,2)
+end;
+
+function GetHexFromDarker(a :TColor; Percent : Byte;): String;
+var r,g,b:integer;
+begin
+Color:=ColorToRGB(Color);
+ b := a div $10000;
+ g := (a mod $10000) div $100;
+ r := a mod $100;
+r:=r- r*Percent div 100;  //процент% уменьшения яркости
+g:=g- g*Percent div 100;
+b:=b- b*Percent div 100;
+Result := IntToHex(r,2) + IntToHex(g,2) + IntToHex(b,2);
 end;
 
 Procedure AddDispControl(FileXMLDispC :TStringList; Board : IPCB_Board;);
@@ -2620,11 +2633,16 @@ LyrMeh        : IPCB_MechanicalLayer;
 LyrClass      : String;
 LyrColor      : TColor;
 LyrColorS     : String;
+LyrColorSP    : String;
+LyrColorSF    : String;
 LyrColorint   : integer;
 LayerType     : Tlayer;
+DispLayer     : String;
 
 begin
      SysOpt := PCBServer.SystemOptions;
+     Stack := Board.LayerStack;
+
      //Получение текущего типа метрики
      lbProcess.Caption := 'Add DisplayControl'; Form1.Refresh;
      UnitsDist := UnitToString2(Board.DisplayUnit);
@@ -2669,15 +2687,19 @@ begin
 
      //информация о цветах слоев
      FileXMLDispC.Add(#9+#9+'<LayersVisualOptions>');
-     Stack := Board.LayerStack;
+
      LyrObj := Stack.First(eLayerClass_All);
      Repeat
+       DispLayer := '';
+       if Board.LayerIsDisplayed[LyrObj.LayerID] then DispLayer := 'visible="on"';
        LyrColor := SysOpt.LayerColors[LyrObj.LayerId];
        LyrColorS := GetHexFrom(LyrColor);
+       LyrColorSP := GetHexFromDarker(LyrColor,30);
+       LyrColorSF := GetHexFromDarker(LyrColor,50);
        FileXMLDispC.Add(#9+#9+#9+'<LayerOptions>');
        FileXMLDispC.Add(#9+#9+#9+#9+'<LayerRef name="'+LyrObj.Name+'"/>');
-       FileXMLDispC.Add(#9+#9+#9+#9+'<Colors details="#'+LyrColorS+'" pads="#'+LyrColorS+'" fix="#'+LyrColorS+'"/>');
-       FileXMLDispC.Add(#9+#9+#9+#9+'<Show visible="on" details="on" pads="on"/>');
+       FileXMLDispC.Add(#9+#9+#9+#9+'<Colors details="#'+LyrColorS+'" pads="#'+LyrColorSP+'" fix="#'+LyrColorSF+'"/>');
+       FileXMLDispC.Add(#9+#9+#9+#9+'<Show '+DispLayer+' details="on" pads="on"/>');
        FileXMLDispC.Add(#9+#9+#9+'</LayerOptions>');
        LyrObj := Stack.Next(eLayerClass_All,LyrObj);
      until LyrObj = Nil;
@@ -2687,15 +2709,31 @@ begin
        LyrMeh := Stack.LayerObject[LayerType];
        if LyrMeh.MechanicalLayerEnabled then
        begin
+       DispLayer := '';
+       if Board.LayerIsDisplayed[LyrMeh.LayerID] then DispLayer := 'visible="on"';
        LyrColor := SysOpt.LayerColors[LyrMeh.LayerId];
        LyrColorS := GetHexFrom(LyrColor);
+       LyrColorSP := GetHexFromDarker(LyrColor,30);
+       LyrColorSF := GetHexFromDarker(LyrColor,50);
        FileXMLDispC.Add(#9+#9+#9+'<LayerOptions>');
        FileXMLDispC.Add(#9+#9+#9+#9+'<LayerRef name="'+LyrMeh.Name+'"/>');
-       FileXMLDispC.Add(#9+#9+#9+#9+'<Colors details="#'+LyrColorS+'" pads="#'+LyrColorS+'" fix="#'+LyrColorS+'"/>');
-       FileXMLDispC.Add(#9+#9+#9+#9+'<Show visible="on" details="on" pads="on"/>');
+       FileXMLDispC.Add(#9+#9+#9+#9+'<Colors details="#'+LyrColorS+'" pads="#'+LyrColorSP+'" fix="#'+LyrColorSF+'"/>');
+       FileXMLDispC.Add(#9+#9+#9+#9+'<Show '+DispLayer+' details="on" pads="on"/>');
        FileXMLDispC.Add(#9+#9+#9+'</LayerOptions>');
        end;
      end;
+
+     LyrObj := Stack.LayerObject(eKeepOutLayer);
+     DispLayer := '';
+     if Board.LayerIsDisplayed[LyrObj.LayerID] then DispLayer := 'visible="on"';
+     LyrColor := SysOpt.LayerColors[LyrObj.LayerId];
+     LyrColorS := GetHexFrom(LyrColor);
+     FileXMLDispC.Add(#9+#9+#9+'<LayerOptions>');
+     FileXMLDispC.Add(#9+#9+#9+#9+'<LayerRef name="'+LyrObj.Name+'"/>');
+     FileXMLDispC.Add(#9+#9+#9+#9+'<Colors details="#'+LyrColorS+'" pads="#'+LyrColorS+'" fix="#'+LyrColorS+'"/>');
+     FileXMLDispC.Add(#9+#9+#9+#9+'<Show '+DispLayer+' details="on" pads="on"/>');
+     FileXMLDispC.Add(#9+#9+#9+'</LayerOptions>');
+
 
      FileXMLDispC.Add(#9+#9+'</LayersVisualOptions>');
      FileXMLDispC.Add(#9+#9+'<ColorNets enabled="on" colorizeWire="on" colorizePad="on" colorizeCopper="on" colorizeVia="on" colorizeNetline="on"/>');
