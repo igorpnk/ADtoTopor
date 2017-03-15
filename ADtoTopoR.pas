@@ -1138,7 +1138,8 @@ Begin
      FileXMLCOB.Add(#9+#9+'<Components>');
      Packages.Add(#9+#9+'<Packages>');
      LyrMehPairs := Board.MechanicalPairs;
-     LyrMehPairs.LayerPair[0];
+     //if LyrMehPairs <> nil then
+     //LyrMehPairs.LayerPair[0];
      //находим все пары слоев перебором потому что LayerPair[I : Integer] возвращает TMechanicalLayerPair  с которой непонятно что делать.
       i := 0;
       for LayerType := eMechanical1 to eMechanical16 do
@@ -2624,9 +2625,9 @@ LayerType     : Tlayer;
 
 begin
      SysOpt := PCBServer.SystemOptions;
-
+     //Получение текущего типа метрики
      lbProcess.Caption := 'Add DisplayControl'; Form1.Refresh;
-     UnitsDist := UnitToString2(Board.DisplayUnit);      //Получение текущего типа метрики
+     UnitsDist := UnitToString2(Board.DisplayUnit);
      FileXMLDispC.Add(#9+'<DisplayControl version="1.3">');
      If (UnitsDist = 'mm') then
      Begin
@@ -2634,6 +2635,38 @@ begin
      End
      Else Begin ShowError('Switch to metric units!'); Exit; End; // Пока поддерживается только метрическая система
 
+     // информация о цветах отображения платы
+     FileXMLDispC.Add(#9+#9+'<Colors hilightRate="42" darkRate="0"');
+     FileXMLDispC.Add(#9+#9+'background="#030b10" board="#d4d4d4" netLines="#af7d3a"');
+     FileXMLDispC.Add(#9+#9+'keepoutPlaceBoth="#f79646" keepoutWireAll="#ff0000" keepoutPlaceTop="#259500" keepoutPlaceBot="#00aaaa"');
+     FileXMLDispC.Add(#9+#9+'compsBound="#ffffff" compsName="#ffffff" pinsName="#bad3ef" pinsNet="#bad3ef"');
+     FileXMLDispC.Add(#9+#9+'clrThroughPads="#c0c0c0" clrThroughVias="#949494" clrBurriedVias="#949494" clrBlindVias="#949494" clrFixedVias="#7070b8"');
+     FileXMLDispC.Add(#9+#9+'drcViolation="#ffffff" narrow="#ff00ff" trimmed="#038bef"/>');
+
+     // информация о отображенных элементах
+     FileXMLDispC.Add(#9+#9+'<Show');
+     FileXMLDispC.Add(#9+#9+'showBoardOutline="on"');
+     FileXMLDispC.Add(#9+#9+'showWires="on"');
+     FileXMLDispC.Add(#9+#9+'showCoppers="on"');
+     FileXMLDispC.Add(#9+#9+'showTexts="on"');
+     FileXMLDispC.Add(#9+#9+'throughVia="on" burriedVia="on" blindVia="on" fixedVia="on"');
+     FileXMLDispC.Add(#9+#9+'showTopMechDetails="on" showBotMechDetails="on"');
+     FileXMLDispC.Add(#9+#9+'showSignalLayers="on" showTopMechLayers="on" showBotMechLayers="on"');
+     FileXMLDispC.Add(#9+#9+'showTopMechDetails="on" showBotMechDetails="on"');
+     FileXMLDispC.Add(#9+#9+'showMetalPads="on" showTopMechPads="on" showBotMechPads="on"');
+     FileXMLDispC.Add(#9+#9+'showNetLines="on" showMountingHoles="on"');
+     FileXMLDispC.Add(#9+#9+'showComponents="on" showCompTop="on" showCompBot="on" showCompsDes="on" showPinsName="on" showPinsNet="on"');
+     FileXMLDispC.Add(#9+#9+'showLabelRefDes="on" showLabelPartName="on" showLabelOther="on"');
+     FileXMLDispC.Add(#9+#9+'showViolations="on" showTrimmed="on" showDRCViolations="on"');
+     FileXMLDispC.Add(#9+#9+'showKeepouts="on" showRouteKeepouts="on"');
+     FileXMLDispC.Add(#9+#9+'showSerpentArea="on"/>');
+
+     // информация о Сетке
+     FileXMLDispC.Add(#9+#9+'<Grid gridColor="#f2f2f2" gridKind="Dots">');
+     FileXMLDispC.Add(#9+#9+#9+'<GridSpace x="5000" y="5000"/>');  //0,5мм
+     FileXMLDispC.Add(#9+#9+'</Grid>');
+
+     //информация о цветах слоев
      FileXMLDispC.Add(#9+#9+'<LayersVisualOptions>');
      Stack := Board.LayerStack;
      LyrObj := Stack.First(eLayerClass_All);
@@ -2642,12 +2675,11 @@ begin
        LyrColorS := GetHexFrom(LyrColor);
        FileXMLDispC.Add(#9+#9+#9+'<LayerOptions>');
        FileXMLDispC.Add(#9+#9+#9+#9+'<LayerRef name="'+LyrObj.Name+'"/>');
-       FileXMLDispC.Add(#9+#9+#9+#9+'<Colors details="#'+LyrColorS+'"/>');
+       FileXMLDispC.Add(#9+#9+#9+#9+'<Colors details="#'+LyrColorS+'" pads="#'+LyrColorS+'" fix="#'+LyrColorS+'"/>');
        FileXMLDispC.Add(#9+#9+#9+#9+'<Show visible="on" details="on" pads="on"/>');
        FileXMLDispC.Add(#9+#9+#9+'</LayerOptions>');
        LyrObj := Stack.Next(eLayerClass_All,LyrObj);
      until LyrObj = Nil;
-
 
      for LayerType := eMechanical1 to eMechanical16 do
      begin
@@ -2658,13 +2690,14 @@ begin
        LyrColorS := GetHexFrom(LyrColor);
        FileXMLDispC.Add(#9+#9+#9+'<LayerOptions>');
        FileXMLDispC.Add(#9+#9+#9+#9+'<LayerRef name="'+LyrMeh.Name+'"/>');
-       FileXMLDispC.Add(#9+#9+#9+#9+'<Colors details="#'+LyrColorS+'"/>');
+       FileXMLDispC.Add(#9+#9+#9+#9+'<Colors details="#'+LyrColorS+'" pads="#'+LyrColorS+'" fix="#'+LyrColorS+'"/>');
        FileXMLDispC.Add(#9+#9+#9+#9+'<Show visible="on" details="on" pads="on"/>');
        FileXMLDispC.Add(#9+#9+#9+'</LayerOptions>');
        end;
      end;
 
      FileXMLDispC.Add(#9+#9+'</LayersVisualOptions>');
+     FileXMLDispC.Add(#9+#9+'<ColorNets enabled="on" colorizeWire="on" colorizePad="on" colorizeCopper="on" colorizeVia="on" colorizeNetline="on"/>');
      FileXMLDispC.Add(#9+'</DisplayControl>');
 end;
 
