@@ -2613,7 +2613,6 @@ end;
 function GetHexFromDarker(a :TColor; Percent : Byte;): String;
 var r,g,b:integer;
 begin
-Color:=ColorToRGB(Color);
  b := a div $10000;
  g := (a mod $10000) div $100;
  r := a mod $100;
@@ -2778,7 +2777,19 @@ Begin
      UTF8BOM[1] := $BB;
      UTF8BOM[2] := $BF;
      FileXml := TStringList.Create;                      // Создание обьекта класса
-     FileXml.DefaultEncoding := TEncoding.UTF8;
+
+     try
+       // If you see this then just press F9
+       // если вы видете это то просто нажмите F9
+       //PCBServer.
+       FileXml.DefaultEncoding := TEncoding.UTF8;
+     except
+       ShowMessage('You use the Altium Designer version below 17.'+
+       'For correct work of the translator, you must use version 17 or higher.'+
+       'However, you can still perform the translation if you change the encoding'+
+       ' of the generated .fst file to utf8 (For example, using the "Notepad++" program).'+
+       ' This is due to the fact that support for utf8 is added only in version 17. ');
+     end;
      FileXml2:= TStringList.Create;
      FileXmlTSt := TStringList.Create;
      FileXmlLL := TStringList.Create;

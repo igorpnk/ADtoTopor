@@ -106,9 +106,9 @@ object Form1: TForm1
   object Label4: TLabel
     Left = 8
     Top = 144
-    Width = 71
+    Width = 30
     Height = 19
-    Caption = 'Export to:'
+    Caption = 'File:'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -16
@@ -119,9 +119,9 @@ object Form1: TForm1
   object Label5: TLabel
     Left = 8
     Top = 232
-    Width = 74
+    Width = 30
     Height = 19
-    Caption = 'Import to:'
+    Caption = 'File:'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -16
@@ -272,16 +272,16 @@ object Form1: TForm1
     OnClick = b_ImportClick
   end
   object tExport: TEdit
-    Left = 88
+    Left = 40
     Top = 144
-    Width = 368
+    Width = 416
     Height = 21
     TabOrder = 8
   end
   object tImport: TEdit
-    Left = 88
+    Left = 40
     Top = 232
-    Width = 368
+    Width = 416
     Height = 21
     TabOrder = 9
   end
