@@ -287,18 +287,18 @@ End;
 
 Function PadTemplate(Pad : IPCB_Pad; TUnit : TUnit;) : String;    //функция получения типа пада  !!!
 Var
-FirstSimbol    : String;
-SecondSimbol   : String;
-XSize          : TReal;
-YSize          : TReal;
-XSizeStr       : String;
-YSizeStr       : String;
-Shape          : String;
-PadSurf        : Boolean;
-Pad2           : IPCB_Pad2;
-Radius         : TReal;
-ShapeType      : Tshape;
-CornerPercent  : Integer;
+ FirstSimbol    : String;
+ SecondSimbol   : String;
+ XSize          : TReal;
+ YSize          : TReal;
+ XSizeStr       : String;
+ YSizeStr       : String;
+ Shape          : String;
+ PadSurf        : Boolean;
+ Pad2           : IPCB_Pad2;
+ Radius         : TReal;
+ ShapeType      : Tshape;
+ CornerPercent  : Integer;
 Begin
      Pad2 := Pad;
      Shape := '';
@@ -329,6 +329,8 @@ Begin
           FirstSimbol := 's';
           XSize := CoordToMMs(Pad.XSizeOnLayer[Pad.Layer])*100;
           XSizeStr := floattostr(XSize);
+          YSize := CoordToMMs(Pad.YSizeOnLayer[Pad.Layer])*100;
+          YSizeStr := floattostr(YSize);
           Radius := CoordToMMs(Pad2.CornerRadius[Pad.Layer]);
           CornerPercent := Radius*2*100/XSize*100;
 
@@ -342,7 +344,7 @@ Begin
                eRoundedRectangular : Shape := 'h90r'+IntToStr(CornerPercent);
           End;
 
-          Result := FirstSimbol + XsizeStr+ Shape;
+          Result := FirstSimbol + XsizeStr+ '_'+YsizeStr + Shape;
     End;
 
 End;
@@ -558,7 +560,7 @@ Begin
   ResultString.Add(StringTab+'<Copper connectPad="Thermal" lineWidth="'+FloatToStr(CoordToMMs(Poly.TrackSize))+
                                                           '" lineClr="'+FloatToStr(CoordToMMs(Poly.Grid))+
                                                         '" minSquare="'+FloatToStr(CoordToMMs(Poly.ArcApproximation))+
-                                                        '" state="Poured" fillType="Solid">');
+                                                        '" fillType="Solid">');
   ResultString.Add(StringTab+#9+'<LayerRef type="'+LayerIDtoStr(Poly.Layer)+'" name="'+Board.LayerName(Poly.Layer)+'"/>');
   ResultString.Add(StringTab+#9+'<NetRef name="'+PolyNet+'"/>');
   ResultString.Add(StringTab+#9+'<ThermalPad>');
@@ -607,6 +609,119 @@ Begin
   ResultString.Add(StringTab+'</Copper>');
   Result := ResultString;
 End;
+
+Function FillSignalToXML(Board :IPCB_Board; Fill : IPCB_Fill; TabCount: integer;) : TStringList;
+Var
+ ResultString : TStringList;
+ StringTab    : String;
+ FillNet      : String;
+ X            : String;
+ Y            : String;
+ XCoord       : Tcoord;
+ YCoord       : Tcoord;
+ i            : integer;
+begin
+  StringTab := '';
+  For I:=0 to TabCount-1 do StringTab := StringTab + #9;
+  ResultString := TStringList.Create;
+  ResultString.Add(StringTab+'<Copper connectPad="Thermal" lineWidth="'+'0.1'+
+                                                          '" lineClr="'+'0.1'+
+                                                        '" minSquare="'+'0.01'+
+                                                        '" fillType="Solid">');
+  ResultString.Add(StringTab+#9+'<LayerRef type="'+LayerIDtoStr(Fill.Layer)+'" name="'+Board.LayerName(Fill.Layer)+'"/>');
+  if Fill.Net = Nil then Begin FillNet := 'No_Net'; End else begin FillNet := Fill.Net.Name; end;
+  ResultString.Add(StringTab+#9+'<NetRef name="'+FillNet+'"/>');
+  ResultString.Add(StringTab+#9+'<ThermalPad>');
+  ResultString.Add(StringTab+#9+#9+'<Thermal spokeNum="'+'4'+
+                                        '" spokeWidth="'+'0.2'+
+                                           '" backoff="'+'0.2'+'"/>');
+  ResultString.Add(StringTab+#9+'</ThermalPad>');
+  ResultString.Add(StringTab+#9+'<ThermalVia/>');
+  ResultString.Add(StringTab+#9+'<Shape>');
+  ResultString.Add(StringTab+#9+#9+'<Polygon>');
+  XCoord := Fill.X1Location;
+  YCoord := Fill.Y1Location;
+  RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
+  X   := FloatToStr(CoordToMMs( XCoord));
+  Y   := FloatToStr(CoordToMMs( YCoord));
+  ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+
+
+  XCoord := Fill.X1Location;
+  YCoord := Fill.Y2Location;
+  RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
+  X   := FloatToStr(CoordToMMs( XCoord));
+  Y   := FloatToStr(CoordToMMs( YCoord));
+  ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+
+  XCoord := Fill.X2Location;
+  YCoord := Fill.Y2Location;
+  RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
+  X   := FloatToStr(CoordToMMs( XCoord));
+  Y   := FloatToStr(CoordToMMs( YCoord));
+  ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+
+  XCoord := Fill.X2Location;
+  YCoord := Fill.Y1Location;
+  RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
+  X   := FloatToStr(CoordToMMs( XCoord));
+  Y   := FloatToStr(CoordToMMs( YCoord));
+  ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+
+  ResultString.Add(StringTab+#9+#9+'</Polygon>');
+  ResultString.Add(StringTab+#9+'</Shape>');
+  ResultString.Add(StringTab+#9+'<Voids/>');
+  ResultString.Add(StringTab+#9+'<Islands/>');
+  ResultString.Add(StringTab+'</Copper>');
+  Result := ResultString;
+end;
+
+Function RegionSignalToXML(Board :IPCB_Board; Region : IPCB_Region; TabCount: integer;) : TStringList;
+Var
+ ResultString : TStringList;
+ StringTab    : String;
+ RegionNet    : String;
+ X            : String;
+ Y            : String;
+ XCoord       : Tcoord;
+ YCoord       : Tcoord;
+ i            : integer;
+ PolyGeom     : IPCB_GeometricPolygon;
+ Contour      : IPCB_Contour;
+begin
+  StringTab := '';
+  For I:=0 to TabCount-1 do StringTab := StringTab + #9;
+  PolyGeom := Region.GeometricPolygon;
+  Contour := PolyGeom.Contour[0];
+
+  ResultString := TStringList.Create;
+  ResultString.Add(StringTab+'<Copper connectPad="Thermal" lineWidth="'+'0.1'+
+                                                          '" lineClr="'+'0.1'+
+                                                        '" minSquare="'+'0.01'+
+                                                        '" fillType="Solid">');
+  ResultString.Add(StringTab+#9+'<LayerRef type="'+LayerIDtoStr(Region.Layer)+'" name="'+Board.LayerName(Region.Layer)+'"/>');
+  if Region.Net = Nil then Begin RegionNet := 'No_Net'; End else begin RegionNet := Region.Net.Name; end;
+  ResultString.Add(StringTab+#9+'<NetRef name="'+RegionNet+'"/>');
+  ResultString.Add(StringTab+#9+'<ThermalPad>');
+  ResultString.Add(StringTab+#9+#9+'<Thermal spokeNum="'+'4'+
+                                        '" spokeWidth="'+'0.2'+
+                                           '" backoff="'+'0.2'+'"/>');
+  ResultString.Add(StringTab+#9+'</ThermalPad>');
+  ResultString.Add(StringTab+#9+'<ThermalVia/>');
+  ResultString.Add(StringTab+#9+'<Shape>');
+  ResultString.Add(StringTab+#9+#9+'<Polygon>');
+  For I := 0 To Contour.Count - 1 Do //перебор всех примитивов
+  Begin
+    ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Contour.x[I] ))+'" y="'+FloatToStr(CoordToMMs( Contour.y[I]))+ '"/>');
+  End;
+
+  ResultString.Add(StringTab+#9+#9+'</Polygon>');
+  ResultString.Add(StringTab+#9+'</Shape>');
+  ResultString.Add(StringTab+#9+'<Voids/>');
+  ResultString.Add(StringTab+#9+'<Islands/>');
+  ResultString.Add(StringTab+'</Copper>');
+  Result := ResultString;
+end;
 
 // конвертирование региона в механических слоях
 Function RegionToXML(Board :IPCB_Board; Region : IPCB_Region; TabCount: integer;) : TStringList;
@@ -719,7 +834,6 @@ Begin
   ResultString.Add(StringTab+'</Text>');
   Result := ResultString;
 End;
-
 
 Function ArcToXML(Board :IPCB_Board; Arc : IPCB_Arc; TabCount: integer;) : TStringList;
 Var
@@ -897,11 +1011,24 @@ Begin
                                  End;
                                eRounded        :
                                  Begin
-                                   PadType := 'PadCircle';
+
+                                   PadType := 'PadOval';
                                    PadXReal := CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]);
                                    PadYReal := CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]);
-                                   Padstacks.Add(#9+#9+#9+#9+#9+'<PadCircle diameter="'+floattostr(PadXReal)+'">');
-                                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+                                   if PadXReal < PadYReal then
+                                   Begin
+                                     Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadXReal)+'">');
+                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
+                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="0.000" y="'+floattostr(PadYReal-PadXReal)+'"/>');
+                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
+                                   End
+                                   Else
+                                   Begin
+                                     Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadYReal)+'">');
+                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
+                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="'+floattostr(PadXReal - PadYReal)+'" y="0.000"/>');
+                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
+                                   End;
                                  End;
                                eRoundedRectangular :   // !!! сделано как для прямоугольного хорощо бы исправить!
                                  Begin
@@ -1463,7 +1590,7 @@ Begin
               PadStackName := PadTemplate(Pad,Board.DisplayUnit);
 
               PozPadstack := 0;
-              PozPadstack := Pos(PadStackName, PadStacksAllName);
+              PozPadstack := Pos(PadStackName+'&', PadStacksAllName);
 
               if PozPadstack = 0 then // если небыло подстака до нужно его создать
               Begin
@@ -2200,6 +2327,8 @@ var
   Track         : IPCB_Track;
   Arc           : IPCB_Arc;
   Poly          : IPCB_Polygon;
+  Fill          : IPCB_Fill;
+  Region        : IPCB_Region;
   ViaName       : String;
   ViaPoz        : Integer;
   ViaMass       : array[0..99] of IPCB_Via; // пока получилось реализовать только через статический
@@ -2410,10 +2539,10 @@ var
      End;
      Board.BoardIterator_Destroy(BoardIterator);
      FileXMLCon.Add(#9+#9+'</Wires>');
-
+     //*******Перебираем Области металлизации********//
      FileXMLCon.Add(#9+#9+'<Coppers>');
      lbProcess.Caption := 'Coppers'; Form1.Refresh;
-     //*******Перебираем Полигоны********//
+     //Полигоны
      BoardIterator := Board.BoardIterator_Create;
      BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
                          16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
@@ -2428,10 +2557,116 @@ var
      End;
      Board.BoardIterator_Destroy(BoardIterator);
 
+
+     // филы
+     BoardIterator := Board.BoardIterator_Create;
+     BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                       16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
+     BoardIterator.AddFilter_ObjectSet(MkSet(eFillObject));
+     BoardIterator.AddFilter_Method(eProcessAll);
+     Fill := BoardIterator.FirstPCBObject; //первый филл
+
+     While (Fill <> Nil) Do
+     Begin
+       if (Fill.Component = Nil & Fill.IsKeepout = false) then
+       Begin
+         FileXMLCon.AddStrings(FillSignalToXML(Board,Fill,3));
+       End;
+       Fill := BoardIterator.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(BoardIterator);
+
+     // Регионы
+     BoardIterator := Board.BoardIterator_Create;
+     BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                       16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
+     BoardIterator.AddFilter_ObjectSet(MkSet(eRegionObject));
+     BoardIterator.AddFilter_Method(eProcessAll);
+     Region := BoardIterator.FirstPCBObject; //первый филл
+
+     While (Region <> Nil) Do
+     Begin
+       if (Region.Component = Nil & Region.IsKeepout = false) then
+       Begin
+         FileXMLCon.AddStrings(RegionSignalToXML(Board,Region,3));
+       End;
+       Region := BoardIterator.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(BoardIterator);
+
+
     FileXMLCon.Add(#9+#9+'</Coppers>');
 
     FileXMLCon.Add(#9+'</Connectivity>');
   End;
+
+Function GetHexFrom(a : TColor) : String;
+var r,g,b : integer;
+begin
+ b := a div $10000;
+ g := (a mod $10000) div $100;
+ r := a mod $100;
+ Result := IntToHex(r,2) + IntToHex(g,2) + IntToHex(b,2);
+end;
+
+Procedure AddDispControl(FileXMLDispC :TStringList; Board : IPCB_Board;);
+var
+UnitsDist     : String;
+LyrObj        : IPCB_LayerObject;
+SysOpt        : IPCB_SystemOptions;
+Stack         : IPCB_LayerStack;
+LyrMeh        : IPCB_MechanicalLayer;
+LyrClass      : String;
+LyrColor      : TColor;
+LyrColorS     : String;
+LyrColorint   : integer;
+LayerType     : Tlayer;
+
+begin
+     SysOpt := PCBServer.SystemOptions;
+
+     lbProcess.Caption := 'Add DisplayControl'; Form1.Refresh;
+     UnitsDist := UnitToString2(Board.DisplayUnit);      //Получение текущего типа метрики
+     FileXMLDispC.Add(#9+'<DisplayControl version="1.3">');
+     If (UnitsDist = 'mm') then
+     Begin
+       FileXMLDispC.Add(#9+#9+'<Units preference="Metric"/>');
+     End
+     Else Begin ShowError('Switch to metric units!'); Exit; End; // Пока поддерживается только метрическая система
+
+     FileXMLDispC.Add(#9+#9+'<LayersVisualOptions>');
+     Stack := Board.LayerStack;
+     LyrObj := Stack.First(eLayerClass_All);
+     Repeat
+       LyrColor := SysOpt.LayerColors[LyrObj.LayerId];
+       LyrColorS := GetHexFrom(LyrColor);
+       FileXMLDispC.Add(#9+#9+#9+'<LayerOptions>');
+       FileXMLDispC.Add(#9+#9+#9+#9+'<LayerRef name="'+LyrObj.Name+'"/>');
+       FileXMLDispC.Add(#9+#9+#9+#9+'<Colors details="#'+LyrColorS+'"/>');
+       FileXMLDispC.Add(#9+#9+#9+#9+'<Show visible="on" details="on" pads="on"/>');
+       FileXMLDispC.Add(#9+#9+#9+'</LayerOptions>');
+       LyrObj := Stack.Next(eLayerClass_All,LyrObj);
+     until LyrObj = Nil;
+
+
+     for LayerType := eMechanical1 to eMechanical16 do
+     begin
+       LyrMeh := Stack.LayerObject[LayerType];
+       if LyrMeh.MechanicalLayerEnabled then
+       begin
+       LyrColor := SysOpt.LayerColors[LyrMeh.LayerId];
+       LyrColorS := GetHexFrom(LyrColor);
+       FileXMLDispC.Add(#9+#9+#9+'<LayerOptions>');
+       FileXMLDispC.Add(#9+#9+#9+#9+'<LayerRef name="'+LyrMeh.Name+'"/>');
+       FileXMLDispC.Add(#9+#9+#9+#9+'<Colors details="#'+LyrColorS+'"/>');
+       FileXMLDispC.Add(#9+#9+#9+#9+'<Show visible="on" details="on" pads="on"/>');
+       FileXMLDispC.Add(#9+#9+#9+'</LayerOptions>');
+       end;
+     end;
+
+     FileXMLDispC.Add(#9+#9+'</LayersVisualOptions>');
+     FileXMLDispC.Add(#9+'</DisplayControl>');
+end;
 
 Procedure ADtoTopoR;
 Var
@@ -2493,23 +2728,16 @@ Begin
      l_N.Font.Color := clRed;
      l_G.Font.Color := clRed;
      l_R.Font.Color := clRed;
+     l_D.Font.Color := clRed;
 
      //StartTime := GetCurrentTimeString();
 
      Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
      TextStyleAll := '';
      If Board = nil then Begin ShowError('Open board!'); Exit; End; // Если платы нет то выходим
-     UnitsDist := UnitToString2(Board.DisplayUnit);      //Получение текущего типа метрики
-     If (UnitsDist = 'mm') then
-     Begin
-       FileXMLDispC.Add(#9+'<DisplayControl version="1.3">');
-       FileXMLDispC.Add(#9+#9+'<Units preference="Metric"/>');
-       FileXMLDispC.Add(#9+'</DisplayControl>');
-     End
-     Else Begin ShowError('Switch to metric units!'); Exit; End; // Пока поддерживается только метрическая система
 
+     UnitsDist := UnitToString2(Board.DisplayUnit);
      //*******Создаем Шапку (Header)********//
-
      AddHeader(FileXml,Board.FileName,UnitsDist);
      l_H.Font.Color := clGreen;     Form1.Refresh;
 
@@ -2548,6 +2776,9 @@ Begin
      AddRules(FileXMLRul,FileXMLHSRul,Board);
      l_R.Font.Color := clGreen;  Form1.Refresh;
 
+     //*******Создаем параметры отображения******//
+     AddDispControl(FileXMLDispC, Board);
+     l_D.Font.Color := clGreen;  Form1.Refresh;
      //*******Объединяем все в 1 файл********//
      FileXml.AddStrings(FileXmlTSt);   // подгружаем итоговый список текстовых стилей
      FileXml.AddStrings(FileXmlLL);    // подгружаем локальную библиотеку компонентов
@@ -2607,7 +2838,7 @@ Begin
        end;
      end;
 
-     lbProcess.Caption := 'End'; Form1.Refresh; 
+     lbProcess.Caption := 'End'; Form1.Refresh;
      //*******Уборка********//
      FileXml.Free;
      FileXmlTSt.Free;
@@ -3527,7 +3758,7 @@ begin
 end;
 
 //ToDo
-// Экспорт филов
+// заменить цепь No_Net на Нилл при экспорте и наоборот при импорте (в топоре тогда она будет не заданной)
 //  добавить дифф пары
 // Проверить двусторонние компоненты
 // Добавить правило зазора до края платы

@@ -156,7 +156,7 @@ object Form1: TForm1
     ParentFont = False
   end
   object lbProcess: TLabel
-    Left = 152
+    Left = 162
     Top = 174
     Width = 21
     Height = 16
@@ -169,7 +169,7 @@ object Form1: TForm1
     ParentFont = False
   end
   object Label6: TLabel
-    Left = 96
+    Left = 106
     Top = 174
     Width = 49
     Height = 16
@@ -180,6 +180,13 @@ object Form1: TForm1
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
+  end
+  object l_D: TLabel
+    Left = 92
+    Top = 176
+    Width = 7
+    Height = 13
+    Caption = 'D'
   end
   object bTopoR: TButton
     Left = 464
