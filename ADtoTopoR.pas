@@ -2650,8 +2650,9 @@ begin
      FileXMLDispC.Add(#9+#9+'showCoppers="on"');
      FileXMLDispC.Add(#9+#9+'showTexts="on"');
      FileXMLDispC.Add(#9+#9+'throughVia="on" burriedVia="on" blindVia="on" fixedVia="on"');
+     FileXMLDispC.Add(#9+#9+'showVias="on"');
      FileXMLDispC.Add(#9+#9+'showTopMechDetails="on" showBotMechDetails="on"');
-     FileXMLDispC.Add(#9+#9+'showSignalLayers="on" showTopMechLayers="on" showBotMechLayers="on"');
+     FileXMLDispC.Add(#9+#9+'showSignalLayers="on" showTopMechLayers="on" showBotMechLayers="on" showDocLayers="on"');
      FileXMLDispC.Add(#9+#9+'showTopMechDetails="on" showBotMechDetails="on"');
      FileXMLDispC.Add(#9+#9+'showMetalPads="on" showTopMechPads="on" showBotMechPads="on"');
      FileXMLDispC.Add(#9+#9+'showNetLines="on" showMountingHoles="on"');
