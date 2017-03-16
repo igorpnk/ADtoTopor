@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'AD to TopoR Interface'
-  ClientHeight = 305
+  ClientHeight = 299
   ClientWidth = 551
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -342,5 +342,13 @@ object Form1: TForm1
     Checked = True
     State = cbChecked
     TabOrder = 15
+  end
+  object cb_FootComp: TCheckBox
+    Left = 328
+    Top = 80
+    Width = 112
+    Height = 17
+    Caption = 'Footprint Compare'
+    TabOrder = 16
   end
 end

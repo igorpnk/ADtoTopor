@@ -913,137 +913,136 @@ var
    PadYReal                : Treal;
    Board                   : IPCB_Board;
 Begin
-                     Board := PCBServer.GetCurrentPCBBoard;
-                     Pad2 := Pad;
-                     PadPlated := 'off';
-                     if Pad2.plated then PadPlated := 'on';
-                     If Pad.IsSurfaceMount = True then // поверхностномонтируемая КП
-                     Begin
-                          PadTypeSurf := 'SMD';
-                          Padstacks.Add(#9+#9+#9+'<Padstack name="'+PadStackName+'" type="'+PadTypeSurf+'" metallized="'+PadPlated+'">');
-                          Padstacks.Add(#9+#9+#9+#9+'<Thermal/>');
-                          Padstacks.Add(#9+#9+#9+#9+'<Pads>');
-                          ShapeType := Pad.ShapeOnLayer[Pad.Layer];
-                          Case ShapeType of
-                               eRectangular    :
-                                 Begin
-                                   PadType := 'PadRect';
-                                   Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
-                                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
-                                 End;
-                               eOctagonal      : // !!! сделано как для прямоугольного в версии 1,1,4 можно будет исправить!
-                                 Begin
-                                   PadType := 'PadRect';
-                                   Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
-                                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
-                                 End;
-                               eRounded        :
-                                 Begin
-                                   PadType := 'PadOval';
-                                   PadXReal := CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]);
-                                   PadYReal := CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]);
-                                   if PadXReal < PadYReal then
-                                   Begin
-                                     Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadXReal)+'">');
-                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
-                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="0.000" y="'+floattostr(PadYReal-PadXReal)+'"/>');
-                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
-                                   End
-                                   Else
-                                   Begin
-                                     Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadYReal)+'">');
-                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
-                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="'+floattostr(PadXReal - PadYReal)+'" y="0.000"/>');
-                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
-                                   End;
-                                 End;
-                               eRoundedRectangular :
-                                 Begin
-                                   Pad2 := Pad;
-                                   PadType := 'PadRect';
+    Board := PCBServer.GetCurrentPCBBoard;
+    Pad2 := Pad;
+    PadPlated := 'off';
+    if Pad2.plated then PadPlated := 'on';
+    If Pad.IsSurfaceMount = True then // поверхностномонтируемая КП
+    Begin
+       PadTypeSurf := 'SMD';
+       Padstacks.Add(#9+#9+#9+'<Padstack name="'+PadStackName+'" type="'+PadTypeSurf+'" metallized="'+PadPlated+'">');
+       Padstacks.Add(#9+#9+#9+#9+'<Thermal/>');
+       Padstacks.Add(#9+#9+#9+#9+'<Pads>');
+       ShapeType := Pad.ShapeOnLayer[Pad.Layer];
+       Case ShapeType of
+            eRectangular    :
+              Begin
+                PadType := 'PadRect';
+                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
+                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
+                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
+              End;
+            eOctagonal      : // !!! сделано как для прямоугольного в версии 1,1,4 можно будет исправить!
+              Begin
+                PadType := 'PadRect';
+                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
+                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
+                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
+              End;
+            eRounded        :
+              Begin
+                PadType := 'PadOval';
+                PadXReal := CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]);
+                PadYReal := CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]);
+                if PadXReal < PadYReal then
+                Begin
+                  Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadXReal)+'">');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="0.000" y="'+floattostr(PadYReal-PadXReal)+'"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
+                End
+                Else
+                Begin
+                  Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadYReal)+'">');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="'+floattostr(PadXReal - PadYReal)+'" y="0.000"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
+                End;
+              End;
+            eRoundedRectangular :
+              Begin
+                Pad2 := Pad;
+                PadType := 'PadRect';
 
-                                   if cb_Version.Text = '1.1.3' then
-                                   Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
+                if cb_Version.Text = '1.1.3' then
+                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
+                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
 
-                                   if (cb_Version.Text = '1.1.4' | cb_Version.Text = '1.1.5') then
-                                   Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
-                                   ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[Pad.Layer]))+'">');
+                if (cb_Version.Text = '1.1.4' | cb_Version.Text = '1.1.5') then
+                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
+                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
+                ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[Pad.Layer]))+'">');
 
-                                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(eTopLayer)+'"/>');
-                                 End;
-                          End;
-                     End; // конец поверхностномонтируемых
+                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(eTopLayer)+'"/>');
+              End;
+       End;
+       End; // конец поверхностномонтируемых
 
-                     If Pad.IsSurfaceMount = false then  // Сквозная КП
-                          Begin
-                          PadTypeSurf := 'Through';
+       If Pad.IsSurfaceMount = false then  // Сквозная КП
+       Begin
+       PadTypeSurf := 'Through';
 
-                          Padstacks.Add(#9+#9+#9+'<Padstack name="'+PadStackName+'" holeDiameter="'+
-                          floattostr(CoordToMMs(Pad.HoleSize))+'" type="'+PadTypeSurf+'" metallized="'+PadPlated+'">');
-                          Padstacks.Add(#9+#9+#9+#9+'<Thermal/>');
-                          Padstacks.Add(#9+#9+#9+#9+'<Pads>');
+       Padstacks.Add(#9+#9+#9+'<Padstack name="'+PadStackName+'" holeDiameter="'+
+       floattostr(CoordToMMs(Pad.HoleSize))+'" type="'+PadTypeSurf+'" metallized="'+PadPlated+'">');
+       Padstacks.Add(#9+#9+#9+#9+'<Thermal/>');
+       Padstacks.Add(#9+#9+#9+#9+'<Pads>');
 
-                          ShapeType := Pad.ShapeOnLayer[Pad.Layer];
-                          Case ShapeType of
-                               eRectangular    :
-                                 Begin
-                                   PadType := 'PadRect';
-                                   Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
-                                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
-                                 End;
-                               eOctagonal      : // !!! сделано как для прямоугольного хорощо бы исправить!
-                                 Begin
-                                   PadType := 'PadRect';
-                                   Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
-                                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
-                                 End;
-                               eRounded        :
-                                 Begin
+       ShapeType := Pad.ShapeOnLayer[Pad.Layer];
+       Case ShapeType of
+            eRectangular    :
+              Begin
+                PadType := 'PadRect';
+                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
+                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
+                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');  //тут заменить на <LayerRef если разная толщина на слоях.
+              End;
+            eOctagonal      : // !!! сделано как для прямоугольного хорощо бы исправить!
+              Begin
+                PadType := 'PadRect';
+                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
+                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
+                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+              End;
+            eRounded        :
+              Begin
 
-                                   PadType := 'PadOval';
-                                   PadXReal := CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]);
-                                   PadYReal := CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]);
-                                   if PadXReal < PadYReal then
-                                   Begin
-                                     Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadXReal)+'">');
-                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
-                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="0.000" y="'+floattostr(PadYReal-PadXReal)+'"/>');
-                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
-                                   End
-                                   Else
-                                   Begin
-                                     Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadYReal)+'">');
-                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
-                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="'+floattostr(PadXReal - PadYReal)+'" y="0.000"/>');
-                                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
-                                   End;
-                                 End;
-                               eRoundedRectangular :   // !!! сделано как для прямоугольного хорощо бы исправить!
-                                 Begin
-                                   PadType := 'PadRect';
-                                   Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
-                                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
-                                 End;
-                          End;// конец Case ShapeType
-                     End; // конец сквозных КП
-
-                Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>');
-                Padstacks.Add(#9+#9+#9+#9+'</Pads>');
-                Padstacks.Add(#9+#9+#9+'</Padstack>');
+                PadType := 'PadOval';
+                PadXReal := CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]);
+                PadYReal := CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]);
+                if PadXReal < PadYReal then
+                Begin
+                  Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadXReal)+'">');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="0.000" y="'+floattostr(PadYReal-PadXReal)+'"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
+                End
+                Else
+                Begin
+                  Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadYReal)+'">');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="'+floattostr(PadXReal - PadYReal)+'" y="0.000"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
+                End;
+              End;
+            eRoundedRectangular :   // !!! сделано как для прямоугольного хорощо бы исправить!
+              Begin
+                PadType := 'PadRect';
+                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
+                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
+                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+              End;
+       End;// конец Case ShapeType
+      End; // конец сквозных КП
+     Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>');
+     Padstacks.Add(#9+#9+#9+#9+'</Pads>');
+     Padstacks.Add(#9+#9+#9+'</Padstack>');
 
 End;
 
@@ -1119,6 +1118,7 @@ Var // жуть...
    FillCoord               : String;
    Width                   : String;
    Height                  : String;
+   FootName                : String;
 
 
 Begin
@@ -1174,13 +1174,14 @@ Begin
            end;
            lbProcess.Caption := 'Component: ' + NameComp;
            Form1.Refresh;
-           Footprints.Add(#9+#9+#9+'<Footprint name="'+Component.Pattern+'$' +NameComp +'$' +IDcomp+ '">');
+           FootName :=  Component.Pattern+'$' +NameComp +'$' +IDcomp;
+           Footprints.Add(#9+#9+#9+'<Footprint name="'+FootName+ '">');
            //Component.GetState_FootprintDescription;
            Components.Add(#9+#9+#9+'<Component name="'+NameComp + '">');
            Components.Add(#9+#9+#9+#9+'<Pins>');
            Packages.Add(#9+#9+#9+'<Package>');
            Packages.Add(#9+#9+#9+#9+'<ComponentRef name="'+NameComp+'"/>');
-           Packages.Add(#9+#9+#9+#9+'<FootprintRef name="'+Component.Pattern+'$' +NameComp +'$' +IDcomp+ '"/>');
+           Packages.Add(#9+#9+#9+#9+'<FootprintRef name="'+FootName+ '"/>');
            CompFix := 'on';
            if Component.Moveable = true then CompFix := 'off';
 
@@ -1189,7 +1190,7 @@ Begin
            FileXMLCOB.Add(#9+#9+#9+'<CompInstance name="'+NameComp+'" side="'+CompSide+
                                     '" angle="'+inttostr(Component.Rotation)+'" fixed="'+CompFix+'">');
            FileXMLCOB.Add(#9+#9+#9+#9+'<ComponentRef name="'+NameComp+'"/>');
-           FileXMLCOB.Add(#9+#9+#9+#9+'<FootprintRef name="'+Component.Pattern+'$' +NameComp +'$' +IDcomp+ '"/>');
+           FileXMLCOB.Add(#9+#9+#9+#9+'<FootprintRef name="'+FootName+ '"/>');
            FileXMLCOB.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Component.x))+'" y="'+FloatToStr(CoordToMMs(Component.y))+'"/>');
            FileXMLCOB.Add(#9+#9+#9+#9+'<Pins>');
 
@@ -1606,6 +1607,7 @@ Begin
               Begin
                 NetName := Pad.Net.Name;
               End;
+              if NetName <> 'No_Net' then
               FileXMLCOB.Add(#9+#9+#9+#9+'<NetRef name="'+NetName+'"/>');
               FileXMLCOB.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Pad.x))+'" y="'+FloatToStr(CoordToMMs(Pad.y))+'"/>');
               FileXMLCOB.Add(#9+#9+#9+'</FreePad>');
@@ -2765,23 +2767,24 @@ Var
    FileXMLDispC: TStringList; // Ветвь отображения <DisplayControl version="1.3">
    ViastacksLL : TStringList; // группа переходных отверстий  Библиотеки
    TopoRCommand : TStringList; // командный файл Топор!
+   StrStream    : TStringStream;
    TextStyleAll: String;
    StartTime   : String;
    i           : integer;
    wBOM        : integer;
    FS          : TFileStream;
    UTF8BOM     : array[0..2] of Byte;
+   CurrentView : IserverDocumentView;
+
 Begin
      //*******Подготовка********//
      UTF8BOM[0] := $EF;
      UTF8BOM[1] := $BB;
      UTF8BOM[2] := $BF;
      FileXml := TStringList.Create;                      // Создание обьекта класса
-
      try
        // If you see this then just press F9
        // если вы видете это то просто нажмите F9
-       //PCBServer.
        FileXml.DefaultEncoding := TEncoding.UTF8;
      except
        ShowMessage('You use the Altium Designer version below 17.'+
@@ -2876,8 +2879,6 @@ Begin
      FileXml.Add('</TopoR_PCB_File>'); // закрываем тег формата данных
 
 
-     //ShowMessage('AddNetList: ' +StartTime +' - '+ GetCurrentTimeString());
-
      //*******Сохранение XML Файла********//
      if cbStartTopoR.Checked then   // если нужно то сразу запускаем топор и импортируем
      //!!!!!!!!!!Не работает
@@ -2889,7 +2890,6 @@ Begin
          FileName := tExport.Text;
        end;
        FileXml.SaveToFile(FileName);
-
 
        TopoRCommand.Add('<?xml version="1.0" encoding="UTF-8"?>');
        TopoRCommand.Add('<Version>1.0</Version>');
