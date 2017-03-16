@@ -346,9 +346,11 @@ object Form1: TForm1
   object cb_FootComp: TCheckBox
     Left = 328
     Top = 80
-    Width = 112
+    Width = 136
     Height = 17
-    Caption = 'Footprint Compare'
+    Caption = 'Footprint(RC) Compare'
+    Checked = True
+    State = cbChecked
     TabOrder = 16
   end
 end

@@ -115,7 +115,7 @@ Begin
      Times := GetCurrentTimeString();
 
      //*******Заголовок XML Файла********//
-     XMLIn.Add(   '<?xml version="1.0" encoding="UTF-8"?>');
+     XMLIn.Add('<?xml version="1.0" encoding="UTF-8"?>');
      XMLIn.Add('');
      XMLIn.Add('<!--**********************************************************************-->');
      XMLIn.Add('<!--   File    :' + FileS +' -->');
@@ -1119,7 +1119,7 @@ Var // жуть...
    Width                   : String;
    Height                  : String;
    FootName                : String;
-
+   FTrue                   : boolean;
 
 Begin
      TrackCount := 0;
@@ -1167,15 +1167,30 @@ Begin
            NameComp := Component.Name.Text;                        // Имя компонента
            IDcomp := Component.UniqueId;                           // вместо имени уникальный ID
            PadFlip := 'off';
-
+           FTrue := true;
            if pos('"'+NameComp+'"',Components.Text) <> 0 then begin
            ShowMessage('Components with the same name: '+NameComp);
            NameComp := NameComp +'$' +IDcomp;
            end;
            lbProcess.Caption := 'Component: ' + NameComp;
            Form1.Refresh;
+
            FootName :=  Component.Pattern+'$' +NameComp +'$' +IDcomp;
-           Footprints.Add(#9+#9+#9+'<Footprint name="'+FootName+ '">');
+
+           if cb_FootComp.Checked then
+           begin
+             if (pos('R',NameComp) >0| pos('C',NameComp) >0) then
+             begin
+               FootName := Component.Pattern;
+             end;
+             if pos('"'+Component.Pattern+'"',Footprints.Text) > 0 then
+             begin
+               FTrue := false;
+             end;
+           end;
+
+           if FTrue then Footprints.Add(#9+#9+#9+'<Footprint name="'+FootName+ '">');
+
            //Component.GetState_FootprintDescription;
            Components.Add(#9+#9+#9+'<Component name="'+NameComp + '">');
            Components.Add(#9+#9+#9+#9+'<Pins>');
@@ -1196,7 +1211,7 @@ Begin
 
 
            //*******перебор всех падов компонента********//
-           Footprints.Add(#9+#9+#9+#9+'<Pads>');
+           if FTrue then Footprints.Add(#9+#9+#9+#9+'<Pads>');
            PadIteratorHandle := Component.GroupIterator_Create;
            PadIteratorHandle.AddFilter_ObjectSet(MkSet(ePadObject));
            Pad := PadIteratorHandle.FirstPCBObject;
@@ -1207,7 +1222,7 @@ Begin
                 PadFlip := 'off';
                 //if (Component.Layer = 32 & Pad.IsSurfaceMount = false )  then PadFlip := 'on';
                 if (Component.Layer <> Pad.Layer & Pad.IsSurfaceMount)then PadFlip := 'on';
-                Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'" angle="'+PadAngle+'" flipped="'+PadFlip+'">');
+                if FTrue then Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'" angle="'+PadAngle+'" flipped="'+PadFlip+'">');
                 Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'"/>');
                 Packages.Add(#9+#9+#9+#9+'<Pinpack pinNum="'+IntToStr(PadNum)+'" padNum="'+IntToStr(PadNum)+'"/>');
                 FileXMLCOB.Add(#9+#9+#9+#9+#9+'<Pin padNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'">');
@@ -1224,7 +1239,7 @@ Begin
                 end; // конец создания подстака
 
 
-                Footprints.Add(#9+#9+#9+#9+#9+#9+'<PadstackRef name="'+PadStackName+'"/>');
+                if FTrue then Footprints.Add(#9+#9+#9+#9+#9+#9+'<PadstackRef name="'+PadStackName+'"/>');
                 FileXMLCOB.Add(#9+#9+#9+#9+#9+#9+'<PadstackRef name="'+PadStackName+'"/>');
 
                 XCoord := Pad.x - Component.x;
@@ -1235,16 +1250,16 @@ Begin
                 Y   := FloatToStr(CoordToMMs( YCoord));
 
                 FileXMLCOB.Add(#9+#9+#9+#9+#9+#9+'<Org x="'+X+'" y="'+Y+'"/>');
-                Footprints.Add(#9+#9+#9+#9+#9+#9+'<Org x="'+X+'" y="'+Y+'"/>');
+                if FTrue then Footprints.Add(#9+#9+#9+#9+#9+#9+'<Org x="'+X+'" y="'+Y+'"/>');
                 FileXMLCOB.Add(#9+#9+#9+#9+#9+'</Pin>');
-                Footprints.Add(#9+#9+#9+#9+#9+'</Pad>');
+                if FTrue then Footprints.Add(#9+#9+#9+#9+#9+'</Pad>');
                 Pad := PadIteratorHandle.NextPCBObject;
            End;// Конец создания падов
            Components.Add(#9+#9+#9+#9+'</Pins>');
            Components.Add(#9+#9+#9+'</Component>');
            Packages.Add(#9+#9+#9+'</Package>');
            padNum := 0;
-           Footprints.Add(#9+#9+#9+#9+'</Pads>');
+           if FTrue then Footprints.Add(#9+#9+#9+#9+'</Pads>');
            FileXMLCOB.Add(#9+#9+#9+#9+'</Pins>');
            //*******Начинаем перебор всей текстовой информации компонента********//
            TextIteratorHandle := Component.GroupIterator_Create;
@@ -1253,9 +1268,9 @@ Begin
 
 
            if TextIteratorHandle.FirstPCBObject <> Nil then
-           Footprints.Add(#9+#9+#9+#9+'<Texts>');
+           if FTrue then Footprints.Add(#9+#9+#9+#9+'<Texts>');
 
-
+           if FTrue then
            While (Text <> Nil) Do
            Begin
                 //разбираемся с текстовым стилем
@@ -1308,18 +1323,18 @@ Begin
 
 
            if TextIteratorHandle.FirstPCBObject <> Nil then
-           Footprints.Add(#9+#9+#9+#9+'</Texts>');
+           if FTrue then Footprints.Add(#9+#9+#9+#9+'</Texts>');
            //*******Заканчиваем перебор всей текстовой информации компонента********//
            Component.GroupIterator_Destroy(TextIteratorHandle);
 
-           Footprints.Add(#9+#9+#9+#9+'<Details>');// Дополнительные справочные слои посадочного
+           if FTrue then Footprints.Add(#9+#9+#9+#9+'<Details>');// Дополнительные справочные слои посадочного
 
            //*******Начинаем перебор всех линий, окружностей********//
             //*******линии ********//
            IteratorHandle := Component.GroupIterator_Create;
            IteratorHandle.AddFilter_ObjectSet(MkSet(eTrackObject));
            Track := IteratorHandle.FirstPCBObject;
-
+           if FTrue then
            While (Track <> Nil) Do
            Begin
                 //lyrObj := Track.Layer;
@@ -1366,7 +1381,7 @@ Begin
            IteratorHandle := Component.GroupIterator_Create;
            IteratorHandle.AddFilter_ObjectSet(MkSet(eArcObject));
            Arc := IteratorHandle.FirstPCBObject;
-
+           if FTrue then
            While (Arc <> Nil) Do
            Begin
 
@@ -1441,23 +1456,29 @@ Begin
            Component.GroupIterator_Destroy(IteratorHandle);
 
 
-           Footprints.Add(#9+#9+#9+#9+'</Details>');
+           if FTrue then Footprints.Add(#9+#9+#9+#9+'</Details>');
            //*******Заканчиваем перебор всех линий,окружностей ********//
 
 
            //*******Добавляем запреты ********//
-           Footprints.Add(#9+#9+#9+#9+'<KeepoutsTrace>');
+           if FTrue then Footprints.Add(#9+#9+#9+#9+'<KeepoutsTrace>');
            //*******Филы ********//
            IteratorHandle := Component.GroupIterator_Create;
            IteratorHandle.AddFilter_ObjectSet(MkSet(eFillObject));
            Fill :=  IteratorHandle.FirstPCBObject;
-
+           if FTrue then
            While (Fill <> Nil) Do
            Begin
              if Fill.IsKeepout = true then // если филл зона запрета
              begin
                 LayerName := Board.LayerName(Fill.Layer);
-                if Fill.Layer = 32 then LayerName := Board.LayerName(1);
+                if component.layer = 32 then
+                 begin
+                   if Fill.Layer = 32 then LayerName := Board.LayerName(1);
+                   if Fill.Layer = 1 then LayerName := Board.LayerName(32);
+                 end;
+
+
                 //если парный слой то переносим с боттом на топ!
                 //if LayerIDtoStr(Fill.Layer) = 'Mechanical' then
                 //  For i := 0 To LyrMehPairs.Count - 1 Do
@@ -1528,13 +1549,18 @@ Begin
            IteratorHandle := Component.GroupIterator_Create;
            IteratorHandle.AddFilter_ObjectSet(MkSet(eRegionObject));
            Region :=  IteratorHandle.FirstPCBObject;
-
+           if FTrue then
            While (Region <> Nil) Do
            Begin
              if Region.IsKeepout = true then // если регион зона запрета
              begin
                 LayerName := Board.LayerName(Region.Layer);
-                if Region.Layer = 32 then LayerName := Board.LayerName(1);
+
+                 if component.layer = 32 then
+                 begin
+                   if Region.Layer = 32 then LayerName := Board.LayerName(1);
+                   if Region.Layer = 1 then LayerName := Board.LayerName(32);
+                 end;
                 //если парный слой то переносим с боттом на топ!
                 //if LayerIDtoStr(Region.Layer) = 'Mechanical' then
                 //  For i := 0 To LyrMehPairs.Count - 1 Do
@@ -1564,12 +1590,12 @@ Begin
            End;
            Component.GroupIterator_Destroy(IteratorHandle);
 
-           Footprints.Add(#9+#9+#9+#9+'</KeepoutsTrace>');
+           if FTrue then Footprints.Add(#9+#9+#9+#9+'</KeepoutsTrace>');
 
            // следующий компонент
            Component := ComponentIteratorHandle.NextPCBObject;
            Inc(ComponentCount);
-           Footprints.Add(#9+#9+#9+'</Footprint>');
+           if FTrue then Footprints.Add(#9+#9+#9+'</Footprint>');
            FileXMLCOB.Add(#9+#9+#9+'</CompInstance>');
      End;  // заканчиваем обрабатывать этот компонент
      Board.BoardIterator_Destroy(ComponentIteratorHandle);
@@ -2775,8 +2801,13 @@ Var
    FS          : TFileStream;
    UTF8BOM     : array[0..2] of Byte;
    CurrentView : IserverDocumentView;
+   F_out       : TextFile;
+   F_in        : TextFile;
+   Buf         : Byte;
+   ut8str      : UTF8String;
 
 Begin
+
      //*******Подготовка********//
      UTF8BOM[0] := $EF;
      UTF8BOM[1] := $BB;
@@ -2915,6 +2946,22 @@ Begin
        end;
        if FileName <> '' then begin
          FileXml.SaveToFile(FileName);
+
+         //AssignFile(F_in,'D:\Temp\PCB2.fst');
+         //Reset(F_in);
+         //AssignFile(F_out,'D:\Temp\PCB1_UTF2.fst');
+         //Rewrite(F_out);
+         //For i:= 1 to 2 do
+         //begin
+           //BlockRead(F_in,Buf,1);
+           //BlockWrite(F_out,Buf,1);
+           //Readln(F_in,ut8str);
+          // Writeln(F_out,ut8str);
+          // ShowMessage(ut8str);
+         //end;
+         //CloseFile(F_in);
+         //CloseFile(F_out);
+
          ShowMessage('FST Файл: '+FileName+' - Создан! И состоит из ' +IntToStr(FileXml.Count) + ' строк.');
        end else begin
          ShowMessage('Присвойте имя FST файла!');
@@ -3412,6 +3459,7 @@ begin
            For ii:= 1 to 32 do
            begin
            Via.SizeOnLayer[ii]:= MMsToCoord(DiamLayers[ii-1]);
+
            if ii = EndLayer then break;
            end;
            Via.HighLayer  := StartLayer;
@@ -3516,7 +3564,7 @@ begin
           begin
             PStackName := XMLGetAttrValue(CurrentStr,'name');
             for ii:=0 to FileXML.Count - 1 do
-            if pos('<Padstack name="'+PStackName, FileXML.Strings[ii]) > 0 then begin StartStInd := ii; break; end;
+            if pos('<Padstack name="'+PStackName+'"', FileXML.Strings[ii]) > 0 then begin StartStInd := ii; break; end;
 
             PadType := '';
             Metallized := '';
@@ -3560,14 +3608,14 @@ begin
 
                 if pos('<Stretch',CurrentStrSt) >0  then // если овал то определяем ширину и высоту
                 begin
-                  if StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'x')) = 0 then
-                  begin
-                    Width := PadDiam;
-                    Height := (StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'x'))) +  Width;
-                  end else
+                  if StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'x')) <> 0 then
                   begin
                     Height := PadDiam;
-                    Width := (StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'y'))) +  Height;
+                    Width := (StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'x'))) +  Height;
+                  end else
+                  begin
+                   Width := PadDiam;
+                   Height := (StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'y'))) +  Width;
                   end;
                 end;
 
