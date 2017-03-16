@@ -346,11 +346,20 @@ object Form1: TForm1
   object cb_FootComp: TCheckBox
     Left = 328
     Top = 80
-    Width = 136
+    Width = 128
     Height = 17
     Caption = 'Footprint(RC) Compare'
     Checked = True
     State = cbChecked
     TabOrder = 16
+  end
+  object bt_ConfSave: TButton
+    Left = 464
+    Top = 80
+    Width = 75
+    Height = 25
+    Caption = 'Config Save'
+    TabOrder = 17
+    OnClick = bt_ConfSaveClick
   end
 end

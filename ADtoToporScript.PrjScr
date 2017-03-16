@@ -75,9 +75,7 @@ DocumentUniqueId=EFWTDOQF
 StartProcName=ADtoTopoR.pas>StartScript
 
 [Generic_Watches]
-6=compcoord
-7=fillcoord
-8=XCoord
+0=PadDiam
 
 [OutputGroup1]
 Name=Netlist Outputs

@@ -25,6 +25,20 @@ begin
   TopoRFile.Add(tProject.Text);   // 1 - путь к проекту топора
   TopoRFile.Add(tExport.Text);    // 2 - путь к файлу fst экспорта
   TopoRFile.Add(tImport.Text);    // 3 - путь к файлу fst Импорта
+  TopoRFile.Add(IntToStr(cb_Version.ItemIndex));    // 4 - FST Version
+  if cb_FootComp.Checked then begin TopoRFile.Add('True'); end
+  else begin TopoRFile.Add('False'); end;      // 5 - FootCompare
+  if cbStartTopoR.Checked then begin TopoRFile.Add('True'); end
+  else begin TopoRFile.Add('False'); end;      // 6 - StartTopoR
+  if cbTrack.Checked then begin TopoRFile.Add('True'); end
+  else begin TopoRFile.Add('False'); end;      // 7 - ImportTrack
+  if cbVia.Checked then begin TopoRFile.Add('True'); end
+  else begin TopoRFile.Add('False'); end;      // 8 - ImportVia
+  if cbComponent.Checked then begin TopoRFile.Add('True'); end
+  else begin TopoRFile.Add('False'); end;      // 9 - ImportComponent
+  if cbFreePad.Checked then begin TopoRFile.Add('True'); end
+  else begin TopoRFile.Add('False'); end;      // 10 - ImportComponent
+
   TopoRFile.SaveToFile(Board.FileName+'.scon');
   TopoRFile.Free;
 end;
@@ -912,6 +926,7 @@ var
    PadxReal                : Treal;
    PadYReal                : Treal;
    Board                   : IPCB_Board;
+   handlingValue           : Double;
 Begin
     Board := PCBServer.GetCurrentPCBBoard;
     Pad2 := Pad;
@@ -933,13 +948,32 @@ Begin
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                 Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
               End;
-            eOctagonal      : // !!! сделано как для прямоугольного в версии 1,1,4 можно будет исправить!
+            eOctagonal      :
               Begin
+                if cb_Version.Text = '1.1.3' then
+                begin  //1.1.3
                 PadType := 'PadRect';
                 Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
                 floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                 Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
+                end;  //1.1.3
+                if cb_Version.Text = '1.1.4' | cb_Version.Text = '1.1.5' then
+                begin // 1.1.4
+                if Pad.XSizeOnLayer[Pad.Layer] > Pad.YSizeOnLayer[Pad.Layer] then begin
+                handlingValue := 0.25*Pad.YSizeOnLayer[Pad.Layer];
+                end else begin
+                handlingValue := 0.25*Pad.XSizeOnLayer[Pad.Layer];
+                end;
+
+                PadType := 'PadRect';
+                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
+                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
+                ' handling="Chamfer" handlingValue="'+floattostr(CoordToMMs(handlingValue))+'">');
+                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
+                end; //1.1.4
+
               End;
             eRounded        :
               Begin
@@ -965,7 +999,6 @@ Begin
               Begin
                 Pad2 := Pad;
                 PadType := 'PadRect';
-
                 if cb_Version.Text = '1.1.3' then
                 Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
                 floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
@@ -978,7 +1011,7 @@ Begin
                 ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[Pad.Layer]))+'">');
 
                 Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(eTopLayer)+'"/>');
-              End;
+              end;
        End;
        End; // конец поверхностномонтируемых
 
@@ -1003,11 +1036,28 @@ Begin
               End;
             eOctagonal      : // !!! сделано как для прямоугольного хорощо бы исправить!
               Begin
+                if cb_Version.Text = '1.1.3' then
+                begin  //1.1.3
                 PadType := 'PadRect';
                 Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
                 floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                 Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+                end;  //1.1.3
+                if cb_Version.Text = '1.1.4' | cb_Version.Text = '1.1.5' then
+                begin  //1.1.4
+                if Pad.XSizeOnLayer[Pad.Layer] > Pad.YSizeOnLayer[Pad.Layer] then begin
+                handlingValue := 0.25*Pad.YSizeOnLayer[Pad.Layer];
+                end else begin
+                handlingValue := 0.25*Pad.XSizeOnLayer[Pad.Layer];
+                end;
+                PadType := 'PadRect';
+                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
+                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+
+                '" handling="Chamfer" handlingValue="'+FloatToStr(CoordToMMs(handlingValue))+'">');
+                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+                end;  //1.1.4
               End;
             eRounded        :
               Begin
@@ -1032,11 +1082,24 @@ Begin
               End;
             eRoundedRectangular :   // !!! сделано как для прямоугольного хорощо бы исправить!
               Begin
+                Pad2 := Pad;
+                if cb_Version.Text = '1.1.3' then
+                begin  //1.1.3
                 PadType := 'PadRect';
                 Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
                 floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                 Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+                end; //1.1.3
+                if cb_Version.Text = '1.1.4' then
+                begin  //1.1.4
+                PadType := 'PadRect';
+                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
+                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
+                ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[Pad.Layer]))+'">');
+                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+                end; //1.1.4
               End;
        End;// конец Case ShapeType
       End; // конец сквозных КП
@@ -3151,7 +3214,7 @@ angle       : Double;
 testDouble  : Double;
 
 begin
-
+  StartInd := 0;
   CurrentStr :=  FileXML.Strings[0];
 
   for i:=0 to FileXML.Count - 1 do
@@ -3164,14 +3227,13 @@ begin
 
   //******** Импортируем Проводники *********//
   bWires := false;
-
   i:=StartInd;
   try
   Repeat
+    if i = FileXML.Count - 2 then break;
     CurrentStr := FileXML.Get(i);
     if pos('<Wires>',CurrentStr) >0 then  bWires := true;
     if pos('</Wires>',CurrentStr) >0 then begin  i := -2; bWires := false;  end;
-
     if bWires then //обрабатываем проводники
     Begin
      if pos('<Wire>',CurrentStr)>0 then   // обрабатываем одну ветку
@@ -3323,7 +3385,7 @@ var
 Via       : IPCB_Via;
 PadDiam   : Double;
 IteratorHandle : IPCB_BoardIterator;
-i           : integer;
+i,j         : integer;
 ii          : integer;
 iii         : integer;
 StartInd    : integer;
@@ -3344,8 +3406,11 @@ StartLayer  : TLayer;
 EndLayer    : TLayer;
 DiamLayers  : array [0..31] of Double;
 test        : String;
+ViaMode     : integer;
 
 begin
+
+  ViaMode := 0;
   Net := Nil;
   TSDiam := 0;
   BSDiam := 0;
@@ -3365,7 +3430,10 @@ begin
     Begin
       if pos('<Via>',CurrentStr)>0 then   // обрабатываем один переходник
       begin
+      For j := 0 to 31 do
+      DiamLayers[j] := -1;
         Repeat
+
           CurrentStr := FileXML.Get(i);
           if pos('<ViastackRef',CurrentStr) >0 then
           begin
@@ -3403,6 +3471,7 @@ begin
                 begin
                   if XMLGetAttrValue(CurrentStrSt,'type') =  'Signal' then
                   begin
+                     ViaMode := 0;
                      for iii :=0 to 31 do
                      DiamLayers[iii] := PadDiam;
                   end;
@@ -3410,19 +3479,18 @@ begin
 
                 if pos ('<LayerRef',CurrentStrSt) >0 then
                 begin
-
+                  ViaMode := 1;
                   if XMLGetAttrValue(CurrentStrSt,'name') =  board.LayerName(37) then
                   TSDiam := PadDiam;
                   if XMLGetAttrValue(CurrentStrSt,'name') =  board.LayerName(38) then
                   BSDiam := PadDiam;
-
                   for iii :=0 to 31 do
                   Begin
                     if XMLGetAttrValue(CurrentStrSt,'name') =  board.LayerName(iii+1) then
                     DiamLayers[iii] := PadDiam;
                   end;
-
                 end;
+
                 if  pos('</Viastack>',CurrentStrSt) >0 then  break;
                 inc(ii);
               Until ii = -1;
@@ -3454,27 +3522,49 @@ begin
 
           if pos ('</Via>',CurrentStr) >0 then
           begin
+           for iii :=0 to 31 do  //проверяем тип переходника
+                if (iii+1>StartLayer & iii+1 < EndLayer) then //если плата многослойная
+                begin
+                  if (iii+1-1>StartLayer & iii+1<EndLayer) then  // если мы на 3 слое или далее
+                      if (DiamLayers[iii-1] <> DiamLayers[iii]) then
+                        ViaMode := 2;
+
+                  if (iii+1>StartLayer & iii+1+1<EndLayer) then
+                  begin
+                    lbProcess.Caption := IntToStr(iii);
+
+                    if  DiamLayers[iii+1] = -1 then
+                    break;
+                    if (DiamLayers[iii+1] <> DiamLayers[iii]) then
+                      ViaMode := 2;
+                  end;
+               end;
+
            Via := PCBServer.PCBObjectFactory(eViaObject, eNoDimension, eCreate_Default);
            Via.Net := Net;
+           Via.Mode := ViaMode;
+           Via.HighLayer  := StartLayer;
+           Via.LowLayer   := EndLayer;
+           Via.HoleSize := MMsToCoord(HoleDiam);
+           Via.x := MMsToCoord(OrgX);
+           Via.y := MMsToCoord(OrgY);
            For ii:= 1 to 32 do
            begin
+           lbProcess.Caption := FloatToStr(DiamLayers[ii-1]);
+           lbProcess.Caption := IntToStr(ii);
+           if  DiamLayers[ii-1] > -1 then
            Via.SizeOnLayer[ii]:= MMsToCoord(DiamLayers[ii-1]);
 
            if ii = EndLayer then break;
            end;
-           Via.HighLayer  := StartLayer;
-
-           Via.LowLayer   := EndLayer;
 
            if TSDiam >0 then begin Via.SizeOnLayer[37] := MMsToCoord(TSDiam); Via.IsTenting_Top := false; end
            else begin Via.IsTenting_Top := true;  end;
            if BSDiam >0 then begin Via.SizeOnLayer[38] := MMsToCoord(TSDiam); Via.IsTenting_Bottom := false; end
            else begin Via.IsTenting_Bottom := true;  end;
-           Via.HoleSize := MMsToCoord(HoleDiam);
-           Via.x := MMsToCoord(OrgX);
-           Via.y := MMsToCoord(OrgY);
+
            Board.AddPCBObject(Via);
-           break;
+           break; // добавили переходник и выходим
           end;
 
 
@@ -3526,6 +3616,7 @@ begin
   i:=StartInd;
 
   Repeat //начинаем перебор всех FreePads
+    if i = FileXML.Count - 2 then break;
     CurrentStr := FileXML.Get(i);
 
     if pos('<FreePad ',CurrentStr)>0 then
@@ -3803,22 +3894,26 @@ begin
   //*******Удаляем FreePad*******//
    if cbFreePad.Checked then RemoveFreePadinSignal(Board);
 
+  lbProcess.Caption := 'MoveComponents'; Form1.Refresh;
   //*******переносим компоненты*******//
    if cbComponent.Checked then MoveComponents(Board,FileXml);
 
+   lbProcess.Caption := 'AddTrack'; Form1.Refresh;
   //*******Добавляем проводники*******//
   if cbTrack.Checked then AddTrackinSignal(Board,FileXml);
 
+  lbProcess.Caption := 'AddVIA'; Form1.Refresh;
   //*******Добавляем переходники*******//
    if cbVia.Checked then  AddViainSignal(Board,FileXml);
 
+   lbProcess.Caption := 'AddFreePad'; Form1.Refresh;
    //*******Добавляем FreePad*******//
    if cbFreePad.Checked then AddFreePadinSignal(Board,FileXml);
 
   //*******отображаем все что изменили*******//
   PolygonsRepour(Board);
   Client.SendMessage('PCB:Zoom', 'Action=Redraw' , 255, Client.CurrentView);
-
+  lbProcess.Caption := 'Imported!'; Form1.Refresh;
   //*******Уборка********//
   FileXml.Free;
 
@@ -3847,6 +3942,19 @@ Begin
   tProject.Text := TopoRFile.Get(1);
   tExport.Text :=  TopoRFile.Get(2);
   tImport.Text :=  TopoRFile.Get(3);
+  cb_Version.ItemIndex := StrToInt(TopoRFile.Get(4));
+  if TopoRFile.Get(5) = 'True' then begin cb_FootComp.Checked := true; end
+  else begin cb_FootComp.Checked := false; end;
+  if TopoRFile.Get(6) = 'True' then begin cbStartTopoR.Checked := true; end
+  else begin cbStartTopoR.Checked := false; end;
+  if TopoRFile.Get(7) = 'True' then begin cbTrack.Checked := true; end
+  else begin cbTrack.Checked := false; end;
+  if TopoRFile.Get(8) = 'True' then begin cbVia.Checked := true; end
+  else begin cbVia.Checked := false; end;
+  if TopoRFile.Get(9) = 'True' then begin cbComponent.Checked := true; end
+  else begin cbComponent.Checked := false; end;
+  if TopoRFile.Get(10) = 'True' then begin cbFreePad.Checked := true; end
+  else begin cbFreePad.Checked := false; end;
   Form1.Show;
   TopoRFile.Free;
 End;
@@ -3889,7 +3997,7 @@ begin
 end;
 
 //ToDo
-// оптимизировать резисторы и конденсаторы
+// дифф пары
 // Змейки!
 // заменить цепь No_Net на Нилл при экспорте и наоборот при импорте (в топоре тогда она будет не заданной)
 //  добавить дифф пары
@@ -3907,4 +4015,10 @@ end;
 // Обработать срезанные и скругленные КП
 
 
+
+procedure TForm1.bt_ConfSaveClick(Sender: TObject);
+begin
+  SaveConfig();
+  lbProcess.Caption := '.scon Saved!'
+end;
 
