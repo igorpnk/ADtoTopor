@@ -824,16 +824,24 @@ Var
  TextMirror   : String;
  PozTextStyle : integer;
  TestString   : String;
+ TBold        : String;
+ TItalic      : String;
 Begin
+  TBold := '';
+  TItalic := '';
+  if Text.Bold then TBold := 'B';
+  if Text.Italic then TItalic := 'I';
   StringTab := '';
   For I:=0 to TabCount-1 do StringTab := StringTab + #9;
   ResultString := TStringList.Create;
-  TextStyle := 'Arial'+ FloatToStr(CoordToMMs(Text.Size)*100);
+  TextStyle := 'Arial'+ FloatToStr(CoordToMMs(Text.Size)*100)+TBold+TItalic;
   PozTextStyle := 0;
-  PozTextStyle := Pos(TextStyle, FileXmlTSt.Text);
+  PozTextStyle := Pos('"'+TextStyle+'"', FileXmlTSt.Text);
   if  PozTextStyle = 0 then  //если текстового стиля нет то создаем
   begin
-  FileXmlTSt.Add(#9+#9+'<TextStyle name="'+TextStyle+ '" fontName="Arial" height="'+FloatToStr(CoordToMMs(Text.Size))+'"/>');
+  if Text.Bold then TBold := ' bold="on"';
+  if Text.Italic then TItalic := ' italic="on"';
+  FileXmlTSt.Add(#9+#9+'<TextStyle name="'+TextStyle+ '" fontName="Arial" height="'+FloatToStr(CoordToMMs(Text.Size))+'"'+TBold+TItalic+'/>');
   end;  //конец созадния нового текстового стиля
 
   //заполняем текстовую информацию
@@ -1183,7 +1191,8 @@ Var // жуть...
    Height                  : String;
    FootName                : String;
    FTrue                   : boolean;
-
+   TBold                   : String;
+   TItalic                 : String;
 Begin
      TrackCount := 0;
      padNum     := 0;
@@ -1337,13 +1346,19 @@ Begin
            While (Text <> Nil) Do
            Begin
                 //разбираемся с текстовым стилем
-                TextStyle := 'Arial'+ FloatToStr(CoordToMMs(Text.Size)*100);
+                TBold := '';
+                TItalic := '';
+                if Text.Bold then TBold := 'B';
+                if Text.Italic then TItalic := 'I';
+                TextStyle := 'Arial'+ FloatToStr(CoordToMMs(Text.Size)*100)+TBold+TItalic;
                 PozTextStyle := 0;
-                PozTextStyle := Pos(TextStyle, FileXmlTSt.Text);
+                PozTextStyle := Pos('"'+TextStyle+'"', FileXmlTSt.Text);
                 if  PozTextStyle = 0 then  //если текстового стиля нет то создаем
                 begin
+                     if Text.Bold then TBold := ' bold="on"';
+                     if Text.Italic then TItalic := ' italic="on"';
                      FileXmlTSt.Add(#9+#9+'<TextStyle name="'+TextStyle+
-                     '" fontName="Arial" height="'+FloatToStr(CoordToMMs(Text.Size))+'"/>');
+                     '" fontName="Arial" height="'+FloatToStr(CoordToMMs(Text.Size))+'"'+TBold+TItalic+'/>');
                 end;  //конец созадния нового текстового стиля
 
                 //заполняем текстовую информацию
