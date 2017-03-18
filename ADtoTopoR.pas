@@ -1852,7 +1852,7 @@ Begin
 
      //*******Перебираем трэки********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
      MechIterH.AddFilter_ObjectSet(MkSet(eTrackObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Track := MechIterH.FirstPCBObject; //первый трэк на механическом слое
@@ -1872,7 +1872,7 @@ Begin
      lbProcess.Caption := 'Arc In Mechanical Layers'; Form1.Refresh;
      //*******Перебираем окружности********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
      MechIterH.AddFilter_ObjectSet(MkSet(eArcObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Arc := MechIterH.FirstPCBObject; //первая окружность на механическом слое
@@ -1890,7 +1890,7 @@ Begin
      lbProcess.Caption := 'Fill In Mechanical Layers'; Form1.Refresh;
      //*******Перебираем Филы********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
      MechIterH.AddFilter_ObjectSet(MkSet(eFillObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Fill := MechIterH.FirstPCBObject; //первый филл на механическом слое
@@ -1908,7 +1908,7 @@ Begin
      lbProcess.Caption := 'Poly In Mechanical Layers'; Form1.Refresh;
      //*******Перебираем Полигоны********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
      MechIterH.AddFilter_ObjectSet(MkSet(ePolyObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Poly := MechIterH.FirstPCBObject; //первый полигон на механическом слое
@@ -1926,7 +1926,7 @@ Begin
      lbProcess.Caption := 'Region In Mechanical Layers'; Form1.Refresh;
      //*******Перебираем Регионы********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
      MechIterH.AddFilter_ObjectSet(MkSet(eRegionObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Region := MechIterH.FirstPCBObject; //первый регион на механическом слое
@@ -3880,7 +3880,7 @@ begin
        NameComp := Component.Name.Text;                        // Имя компонента
        For i:= StartInd to FileXML.Count - 1 do
        begin
-         if pos('<CompInstance name="'+NameComp, FileXML.Strings[i]) > 0 then
+         if pos('<CompInstance name="'+NameComp+'"', FileXML.Strings[i]) > 0 then
          begin
            angle := XMLGetAttrValue(FileXML.Strings[i],'angle');
            if angle <> '' then
@@ -4082,6 +4082,8 @@ begin
 end;
 
 //ToDo
+
+// импорт обьектов на мех слоях
 // дифф пары
 // Змейки!
 // заменить цепь No_Net на Нилл при экспорте и наоборот при импорте (в топоре тогда она будет не заданной)

@@ -60,6 +60,7 @@ StartProcName=ADtoTopoR.pas>StartScript
 [Generic_Watches]
 0=TestString
 1=TestString
+2=NameComp
 
 [OutputGroup1]
 Name=Netlist Outputs
