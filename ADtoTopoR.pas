@@ -375,8 +375,8 @@ Begin
   ResultString.Add(StringTab+'<Detail lineWidth="'+FloatToStr(CoordToMMs(Track.Width))+'">');
   ResultString.Add(StringTab+#9+'<LayerRef type="'+LayerIDtoStr(Track.Layer)+'" name="'+Board.LayerName(Track.Layer)+'"/>');//ИМя!
   ResultString.Add(StringTab+#9+'<Line>');
-  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Track.x1 ))+'" y="'+FloatToStr(CoordToMMs( Track.y1))+ '"/>');
-  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Track.x2 ))+'" y="'+FloatToStr(CoordToMMs( Track.y2))+'"/>');
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Track.x1 -Board.XOrigin))+'" y="'+FloatToStr(CoordToMMs( Track.y1-Board.YOrigin))+ '"/>');
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Track.x2 -Board.XOrigin))+'" y="'+FloatToStr(CoordToMMs( Track.y2-Board.YOrigin))+'"/>');
   ResultString.Add(StringTab+#9+'</Line>');
   ResultString.Add(StringTab+'</Detail>');
   Result := ResultString;
@@ -398,8 +398,8 @@ Begin
   ResultString.Add(StringTab+#9+#9+'</Trace>');
   ResultString.Add(StringTab+#9+'</Role>');
   ResultString.Add(StringTab+#9+'<Line>');
-  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Track.x1 ))+'" y="'+FloatToStr(CoordToMMs( Track.y1))+ '"/>');
-  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Track.x2 ))+'" y="'+FloatToStr(CoordToMMs( Track.y2))+'"/>');
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Track.x1-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Track.y1-Board.YOrigin))+ '"/>');
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Track.x2-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Track.y2-Board.YOrigin))+'"/>');
   ResultString.Add(StringTab+#9+'</Line>');
   ResultString.Add(StringTab+'</Keepout>');
   Result := ResultString;
@@ -417,10 +417,10 @@ Begin
   ResultString.Add(StringTab+'<Detail lineWidth="0.001">');
   ResultString.Add(StringTab+#9+'<LayerRef type="'+LayerIDtoStr(Fill.Layer)+'" name="'+Board.LayerName(Fill.Layer)+'"/>');//ИМя!
   ResultString.Add(StringTab+#9+'<Polygon>');
-  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X1Location ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y1Location))+ '"/>');
-  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X1Location ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y2Location))+ '"/>');
-  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X2Location ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y2Location))+ '"/>');
-  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X2Location ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y1Location))+ '"/>');
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X1Location-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y1Location-Board.YOrigin))+ '"/>');
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X1Location-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y2Location-Board.YOrigin))+ '"/>');
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X2Location-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y2Location-Board.YOrigin))+ '"/>');
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X2Location-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y1Location-Board.YOrigin))+ '"/>');
   ResultString.Add(StringTab+#9+'</Polygon>');
   ResultString.Add(StringTab+'</Detail>');
   Result := ResultString;
@@ -455,30 +455,30 @@ Begin
   XCoord := Fill.X1Location;
   YCoord := Fill.Y1Location;
   RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
-  X   := FloatToStr(CoordToMMs( XCoord));
-  Y   := FloatToStr(CoordToMMs( YCoord));
+  X   := FloatToStr(CoordToMMs( XCoord-Board.XOrigin));
+  Y   := FloatToStr(CoordToMMs( YCoord-Board.YOrigin));
   ResultString.Add(StringTab+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
 
 
   XCoord := Fill.X1Location;
   YCoord := Fill.Y2Location;
   RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
-  X   := FloatToStr(CoordToMMs( XCoord));
-  Y   := FloatToStr(CoordToMMs( YCoord));
+  X   := FloatToStr(CoordToMMs( XCoord-Board.XOrigin));
+  Y   := FloatToStr(CoordToMMs( YCoord-Board.YOrigin));
   ResultString.Add(StringTab+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
 
   XCoord := Fill.X2Location;
   YCoord := Fill.Y2Location;
   RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
-  X   := FloatToStr(CoordToMMs( XCoord));
-  Y   := FloatToStr(CoordToMMs( YCoord));
+  X   := FloatToStr(CoordToMMs( XCoord-Board.XOrigin));
+  Y   := FloatToStr(CoordToMMs( YCoord-Board.YOrigin));
   ResultString.Add(StringTab+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
 
   XCoord := Fill.X2Location;
   YCoord := Fill.Y1Location;
   RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
-  X   := FloatToStr(CoordToMMs( XCoord));
-  Y   := FloatToStr(CoordToMMs( YCoord));
+  X   := FloatToStr(CoordToMMs( XCoord-Board.XOrigin));
+  Y   := FloatToStr(CoordToMMs( YCoord-Board.YOrigin));
   ResultString.Add(StringTab+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
   ResultString.Add(StringTab+#9+'</Polygon>');
 
@@ -511,7 +511,7 @@ Begin
   Begin
     If Poly.Segments[I].Kind = ePolySegmentLine Then  // Если сегмент представляет собой линию
     Begin
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Poly.Segments[I].vx ))+'" y="'+FloatToStr(CoordToMMs( Poly.Segments[I].vy))+ '"/>');
+      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Poly.Segments[I].vx-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Poly.Segments[I].vy-Board.YOrigin))+ '"/>');
     End
     Else  // если дуга то описываем ее через 5 точек
     Begin
@@ -523,18 +523,18 @@ Begin
       AMidY := Poly.Segments[I].cy;
       RotateCoordsAroundXY(AStartX,AStartY,Poly.Segments[I].cx,Poly.Segments[I].cy,Poly.Segments[I].Angle1);
       RotateCoordsAroundXY(AEndX,AEndY,Poly.Segments[I].cx,Poly.Segments[I].cy,Poly.Segments[I].Angle2);
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AEndX ))+'" y="'+FloatToStr(CoordToMMs( AEndY))+ '"/>'); // точка в конце дуги
+      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AEndX-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( AEndY-Board.YOrigin))+ '"/>'); // точка в конце дуги
       RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*3/4));
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX ))+'" y="'+FloatToStr(CoordToMMs( AMidY))+ '"/>'); // точка в 3/4 дуги
+      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( AMidY-Board.YOrigin))+ '"/>'); // точка в 3/4 дуги
       AMidX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
       AMidY := Poly.Segments[I].cy;
       RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*1/2));
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX ))+'" y="'+FloatToStr(CoordToMMs( AMidY))+ '"/>'); // точка в 1/2 дуги
+      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( AMidY-Board.YOrigin))+ '"/>'); // точка в 1/2 дуги
       AMidX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
       AMidY := Poly.Segments[I].cy;
       RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*1/4));
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX ))+'" y="'+FloatToStr(CoordToMMs( AMidY))+ '"/>'); // точка в 1/4 дуги
-      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AStartX ))+'" y="'+FloatToStr(CoordToMMs( AStartY))+ '"/>'); // Точка в начале дуги
+      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( AMidY-Board.YOrigin))+ '"/>'); // точка в 1/4 дуги
+      ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AStartX-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( AStartY-Board.YOrigin))+ '"/>'); // Точка в начале дуги
     End;
   End;
   ResultString.Add(StringTab+#9+'</Polygon>');
@@ -590,7 +590,7 @@ Begin
   Begin
     If Poly.Segments[I].Kind = ePolySegmentLine Then  // Если сегмент представляет собой линию
     Begin
-      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Poly.Segments[I].vx ))+'" y="'+FloatToStr(CoordToMMs( Poly.Segments[I].vy))+ '"/>');
+      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Poly.Segments[I].vx-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Poly.Segments[I].vy-Board.YOrigin))+ '"/>');
     End
     Else  // если дуга то описываем ее через 5 точек
     Begin
@@ -602,18 +602,18 @@ Begin
       AMidY := Poly.Segments[I].cy;
       RotateCoordsAroundXY(AStartX,AStartY,Poly.Segments[I].cx,Poly.Segments[I].cy,Poly.Segments[I].Angle1);
       RotateCoordsAroundXY(AEndX,AEndY,Poly.Segments[I].cx,Poly.Segments[I].cy,Poly.Segments[I].Angle2);
-      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AEndX ))+'" y="'+FloatToStr(CoordToMMs( AEndY))+ '"/>'); // точка в конце дуги
+      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AEndX-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( AEndY-Board.YOrigin))+ '"/>'); // точка в конце дуги
       RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*3/4));
-      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX ))+'" y="'+FloatToStr(CoordToMMs( AMidY))+ '"/>'); // точка в 3/4 дуги
+      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( AMidY-Board.YOrigin))+ '"/>'); // точка в 3/4 дуги
       AMidX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
       AMidY := Poly.Segments[I].cy;
       RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*1/2));
-      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX ))+'" y="'+FloatToStr(CoordToMMs( AMidY))+ '"/>'); // точка в 1/2 дуги
+      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( AMidY-Board.YOrigin))+ '"/>'); // точка в 1/2 дуги
       AMidX := Poly.Segments[I].cx+Poly.Segments[I].Radius;
       AMidY := Poly.Segments[I].cy;
       RotateCoordsAroundXY(AMidX,AMidY,Poly.Segments[I].cx,Poly.Segments[I].cy,(Poly.Segments[I].Angle1 + (Poly.Segments[I].Angle2-Poly.Segments[I].Angle1)*1/4));
-      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX ))+'" y="'+FloatToStr(CoordToMMs( AMidY))+ '"/>'); // точка в 1/4 дуги
-      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AStartX ))+'" y="'+FloatToStr(CoordToMMs( AStartY))+ '"/>'); // Точка в начале дуги
+      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AMidX-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( AMidY-Board.YOrigin))+ '"/>'); // точка в 1/4 дуги
+      ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AStartX-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( AStartY-Board.YOrigin))+ '"/>'); // Точка в начале дуги
     End;
   End;
   ResultString.Add(StringTab+#9+#9+'</Polygon>');
@@ -656,30 +656,30 @@ begin
   XCoord := Fill.X1Location;
   YCoord := Fill.Y1Location;
   RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
-  X   := FloatToStr(CoordToMMs( XCoord));
-  Y   := FloatToStr(CoordToMMs( YCoord));
+  X   := FloatToStr(CoordToMMs( XCoord-Board.XOrigin));
+  Y   := FloatToStr(CoordToMMs( YCoord-Board.YOrigin));
   ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
 
 
   XCoord := Fill.X1Location;
   YCoord := Fill.Y2Location;
   RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
-  X   := FloatToStr(CoordToMMs( XCoord));
-  Y   := FloatToStr(CoordToMMs( YCoord));
+  X   := FloatToStr(CoordToMMs( XCoord-Board.XOrigin));
+  Y   := FloatToStr(CoordToMMs( YCoord-Board.YOrigin));
   ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
 
   XCoord := Fill.X2Location;
   YCoord := Fill.Y2Location;
   RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
-  X   := FloatToStr(CoordToMMs( XCoord));
-  Y   := FloatToStr(CoordToMMs( YCoord));
+  X   := FloatToStr(CoordToMMs( XCoord-Board.XOrigin));
+  Y   := FloatToStr(CoordToMMs( YCoord-Board.YOrigin));
   ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
 
   XCoord := Fill.X2Location;
   YCoord := Fill.Y1Location;
   RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
-  X   := FloatToStr(CoordToMMs( XCoord));
-  Y   := FloatToStr(CoordToMMs( YCoord));
+  X   := FloatToStr(CoordToMMs( XCoord-Board.XOrigin));
+  Y   := FloatToStr(CoordToMMs( YCoord-Board.YOrigin));
   ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
 
   ResultString.Add(StringTab+#9+#9+'</Polygon>');
@@ -726,7 +726,7 @@ begin
   ResultString.Add(StringTab+#9+#9+'<Polygon>');
   For I := 0 To Contour.Count - 1 Do //перебор всех примитивов
   Begin
-    ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Contour.x[I] ))+'" y="'+FloatToStr(CoordToMMs( Contour.y[I]))+ '"/>');
+    ResultString.Add(StringTab+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Contour.x[I]-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Contour.y[I]-Board.YOrigin))+ '"/>');
   End;
 
   ResultString.Add(StringTab+#9+#9+'</Polygon>');
@@ -766,7 +766,7 @@ Begin
   ResultString.Add(StringTab+#9+'<Polygon>');
   For I := 0 To Contour.Count - 1 Do //перебор всех примитивов
   Begin
-    ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Contour.x[I] ))+'" y="'+FloatToStr(CoordToMMs( Contour.y[I]))+ '"/>');
+    ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Contour.x[I]-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Contour.y[I]-Board.YOrigin))+ '"/>');
   End;
   ResultString.Add(StringTab+#9+'</Polygon>');
   ResultString.Add(StringTab+'</Detail>');
@@ -774,7 +774,7 @@ Begin
 End;
 
 // конвертирование региона в виде запрета
-Function RegionKeepoutToXML(Board :IPCB_Board; Region : IPCB_Region; TabCount: integer;) : TStringList;  // пока не работает.. нужно разобраться
+Function RegionKeepoutToXML(Board :IPCB_Board; Region : IPCB_Region; TabCount: integer;) : TStringList;
 Var
  ResultString : TStringList;
  StringTab    : String;
@@ -807,14 +807,14 @@ Begin
   ResultString.Add(StringTab+#9+'<Polygon>');
   For I := 0 To Contour.Count - 1 Do //перебор всех примитивов
   Begin
-    ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Contour.x[I] ))+'" y="'+FloatToStr(CoordToMMs( Contour.y[I]))+ '"/>');
+    ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Contour.x[I]-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Contour.y[I]-Board.YOrigin))+ '"/>');
   End;
   ResultString.Add(StringTab+#9+'</Polygon>');
   ResultString.Add(StringTab+'</Keepout>');
   Result := ResultString;
 End;
 
-//нужно отфильтровать текст принадлижащий компонентам!
+
 Function TextToXML(Board :IPCB_Board; Text : IPCB_Text; TabCount: integer; FileXmlTSt : TStringList;)  : TStringList;
 Var
  ResultString : TStringList;
@@ -852,7 +852,7 @@ Begin
   ResultString.Add(StringTab+#9+'<LayerRef type="'+LayerIDtoStr(Text.Layer)+'" name="'+Board.LayerName(Text.Layer)+'"/>');//ИМя!
   ResultString.Add(StringTab+#9+'<TextStyleRef name="'+TextStyle+'"/>');
 
-  ResultString.Add(StringTab+#9+'<Org x="'+FloatToStr(CoordToMMs(Text.XLocation))+'" y="'+FloatToStr(CoordToMMs(Text.YLocation))+'"/>');
+  ResultString.Add(StringTab+#9+'<Org x="'+FloatToStr(CoordToMMs(Text.XLocation-Board.XOrigin))+'" y="'+FloatToStr(CoordToMMs(Text.YLocation-Board.YOrigin))+'"/>');
   ResultString.Add(StringTab+'</Text>');
   Result := ResultString;
 End;
@@ -872,15 +872,15 @@ Begin
   if (Arc.StartAngle = 0 & Arc.EndAngle = 360) then // Если полный круг
   Begin
   ResultString.Add(StringTab+#9+'<Circle diameter="'+FloatToStr(CoordToMMs(Arc.Radius*2))+'">');
-  ResultString.Add(StringTab+#9+#9+'<Center x="'+FloatToStr(CoordToMMs(Arc.XCenter))+'" y="'+FloatToStr(CoordToMMs( Arc.YCenter))+'"/>');
+  ResultString.Add(StringTab+#9+#9+'<Center x="'+FloatToStr(CoordToMMs(Arc.XCenter-Board.XOrigin))+'" y="'+FloatToStr(CoordToMMs( Arc.YCenter-Board.YOrigin))+'"/>');
   ResultString.Add(StringTab+#9+'</Circle>');
   End
   Else  // Если разорванный круг
   Begin
   ResultString.Add(StringTab+#9+'<Arc>');
-  ResultString.Add(StringTab+#9+#9+'<Center x="'+FloatToStr(CoordToMMs( Arc.XCenter))+'" y="'+FloatToStr(CoordToMMs( Arc.YCenter))+'"/>');
-  ResultString.Add(StringTab+#9+#9+'<Start x="'+FloatToStr(CoordToMMs( Arc.StartX ))+'" y="'+FloatToStr(CoordToMMs( Arc.StartY))+'"/>');
-  ResultString.Add(StringTab+#9+#9+'<End x="'+FloatToStr(CoordToMMs( Arc.EndX))+'" y="'+FloatToStr(CoordToMMs( Arc.EndY ))+'"/>');
+  ResultString.Add(StringTab+#9+#9+'<Center x="'+FloatToStr(CoordToMMs( Arc.XCenter-Board.XOrigin))+'" y="'+FloatToStr(CoordToMMs( Arc.YCenter-Board.YOrigin))+'"/>');
+  ResultString.Add(StringTab+#9+#9+'<Start x="'+FloatToStr(CoordToMMs( Arc.StartX-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Arc.StartY-Board.YOrigin))+'"/>');
+  ResultString.Add(StringTab+#9+#9+'<End x="'+FloatToStr(CoordToMMs( Arc.EndX-Board.XOrigin))+'" y="'+FloatToStr(CoordToMMs( Arc.EndY-Board.YOrigin ))+'"/>');
   ResultString.Add(StringTab+#9+'</Arc>');
   End;
   ResultString.Add(StringTab+'</Detail>');
@@ -908,15 +908,15 @@ Begin
   if (Arc.StartAngle = 0 & Arc.EndAngle = 360) then // Если полный круг
   Begin
   ResultString.Add(StringTab+#9+'<Circle diameter="'+FloatToStr(CoordToMMs(Arc.Radius*2))+'">');
-  ResultString.Add(StringTab+#9+#9+'<Center x="'+FloatToStr(CoordToMMs(Arc.XCenter))+'" y="'+FloatToStr(CoordToMMs( Arc.YCenter))+'"/>');
+  ResultString.Add(StringTab+#9+#9+'<Center x="'+FloatToStr(CoordToMMs(Arc.XCenter-Board.XOrigin))+'" y="'+FloatToStr(CoordToMMs( Arc.YCenter-Board.YOrigin))+'"/>');
   ResultString.Add(StringTab+#9+'</Circle>');
   End
   Else  // Если разорванный круг
   Begin
   ResultString.Add(StringTab+#9+'<Arc>');
-  ResultString.Add(StringTab+#9+#9+'<Center x="'+FloatToStr(CoordToMMs( Arc.XCenter))+'" y="'+FloatToStr(CoordToMMs( Arc.YCenter))+'"/>');
-  ResultString.Add(StringTab+#9+#9+'<Start x="'+FloatToStr(CoordToMMs( Arc.StartX ))+'" y="'+FloatToStr(CoordToMMs( Arc.StartY))+'"/>');
-  ResultString.Add(StringTab+#9+#9+'<End x="'+FloatToStr(CoordToMMs( Arc.EndX))+'" y="'+FloatToStr(CoordToMMs( Arc.EndY ))+'"/>');
+  ResultString.Add(StringTab+#9+#9+'<Center x="'+FloatToStr(CoordToMMs( Arc.XCenter-Board.XOrigin))+'" y="'+FloatToStr(CoordToMMs( Arc.YCenter-Board.YOrigin))+'"/>');
+  ResultString.Add(StringTab+#9+#9+'<Start x="'+FloatToStr(CoordToMMs( Arc.StartX -Board.XOrigin))+'" y="'+FloatToStr(CoordToMMs( Arc.StartY-Board.YOrigin))+'"/>');
+  ResultString.Add(StringTab+#9+#9+'<End x="'+FloatToStr(CoordToMMs( Arc.EndX-Board.XOrigin))+'" y="'+FloatToStr(CoordToMMs( Arc.EndY-Board.YOrigin ))+'"/>');
   ResultString.Add(StringTab+#9+'</Arc>');
   End;
   ResultString.Add(StringTab+'</Keepout>');
@@ -1282,7 +1282,7 @@ Begin
                                     '" angle="'+inttostr(Component.Rotation)+'" fixed="'+CompFix+'">');
            FileXMLCOB.Add(#9+#9+#9+#9+'<ComponentRef name="'+NameComp+'"/>');
            FileXMLCOB.Add(#9+#9+#9+#9+'<FootprintRef name="'+FootName+ '"/>');
-           FileXMLCOB.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Component.x))+'" y="'+FloatToStr(CoordToMMs(Component.y))+'"/>');
+           FileXMLCOB.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Component.x-Board.XOrigin))+'" y="'+FloatToStr(CoordToMMs(Component.y-Board.YOrigin))+'"/>');
            FileXMLCOB.Add(#9+#9+#9+#9+'<Pins>');
 
 
@@ -1376,7 +1376,7 @@ Begin
 
                 if Component.Layer = 32 then begin
                 Footprints.Add(#9+#9+#9+#9+#9+'<Text text="'+ Text.text
-                +'" align="LB" angle="'+inttostr(Text.Rotation)+'" mirror="'+TextMirror+'">'); // !!! не получена информация о align="LB"
+                +'" align="LB" angle="'+inttostr(-(Text.Rotation-Component.Rotation))+'" mirror="'+TextMirror+'">'); // !!! не получена информация о align="LB"
                 end                 else                  begin
                 Footprints.Add(#9+#9+#9+#9+#9+'<Text text="'+ Text.text
                 +'" align="LB" angle="'+inttostr(Text.Rotation-Component.Rotation)+'" mirror="'+TextMirror+'">');
@@ -1726,7 +1726,7 @@ Begin
               End;
               if NetName <> 'No_Net' then
               FileXMLCOB.Add(#9+#9+#9+#9+'<NetRef name="'+NetName+'"/>');
-              FileXMLCOB.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Pad.x))+'" y="'+FloatToStr(CoordToMMs(Pad.y))+'"/>');
+              FileXMLCOB.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Pad.x-Board.XOrigin))+'" y="'+FloatToStr(CoordToMMs(Pad.y-Board.YOrigin))+'"/>');
               FileXMLCOB.Add(#9+#9+#9+'</FreePad>');
             end;
             pad := PadIteratorHandle2.NextPCBObject;
@@ -1782,6 +1782,7 @@ NetName   : String;
 
 BoardOutline: IPCB_BoardOutline;
 Begin
+
      Constructive.Add(#9+'<Constructive version="1.0">');
      //*******Контур платы********//
      Constructive.Add(#9+#9+'<BoardOutline>');
@@ -1803,10 +1804,10 @@ Begin
             Begin
               Constructive.Add(#9+#9+#9+#9+'<Shape lineWidth="0.001">');
               Constructive.Add(#9+#9+#9+#9+#9+'<Line>');
-              Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( XEnd))+
-                      '" y="'+FloatToStr(CoordToMMs( YEnd))+'"/>');
-              Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].vx))+
-                      '" y="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].vy))+'"/>');
+              Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( XEnd-Board.XOrigin))+
+                      '" y="'+FloatToStr(CoordToMMs( YEnd-Board.YOrigin))+'"/>');
+              Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].vx-Board.XOrigin))+
+                      '" y="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].vy-Board.YOrigin))+'"/>');
               Constructive.Add(#9+#9+#9+#9+#9+'</Line>');
               Constructive.Add(#9+#9+#9+#9+'</Shape>');
               XEnd := BoardOutline.Segments[I].vx;
@@ -1815,10 +1816,10 @@ Begin
               Begin
               Constructive.Add(#9+#9+#9+#9+'<Shape lineWidth="0.001">');
                 Constructive.Add(#9+#9+#9+#9+#9+'<Line>');
-                Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].vx))+
-                      '" y="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].vy))+'"/>');
-                Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( X0))+
-                      '" y="'+FloatToStr(CoordToMMs( Y0))+'"/>');
+                Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].vx-Board.XOrigin))+
+                      '" y="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].vy-Board.YOrigin))+'"/>');
+                Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( X0-Board.XOrigin))+
+                      '" y="'+FloatToStr(CoordToMMs( Y0-Board.YOrigin))+'"/>');
                 Constructive.Add(#9+#9+#9+#9+#9+'</Line>');
                 Constructive.Add(#9+#9+#9+#9+'</Shape>');
               End;
@@ -1835,22 +1836,22 @@ Begin
               RotateCoordsAroundXY(AEndX,AEndY,BoardOutline.Segments[I].cx,BoardOutline.Segments[I].cy,BoardOutline.Segments[I].Angle2);
               Constructive.Add(#9+#9+#9+#9+'<Shape lineWidth="0.001">');
               Constructive.Add(#9+#9+#9+#9+#9+'<Line>');
-              Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( XEnd))+
-                                                    '" y="'+FloatToStr(CoordToMMs( YEnd))+'"/>');
-              Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AStartX))+
-                                                    '" y="'+FloatToStr(CoordToMMs( AStartY))+'"/>');
+              Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( XEnd-Board.XOrigin))+
+                                                    '" y="'+FloatToStr(CoordToMMs( YEnd-Board.YOrigin))+'"/>');
+              Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AStartX-Board.XOrigin))+
+                                                    '" y="'+FloatToStr(CoordToMMs( AStartY-Board.YOrigin))+'"/>');
               Constructive.Add(#9+#9+#9+#9+#9+'</Line>');
               Constructive.Add(#9+#9+#9+#9+'</Shape>');
               XEnd := AEndX;
               YEnd := AEndY;
               Constructive.Add(#9+#9+#9+#9+'<Shape lineWidth="0.001">');
               Constructive.Add(#9+#9+#9+#9+#9+'<Arc>');
-              Constructive.Add(#9+#9+#9+#9+#9+#9+'<Center x="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].cx))+
-              '" y="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].cy))+'"/>');
-              Constructive.Add(#9+#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs( AStartX))+
-              '" y="'+FloatToStr(CoordToMMs( AStartY))+'"/>');
-              Constructive.Add(#9+#9+#9+#9+#9+#9+'<End x="'+FloatToStr(CoordToMMs( AEndX))+
-              '" y="'+FloatToStr(CoordToMMs( AEndY))+'"/>');
+              Constructive.Add(#9+#9+#9+#9+#9+#9+'<Center x="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].cx-Board.XOrigin))+
+              '" y="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].cy-Board.YOrigin))+'"/>');
+              Constructive.Add(#9+#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs( AStartX-Board.XOrigin))+
+              '" y="'+FloatToStr(CoordToMMs( AStartY-Board.YOrigin))+'"/>');
+              Constructive.Add(#9+#9+#9+#9+#9+#9+'<End x="'+FloatToStr(CoordToMMs( AEndX-Board.XOrigin))+
+              '" y="'+FloatToStr(CoordToMMs( AEndY-Board.YOrigin))+'"/>');
               Constructive.Add(#9+#9+#9+#9+#9+'</Arc>');
               Constructive.Add(#9+#9+#9+#9+'</Shape>');
             End;
@@ -2588,8 +2589,8 @@ var
       if Via.Net <> nil then NetName := Via.Net.Name;
       if Via.Net = nil then NetName := 'No_Net';
       FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+NetName+'"/>');
-      FileXMLCon.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Via.x))+
-                                    '" y="'+FloatToStr(CoordToMMs(Via.y))+'"/>');
+      FileXMLCon.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Via.x-Board.XOrigin))+
+                                    '" y="'+FloatToStr(CoordToMMs(Via.y-Board.YOrigin))+'"/>');
       FileXMLCon.Add(#9+#9+#9+'</Via>');
       Via := BoardIterator.NextPCBObject;
     end; //заканчиваем перебор переходников
@@ -2663,14 +2664,14 @@ var
        FileXMLCon.Add(#9+#9+#9+#9+'<LayerRef type="Signal" name="'+LyrObj.Name+'"/>');
        FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+NetName+'"/>');
        FileXMLCon.Add(#9+#9+#9+#9+'<Subwire fixed="'+Fixed+'" width="'+FloatToStr(CoordToMMs(Track.Width))+'">');
-       FileXMLCon.Add(#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs(Track.x1))+
-                                          '" y="'+FloatToStr(CoordToMMs(Track.y1))+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs(Track.x1-Board.XOrigin))+
+                                          '" y="'+FloatToStr(CoordToMMs(Track.y1-Board.YOrigin))+'"/>');
        //if pos('serp_'+IntToStr(Track.UnionIndex)+'&', Accordions) >0 then begin
        //FileXMLCon.Add(#9+#9+#9+#9+#9+'<TrackLine serpRef="serp_'+IntToStr(Track.UnionIndex)+'">'); end else begin // если линия аккордиона
        FileXMLCon.Add(#9+#9+#9+#9+#9+'<TrackLine>');
        //end;
-       FileXMLCon.Add(#9+#9+#9+#9+#9+#9+'<End x="'+FloatToStr(CoordToMMs(Track.x2))+
-                                           '" y="'+FloatToStr(CoordToMMs(Track.y2))+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+#9+#9+'<End x="'+FloatToStr(CoordToMMs(Track.x2-Board.XOrigin))+
+                                           '" y="'+FloatToStr(CoordToMMs(Track.y2-Board.YOrigin))+'"/>');
        FileXMLCon.Add(#9+#9+#9+#9+#9+'</TrackLine>');
        FileXMLCon.Add(#9+#9+#9+#9+'</Subwire>');
        FileXMLCon.Add(#9+#9+#9+'</Wire>');
@@ -2704,16 +2705,16 @@ var
 
        FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+NetName+'"/>');
        FileXMLCon.Add(#9+#9+#9+#9+'<Subwire width="'+FloatToStr(CoordToMMs(Arc.LineWidth))+'">');
-       FileXMLCon.Add(#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs(Arc.StartX))+
-                                          '" y="'+FloatToStr(CoordToMMs(Arc.StartY))+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs(Arc.StartX-Board.XOrigin))+
+                                          '" y="'+FloatToStr(CoordToMMs(Arc.StartY-Board.YOrigin))+'"/>');
        //if pos('serp_'+IntToStr(Arc.UnionIndex)+'&', Accordions) >0 then begin
        //FileXMLCon.Add(#9+#9+#9+#9+#9+'<TrackArc serpRef="serp_'+IntToStr(Arc.UnionIndex)+'">'); end else begin // если арк аккордиона
        FileXMLCon.Add(#9+#9+#9+#9+#9+'<TrackArc>');
        //end;
-       FileXMLCon.Add(#9+#9+#9+#9+#9+#9+'<Center x="'+FloatToStr(CoordToMMs(Arc.XCenter))+
-                                              '" y="'+FloatToStr(CoordToMMs(Arc.YCenter))+'"/>');
-       FileXMLCon.Add(#9+#9+#9+#9+#9+#9+'<End x="'+FloatToStr(CoordToMMs(Arc.EndX))+
-                                           '" y="'+FloatToStr(CoordToMMs(Arc.EndY))+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+#9+#9+'<Center x="'+FloatToStr(CoordToMMs(Arc.XCenter-Board.XOrigin))+
+                                              '" y="'+FloatToStr(CoordToMMs(Arc.YCenter-Board.YOrigin))+'"/>');
+       FileXMLCon.Add(#9+#9+#9+#9+#9+#9+'<End x="'+FloatToStr(CoordToMMs(Arc.EndX-Board.XOrigin))+
+                                           '" y="'+FloatToStr(CoordToMMs(Arc.EndY-Board.YOrigin))+'"/>');
        FileXMLCon.Add(#9+#9+#9+#9+#9+'</TrackArc>');
        FileXMLCon.Add(#9+#9+#9+#9+'</Subwire>');
        FileXMLCon.Add(#9+#9+#9+'</Wire>');
@@ -2965,7 +2966,9 @@ Var
    ut8str      : UTF8String;
 
 Begin
-
+     bt_ConfSave.Enabled := false;
+     b_GO.Enabled := false;
+     b_Import.Enabled := false;
      //*******Подготовка********//
      UTF8BOM[0] := $EF;
      UTF8BOM[1] := $BB;
@@ -3141,6 +3144,9 @@ Begin
      FileXMLDispC.Free;
      FileXMLCon.Free;
      TopoRCommand.Free;
+     bt_ConfSave.Enabled := true;
+     b_GO.Enabled := true;
+     b_Import.Enabled := true;
 End;
 
 // Удаляем все проводники с сигнальных слоев
@@ -3384,10 +3390,10 @@ begin
            Track := PCBServer.PCBObjectFactory(eTrackObject, eNoDimension, eCreate_Default);
            Track.Layer := LayerID;
            Track.Net := Net;
-           Track.x1 := MMsToCoord(StartX);
-           Track.y1 := MMsToCoord(StartY);
-           Track.x2 := MMsToCoord(EndX);
-           Track.y2 := MMsToCoord(EndY);
+           Track.x1 := MMsToCoord(StartX)+Board.XOrigin;
+           Track.y1 := MMsToCoord(StartY)+Board.YOrigin;
+           Track.x2 := MMsToCoord(EndX)+Board.XOrigin;
+           Track.y2 := MMsToCoord(EndY)+Board.YOrigin;
            Track.Width := MMsToCoord(Width);
            Board.AddPCBObject(Track);
            StartX := EndX;
@@ -3400,8 +3406,8 @@ begin
            Arc.Layer := LayerID;
            Arc.Net := Net;
            Arc.LineWidth  := MMsToCoord(Width);
-           Arc.XCenter := MMsToCoord(CenterX);
-           Arc.YCenter := MMsToCoord(CenterY);
+           Arc.XCenter := MMsToCoord(CenterX)+Board.XOrigin;
+           Arc.YCenter := MMsToCoord(CenterY)+Board.YOrigin;
            r := abs(Sqrt((CenterX - StartX)*(CenterX - StartX) + (CenterY - StartY)*(CenterY - StartY))); // находим радиус
            // находим расстояние от точки старта до точки равному углу 0.
            d := abs(Sqrt((CenterX+r - StartX)*(CenterX+r - StartX) + (CenterY - StartY)*(CenterY - StartY)));
@@ -3433,8 +3439,8 @@ begin
            Arc.Layer := LayerID;
            Arc.Net := Net;
            Arc.LineWidth  := MMsToCoord(Width);
-           Arc.XCenter := MMsToCoord(CenterX);
-           Arc.YCenter := MMsToCoord(CenterY);
+           Arc.XCenter := MMsToCoord(CenterX)+Board.XOrigin;
+           Arc.YCenter := MMsToCoord(CenterY)+Board.YOrigin;
            r := abs(Sqrt((CenterX - StartX)*(CenterX - StartX) + (CenterY - StartY)*(CenterY - StartY))); // находим радиус
            // находим расстояние от точки старта до точки равному углу 0.
            d := abs(Sqrt((CenterX+r - StartX)*(CenterX+r - StartX) + (CenterY - StartY)*(CenterY - StartY)));
@@ -3517,6 +3523,7 @@ begin
   i:=StartInd;
   try
   Repeat //начинаем перебор всего коннективити
+    if i = FileXML.Count - 2 then break;
     CurrentStr := FileXML.Get(i);
     if pos('<Vias>',CurrentStr) >0 then  bVias := true;
     if pos('</Vias>',CurrentStr) >0 then begin  i := -2; bVias := false;  end;
@@ -3641,8 +3648,8 @@ begin
            Via.HighLayer  := StartLayer;
            Via.LowLayer   := EndLayer;
            Via.HoleSize := MMsToCoord(HoleDiam);
-           Via.x := MMsToCoord(OrgX);
-           Via.y := MMsToCoord(OrgY);
+           Via.x := MMsToCoord(OrgX)+Board.XOrigin;
+           Via.y := MMsToCoord(OrgY)+Board.YOrigin;
            For ii:= 1 to 32 do
            begin
            lbProcess.Caption := FloatToStr(DiamLayers[ii-1]);
@@ -3655,7 +3662,7 @@ begin
 
            if TSDiam >0 then begin Via.SizeOnLayer[37] := MMsToCoord(TSDiam); Via.IsTenting_Top := false; end
            else begin Via.IsTenting_Top := true;  end;
-           if BSDiam >0 then begin Via.SizeOnLayer[38] := MMsToCoord(TSDiam); Via.IsTenting_Bottom := false; end
+           if BSDiam >0 then begin Via.SizeOnLayer[38] := MMsToCoord(BSDiam); Via.IsTenting_Bottom := false; end
            else begin Via.IsTenting_Bottom := true;  end;
 
            Board.AddPCBObject(Via);
@@ -3838,16 +3845,16 @@ begin
             end;
             Pad.HoleSize := 0;
             Pad.Rotation := MMsToCoord(angle);
-            Pad.x := MMsToCoord(OrgX);
-            Pad.y := MMsToCoord(OrgY);
+            Pad.x := MMsToCoord(OrgX)+Board.XOrigin;
+            Pad.y := MMsToCoord(OrgY)+Board.YOrigin;
 
           end
           else  // Врубные КП
           begin
             Pad.Layer := eMultiLayer ;
             Pad.Rotation := MMsToCoord(angle);
-            Pad.x := MMsToCoord(OrgX);
-            Pad.y := MMsToCoord(OrgY);
+            Pad.x := MMsToCoord(OrgX)+Board.XOrigin;
+            Pad.y := MMsToCoord(OrgY)+Board.YOrigin;
             Pad.TopXSize := MMsToCoord(Width);
             Pad.TopYSize := MMsToCoord(Height);
             Pad.TopShape := ShapeType;
@@ -3912,8 +3919,8 @@ begin
            end;
            i := i+3;
            currStr := FileXML.Strings[i];
-           Component.x := MMsToCoord(StrToFloatDot(XMLGetAttrValue(FileXML.Strings[i],'x')));
-           Component.y := MMsToCoord(StrToFloatDot(XMLGetAttrValue(FileXML.Strings[i],'y')));
+           Component.x := MMsToCoord(StrToFloatDot(XMLGetAttrValue(FileXML.Strings[i],'x')))+Board.XOrigin;
+           Component.y := MMsToCoord(StrToFloatDot(XMLGetAttrValue(FileXML.Strings[i],'y')))+Board.YOrigin;
          break;
          end;
 
@@ -3952,9 +3959,11 @@ var
 Board       : IPCB_Board;
 FileXml     : TStringList; // Входной файл fst в формате xml <TopoR_PCB_File>
 FileName    : String;
-
-
 begin
+  bt_ConfSave.Enabled := false;
+  b_GO.Enabled := false;
+  b_Import.Enabled := false;
+
   FileXml := TStringList.Create;
 
   Board := PCBServer.GetCurrentPCBBoard;
@@ -4011,7 +4020,9 @@ begin
   lbProcess.Caption := 'Imported!'; Form1.Refresh;
   //*******Уборка********//
   FileXml.Free;
-
+  bt_ConfSave.Enabled := true;
+  b_GO.Enabled := true;
+  b_Import.Enabled := true;
 end;
 
 Procedure StartScript ();
@@ -4098,7 +4109,6 @@ begin
 end;
 
 //ToDo
-//Координаты относительно Origin!
 // импорт обьектов на мех слоях
 //  добавить дифф пары
 // Добавить правило зазора до края платы
@@ -4112,3 +4122,5 @@ end;
 
 //для 1.1.4
 // Обработать срезанные и скругленные КП
+
+

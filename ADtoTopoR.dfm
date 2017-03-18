@@ -1,9 +1,10 @@
 object Form1: TForm1
   Left = 0
   Top = 0
+  BorderStyle = bsSingle
   Caption = 'AD to TopoR Interface'
-  ClientHeight = 299
-  ClientWidth = 551
+  ClientHeight = 312
+  ClientWidth = 545
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -11,6 +12,7 @@ object Form1: TForm1
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  Scaled = False
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
@@ -156,24 +158,11 @@ object Form1: TForm1
     ParentFont = False
   end
   object lbProcess: TLabel
-    Left = 162
-    Top = 174
+    Left = 90
+    Top = 296
     Width = 21
     Height = 16
     Caption = 'Go?'
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -13
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    ParentFont = False
-  end
-  object Label6: TLabel
-    Left = 106
-    Top = 174
-    Width = 49
-    Height = 16
-    Caption = 'Process:'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -13
@@ -187,6 +176,19 @@ object Form1: TForm1
     Width = 7
     Height = 13
     Caption = 'D'
+  end
+  object InstrumentCaption3: TInstrumentCaption
+    Left = 8
+    Top = 296
+    Width = 528
+    Height = 16
+    Caption = 'Status:'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWhite
+    Font.Height = -12
+    Font.Name = 'Arial Black'
+    Font.Style = []
+    ParentFont = False
   end
   object bTopoR: TButton
     Left = 464
@@ -254,9 +256,9 @@ object Form1: TForm1
     Top = 80
     Width = 72
     Height = 21
-    ItemIndex = 0
+    ItemIndex = 1
     TabOrder = 6
-    Text = '1.1.3'
+    Text = '1.1.4'
     Items.Strings = (
       '1.1.3'
       '1.1.4'
