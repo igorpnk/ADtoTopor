@@ -2866,7 +2866,8 @@ begin
 
      // информация о Сетке
      FileXMLDispC.Add(#9+#9+'<Grid gridColor="#f2f2f2" gridKind="Dots">');
-     FileXMLDispC.Add(#9+#9+#9+'<GridSpace x="5000" y="5000"/>');  //0,5мм
+     FileXMLDispC.Add(#9+#9+#9+'<GridSpace x="'+FloatToStr(CoordToMMs(Board.ComponentGridSizeX)*10000)+'" y="'+
+                                                FloatToStr(CoordToMMs(Board.ComponentGridSizeY)*10000)+'"/>');
      FileXMLDispC.Add(#9+#9+'</Grid>');
 
      //информация о цветах слоев
@@ -4098,13 +4099,8 @@ end;
 
 //ToDo
 //Координаты относительно Origin!
-//Сетка
 // импорт обьектов на мех слоях
-// дифф пары
-// Змейки!
-// заменить цепь No_Net на Нилл при экспорте и наоборот при импорте (в топоре тогда она будет не заданной)
 //  добавить дифф пары
-// Проверить двусторонние компоненты
 // Добавить правило зазора до края платы
 // Добавить Plane слои
 // Обработать правила проектирования
