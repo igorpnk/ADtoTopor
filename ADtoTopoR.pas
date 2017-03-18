@@ -1193,7 +1193,10 @@ Var // жуть...
    FTrue                   : boolean;
    TBold                   : String;
    TItalic                 : String;
+   Fixed                   : String;
 Begin
+
+     Fixed := '';
      TrackCount := 0;
      padNum     := 0;
      ComponentCount := 0;
@@ -1254,11 +1257,12 @@ Begin
              if (pos('R',NameComp) >0| pos('C',NameComp) >0) then
              begin
                FootName := Component.Pattern;
+               if pos('"'+Component.Pattern+'"',Footprints.Text) > 0 then
+               begin
+                 FTrue := false;
+               end;
              end;
-             if pos('"'+Component.Pattern+'"',Footprints.Text) > 0 then
-             begin
-               FTrue := false;
-             end;
+
            end;
 
            if FTrue then Footprints.Add(#9+#9+#9+'<Footprint name="'+FootName+ '">');
@@ -1370,13 +1374,20 @@ Begin
                   end;
 
 
+                if Component.Layer = 32 then begin
                 Footprints.Add(#9+#9+#9+#9+#9+'<Text text="'+ Text.text
-                +'" align="LB" angle="'+inttostr(Text.Rotation-Component.Rotation)+'" mirror="'+TextMirror+'">'); // !!! не получена информация о align="LB"
+                +'" align="LB" angle="'+inttostr(Text.Rotation)+'" mirror="'+TextMirror+'">'); // !!! не получена информация о align="LB"
+                end                 else                  begin
+                Footprints.Add(#9+#9+#9+#9+#9+'<Text text="'+ Text.text
+                +'" align="LB" angle="'+inttostr(Text.Rotation-Component.Rotation)+'" mirror="'+TextMirror+'">');
+                end;
                 // Информация о текстовом слое
+
+
 
                 TextLayerType := LayerIDtoStr(Text.Layer);
                 LayerName := Board.LayerName(Text.Layer);
-                if LayerName = 'Bottom Overlay' then LayerName := 'Top Overlay';
+                if Text.Layer = eBottomOverlay then LayerName := Board.LayerName(eTopOverlay);
 
                 //если парный слой то ренейминг!
                 if TextLayerType = 'Mechanical' then
@@ -1679,7 +1690,7 @@ Begin
      Board.BoardIterator_Destroy(ComponentIteratorHandle);
      FileXMLCOB.Add(#9+#9+'</Components>');
      FileXMLCOB.Add(#9+#9+'<FreePads>');
-     //*******перебор всех Падов********//
+     //*******перебор всех Free Падов********//
      PadIteratorHandle2 := Board.BoardIterator_Create;
      PadIteratorHandle2.AddFilter_ObjectSet(MkSet(ePadObject));
      PadIteratorHandle2.AddFilter_LayerSet(AllLayers);
@@ -1689,10 +1700,12 @@ Begin
           Begin
             if (pad.Component = Nil) then
             Begin//если пад не принадлежит компоненту
+              Fixed := 'on';
               TestString := pad.Name;
               PadSide := 'Top';
+              if Pad.Moveable = true then  Fixed := 'off';
               if pad.layer = 32 then PadSide := 'Bottom';
-              FileXMLCOB.Add(#9+#9+#9+'<FreePad side="'+PadSide+'" angle="'+IntToStr(pad.Rotation)+'" fixed="off">');
+              FileXMLCOB.Add(#9+#9+#9+'<FreePad side="'+PadSide+'" angle="'+IntToStr(pad.Rotation)+'" fixed="'+Fixed+'">');
               PadStackName := PadTemplate(Pad,Board.DisplayUnit);
 
               PozPadstack := 0;
@@ -2461,7 +2474,7 @@ var
   NetName       : String;
   Accordions    : String;
   Accordh       : String;
-
+  Fixed         : String;
 
 
   Begin
@@ -2645,9 +2658,11 @@ var
        end        else       begin
         NetName := Track.Net.Name;
        end;
+       Fixed :='off';
+       if Track.Moveable = false then Fixed :='on';
        FileXMLCon.Add(#9+#9+#9+#9+'<LayerRef type="Signal" name="'+LyrObj.Name+'"/>');
        FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+NetName+'"/>');
-       FileXMLCon.Add(#9+#9+#9+#9+'<Subwire width="'+FloatToStr(CoordToMMs(Track.Width))+'">');
+       FileXMLCon.Add(#9+#9+#9+#9+'<Subwire fixed="'+Fixed+'" width="'+FloatToStr(CoordToMMs(Track.Width))+'">');
        FileXMLCon.Add(#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs(Track.x1))+
                                           '" y="'+FloatToStr(CoordToMMs(Track.y1))+'"/>');
        //if pos('serp_'+IntToStr(Track.UnionIndex)+'&', Accordions) >0 then begin
@@ -4082,7 +4097,8 @@ begin
 end;
 
 //ToDo
-
+//Координаты относительно Origin!
+//Сетка
 // импорт обьектов на мех слоях
 // дифф пары
 // Змейки!
