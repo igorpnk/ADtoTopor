@@ -54,28 +54,12 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=
 
-[Document2]
-DocumentPath=PCB1.PcbDoc
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=-1
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=1
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=EFWTDOQF
-
 [Generic_ScriptingSystem]
 StartProcName=ADtoTopoR.pas>StartScript
 
 [Generic_Watches]
-0=PadDiam
+0=TestString
+1=TestString
 
 [OutputGroup1]
 Name=Netlist Outputs

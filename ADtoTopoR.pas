@@ -2127,7 +2127,6 @@ Begin
 
   While c <> NIl Do
    Begin
-
        //Если группа цепей
        If c.MemberKind = eClassMemberKind_Net Then
        Begin
@@ -2414,6 +2413,10 @@ Procedure AddConnectivity (FileXMLCon :TStringList; Board : IPCB_Board; Viastack
 uses Classes, Generics.Collections;
 var
   BoardIterator : IPCB_BoardIterator;
+  AccordionIter : IPCB_AccordinGraphicIterator;
+  AccordionMp   : IPCB_AccordionMakerProcess;
+  AccordStyle   : TAccordionStyle;
+  GroupIter     : IPCB_GroupIterator;
   LyrObj        : IPCB_LayerObject;
   Via           : IPCB_Via;
   Track         : IPCB_Track;
@@ -2421,6 +2424,14 @@ var
   Poly          : IPCB_Polygon;
   Fill          : IPCB_Fill;
   Region        : IPCB_Region;
+  Net           : IPCB_Net;
+  Accordion     : IPCB_Accordion;
+  PCBPrim       : IPCB_Primitive;
+  Spatialiter   : IPCB_SpatialIterator;
+  AccordPoly    : IPCB_Polygon;
+  Dimension     : IPCB_Dimension;
+  AccordCoord   : IPCB_Coordinate;
+  Rect          : TCoordRect;
   ViaName       : String;
   ViaPoz        : Integer;
   ViaMass       : array[0..99] of IPCB_Via; // пока получилось реализовать только через статический
@@ -2433,8 +2444,13 @@ var
   ViaStart      : Boolean;
   TestString    : String;
   NetName       : String;
+  Accordions    : String;
+  Accordh       : String;
+
+
 
   Begin
+    Accordions :='';
     FileXMLCon.Add(#9+'<Connectivity version="1.2">');
     FileXMLCon.Add(#9+#9+'<Vias>');
     lbProcess.Caption := 'Vias'; Form1.Refresh;
@@ -2552,6 +2568,45 @@ var
     Board.BoardIterator_Destroy(BoardIterator);
     FileXMLCon.Add(#9+#9+'</Vias>');
 
+     // Не РАБОТАЕТ! если кто знает как получить всю необходимую инфу о змейках то напишите:
+     //igorpnk@mail.ru
+    //Аккордионы    //находим через поиск обьекта в координатах линий
+
+     //FileXMLCon.Add(#9+#9+'<Serpents>');
+     //BoardIterator := Board.BoardIterator_Create;
+     //BoardIterator.AddFilter_ObjectSet(MkSet(eTrackObject));
+     //BoardIterator.AddFilter_LayerSet(AllLayers);
+     //BoardIterator.AddFilter_Method(eProcessAll);
+     //Track := BoardIterator.FirstPCBObject;
+
+     //Accordion := PCBServer.PCBObjectFactory(eNoObject, eNoDimension, eCreate_Default);
+     // так предположительно сможем создать змейку
+     //Board.AddPCBObject(Accordion);
+     //While (Track <> Nil) Do
+     //begin
+     //  TestString:= IntToStr(Track.Layer);
+     //  if Track.Layer = 1 then
+     //  begin //top
+      //   Accordion := Board.GetObjectAtXYAskUserIfAmbiguous(Track.x1,Track.y1,AllObjects,AllLayers,eEditAction_Select);
+      //   if (accordion <> nil & Accordion.ObjectID = 0) then
+      //   begin   //accord
+      //     Rect := Accordion.BoundingRectangle;
+       //    Accordh :=  FloatToStr(CoordToMMs((Rect.right- Rect.Left)/2));
+       //    if pos('serp_'+IntToStr(Accordion.UnionIndex)+'&', Accordions) = nil then //если аккордиона еще небыло
+       //    begin
+       //      Accordions :=Accordions + 'serp_'+IntToStr(Accordion.UnionIndex)+'&';
+       //      FileXMLCon.Add(#9+#9+#9+'<Serpent id="serp_'+IntToStr(Accordion.UnionIndex)+'" length="5" gap="'+FloatToStr(CoordToMMs(Accordion.Gap))+'" '+
+        //     'h1="'+Accordh+'" h2="'+Accordh+'" '+
+        //     'h3="'+Accordh+'" h4="'+Accordh+'"/>');
+        //   end;
+       //  end; //accord
+      // end; //top
+      // Track := BoardIterator.NextPcbObject;
+    // end;
+     // Board.BoardIterator_Destroy(BoardIterator);
+     // FileXMLCon.Add(#9+#9+'</Serpents>');
+
+
 
     FileXMLCon.Add(#9+#9+'<Wires>');
     lbProcess.Caption := 'Wires - Track'; Form1.Refresh;
@@ -2580,7 +2635,10 @@ var
        FileXMLCon.Add(#9+#9+#9+#9+'<Subwire width="'+FloatToStr(CoordToMMs(Track.Width))+'">');
        FileXMLCon.Add(#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs(Track.x1))+
                                           '" y="'+FloatToStr(CoordToMMs(Track.y1))+'"/>');
+       //if pos('serp_'+IntToStr(Track.UnionIndex)+'&', Accordions) >0 then begin
+       //FileXMLCon.Add(#9+#9+#9+#9+#9+'<TrackLine serpRef="serp_'+IntToStr(Track.UnionIndex)+'">'); end else begin // если линия аккордиона
        FileXMLCon.Add(#9+#9+#9+#9+#9+'<TrackLine>');
+       //end;
        FileXMLCon.Add(#9+#9+#9+#9+#9+#9+'<End x="'+FloatToStr(CoordToMMs(Track.x2))+
                                            '" y="'+FloatToStr(CoordToMMs(Track.y2))+'"/>');
        FileXMLCon.Add(#9+#9+#9+#9+#9+'</TrackLine>');
@@ -2618,7 +2676,10 @@ var
        FileXMLCon.Add(#9+#9+#9+#9+'<Subwire width="'+FloatToStr(CoordToMMs(Arc.LineWidth))+'">');
        FileXMLCon.Add(#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs(Arc.StartX))+
                                           '" y="'+FloatToStr(CoordToMMs(Arc.StartY))+'"/>');
+       //if pos('serp_'+IntToStr(Arc.UnionIndex)+'&', Accordions) >0 then begin
+       //FileXMLCon.Add(#9+#9+#9+#9+#9+'<TrackArc serpRef="serp_'+IntToStr(Arc.UnionIndex)+'">'); end else begin // если арк аккордиона
        FileXMLCon.Add(#9+#9+#9+#9+#9+'<TrackArc>');
+       //end;
        FileXMLCon.Add(#9+#9+#9+#9+#9+#9+'<Center x="'+FloatToStr(CoordToMMs(Arc.XCenter))+
                                               '" y="'+FloatToStr(CoordToMMs(Arc.YCenter))+'"/>');
        FileXMLCon.Add(#9+#9+#9+#9+#9+#9+'<End x="'+FloatToStr(CoordToMMs(Arc.EndX))+
@@ -2631,6 +2692,9 @@ var
      End;
      Board.BoardIterator_Destroy(BoardIterator);
      FileXMLCon.Add(#9+#9+'</Wires>');
+
+
+
      //*******Перебираем Области металлизации********//
      FileXMLCon.Add(#9+#9+'<Coppers>');
      lbProcess.Caption := 'Coppers'; Form1.Refresh;
@@ -3996,6 +4060,12 @@ begin
   SaveConfig;
 end;
 
+procedure TForm1.bt_ConfSaveClick(Sender: TObject);
+begin
+  SaveConfig();
+  lbProcess.Caption := '.scon Saved!'
+end;
+
 //ToDo
 // дифф пары
 // Змейки!
@@ -4013,12 +4083,3 @@ end;
 
 //для 1.1.4
 // Обработать срезанные и скругленные КП
-
-
-
-procedure TForm1.bt_ConfSaveClick(Sender: TObject);
-begin
-  SaveConfig();
-  lbProcess.Caption := '.scon Saved!'
-end;
-
