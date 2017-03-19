@@ -38,6 +38,10 @@ begin
   else begin TopoRFile.Add('False'); end;      // 9 - ImportComponent
   if cbFreePad.Checked then begin TopoRFile.Add('True'); end
   else begin TopoRFile.Add('False'); end;      // 10 - ImportComponent
+  if cb_Text.Checked then begin TopoRFile.Add('True'); end
+  else begin TopoRFile.Add('False'); end;      // 11 - ImportText
+  if cbPrimitive.Checked then begin TopoRFile.Add('True'); end
+  else begin TopoRFile.Add('False'); end;      // 12 - ImportPrim
 
   TopoRFile.SaveToFile(Board.FileName+'.scon');
   TopoRFile.Free;
@@ -831,6 +835,7 @@ Begin
   TItalic := '';
   if Text.Bold then TBold := 'B';
   if Text.Italic then TItalic := 'I';
+
   StringTab := '';
   For I:=0 to TabCount-1 do StringTab := StringTab + #9;
   ResultString := TStringList.Create;
@@ -1248,7 +1253,7 @@ Begin
            NameComp := NameComp +'$' +IDcomp;
            end;
            lbProcess.Caption := 'Component: ' + NameComp;
-           Form1.Refresh;
+           Form1.Update;
 
            FootName :=  Component.Pattern+'$' +NameComp +'$' +IDcomp;
 
@@ -1794,7 +1799,7 @@ Begin
      Y0 := BoardOutline.Segments[0].vy;
      XEnd := X0;
      YEnd := Y0;
-     lbProcess.Caption := 'PCB Contour '; Form1.Refresh;
+     lbProcess.Caption := 'PCB Contour '; Form1.Update;
      For I:=0 To BoardOutline.PointCount - 1 Do //перебор всех примитивов контура платы
        Begin
          If I = 0 then
@@ -1871,7 +1876,7 @@ Begin
      MechIterH.AddFilter_Method(eProcessAll);
      Track := MechIterH.FirstPCBObject; //первый трэк на механическом слое
 
-     lbProcess.Caption := 'Tracks In Mechanical Layers'; Form1.Refresh;
+     lbProcess.Caption := 'Tracks In Mechanical Layers'; Form1.Update;
      While (Track <> Nil) Do
      Begin
        if Track.Component = Nil then
@@ -1883,7 +1888,7 @@ Begin
      End;
      Board.BoardIterator_Destroy(MechIterH);
 
-     lbProcess.Caption := 'Arc In Mechanical Layers'; Form1.Refresh;
+     lbProcess.Caption := 'Arc In Mechanical Layers'; Form1.Update;
      //*******Перебираем окружности********//
      MechIterH := Board.BoardIterator_Create;
      MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
@@ -1901,7 +1906,7 @@ Begin
      End;
      Board.BoardIterator_Destroy(MechIterH);
 
-     lbProcess.Caption := 'Fill In Mechanical Layers'; Form1.Refresh;
+     lbProcess.Caption := 'Fill In Mechanical Layers'; Form1.Update;
      //*******Перебираем Филы********//
      MechIterH := Board.BoardIterator_Create;
      MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
@@ -1919,7 +1924,7 @@ Begin
      End;
      Board.BoardIterator_Destroy(MechIterH);
 
-     lbProcess.Caption := 'Poly In Mechanical Layers'; Form1.Refresh;
+     lbProcess.Caption := 'Poly In Mechanical Layers'; Form1.Update;
      //*******Перебираем Полигоны********//
      MechIterH := Board.BoardIterator_Create;
      MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
@@ -1937,7 +1942,7 @@ Begin
      End;
      Board.BoardIterator_Destroy(MechIterH);
 
-     lbProcess.Caption := 'Region In Mechanical Layers'; Form1.Refresh;
+     lbProcess.Caption := 'Region In Mechanical Layers'; Form1.Update;
      //*******Перебираем Регионы********//
      MechIterH := Board.BoardIterator_Create;
      MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
@@ -1957,7 +1962,7 @@ Begin
       //*******Перебираем Запреты********//
      Constructive.Add(#9+#9+'<Keepouts>');
 
-     lbProcess.Caption := 'Fills keepouts'; Form1.Refresh;
+     lbProcess.Caption := 'Fills keepouts'; Form1.Update;
      // филы
      MechIterH := Board.BoardIterator_Create;
      MechIterH.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
@@ -1975,7 +1980,7 @@ Begin
      End;
      Board.BoardIterator_Destroy(MechIterH);
 
-     lbProcess.Caption := 'Regions keepouts'; Form1.Refresh;
+     lbProcess.Caption := 'Regions keepouts'; Form1.Update;
      // регионы
      MechIterH := Board.BoardIterator_Create;
      MechIterH.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
@@ -1993,7 +1998,7 @@ Begin
      End;
      Board.BoardIterator_Destroy(MechIterH);
 
-     lbProcess.Caption := 'Lines keepouts'; Form1.Refresh;
+     lbProcess.Caption := 'Lines keepouts'; Form1.Update;
      //линии
      MechIterH := Board.BoardIterator_Create;
      MechIterH.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
@@ -2012,7 +2017,7 @@ Begin
      End;
      Board.BoardIterator_Destroy(MechIterH);
 
-     lbProcess.Caption := 'Arc keepouts'; Form1.Refresh;
+     lbProcess.Caption := 'Arc keepouts'; Form1.Update;
      //окружности
      MechIterH := Board.BoardIterator_Create;
      MechIterH.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
@@ -2045,7 +2050,7 @@ Begin
      Begin
        if Text.Component = Nil then
        Begin
-         lbProcess.Caption := 'Texts: ' + Text.Text ; Form1.Refresh;
+         lbProcess.Caption := 'Texts: ' + Text.Text ; Form1.Update;
          Constructive.AddStrings(TextToXML(Board,Text,3,FileXmlTSt));
        End;
        Text := MechIterH.NextPCBObject;
@@ -2081,7 +2086,7 @@ Begin
      FileXMLNList.Add(#9+#9+'<Net name="No_Net">');
      FileXMLNList.Add(#9+#9+'</Net>');
 
-     lbProcess.Caption := 'Nets'; Form1.Refresh;
+     lbProcess.Caption := 'Nets'; Form1.Update;
      While (Net <> Nil) Do
      Begin
 
@@ -2092,7 +2097,7 @@ Begin
 
 
      /// необходимо получить информацию о пинах принадлежащих цепи.
-     lbProcess.Caption := 'Pins to Nets'; Form1.Refresh;
+     lbProcess.Caption := 'Pins to Nets'; Form1.Update;
      PadIteratorHandle := Board.BoardIterator_Create;
      PadIteratorHandle.AddFilter_ObjectSet(MkSet(ePadObject));
      PadIteratorHandle.AddFilter_LayerSet(AllLayers);
@@ -2143,7 +2148,7 @@ Begin
   NetGroups := TStringList.Create;
   CompGroups := TStringList.Create;
   FileXMLGroup.Add(#9+'<Groups version="1.1">');
-  lbProcess.Caption := 'Groups'; Form1.Refresh;
+  lbProcess.Caption := 'Groups'; Form1.Update;
   LayerGroups.Add(#9+#9+'<LayerGroups>');
   NetGroups.Add(#9+#9+'<NetGroups>');
   CompGroups.Add(#9+#9+'<CompGroups>');
@@ -2159,7 +2164,7 @@ Begin
        //Если группа цепей
        If c.MemberKind = eClassMemberKind_Net Then
        Begin
-           lbProcess.Caption := 'Grooup Net: '+c.Name; Form1.Refresh;
+           lbProcess.Caption := 'Grooup Net: '+c.Name; Form1.Update;
            TestString := c.Name;
            NetGroups.Add(#9+#9+#9+'<NetGroup name="'+c.Name+'">');
 
@@ -2183,7 +2188,7 @@ Begin
        //Если группа компонентов
        If c.MemberKind = eClassMemberKind_Component Then
        Begin
-           lbProcess.Caption := 'Grooup Component: '+c.Name; Form1.Refresh;
+           lbProcess.Caption := 'Grooup Component: '+c.Name; Form1.Update;
            TestString := c.Name;
            CompGroups.Add(#9+#9+#9+'<CompGroup name="'+c.Name+'">');
 
@@ -2281,7 +2286,7 @@ Begin
    RuleWidth := Nil;
    RuleClear := Nil;
    RuleClearComp := Nil;
-   lbProcess.Caption := 'Rules'; Form1.Refresh;
+   lbProcess.Caption := 'Rules'; Form1.Update;
    Stack := Board.LayerStack;
    FileXMLHSRul.Add(#9+'<HiSpeedRules version="2.1">');
    FileXMLRul.Add(#9+'<Rules version="1.2">');
@@ -2482,7 +2487,7 @@ var
     Accordions :='';
     FileXMLCon.Add(#9+'<Connectivity version="1.2">');
     FileXMLCon.Add(#9+#9+'<Vias>');
-    lbProcess.Caption := 'Vias'; Form1.Refresh;
+    lbProcess.Caption := 'Vias'; Form1.Update;
     ViaMassi := -1;
     // Создаем итератор перебора переходных отверстий
     BoardIterator        := Board.BoardIterator_Create;
@@ -2638,7 +2643,7 @@ var
 
 
     FileXMLCon.Add(#9+#9+'<Wires>');
-    lbProcess.Caption := 'Wires - Track'; Form1.Refresh;
+    lbProcess.Caption := 'Wires - Track'; Form1.Update;
     // Создаем итератор перебора Проводников
     BoardIterator        := Board.BoardIterator_Create;
     BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
@@ -2681,7 +2686,7 @@ var
      End;
      Board.BoardIterator_Destroy(BoardIterator);
 
-     lbProcess.Caption := 'Wires - Arc'; Form1.Refresh;
+     lbProcess.Caption := 'Wires - Arc'; Form1.Update;
     // Создаем итератор перебора Окружностей
     BoardIterator        := Board.BoardIterator_Create;
     BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
@@ -2728,7 +2733,7 @@ var
 
      //*******Перебираем Области металлизации********//
      FileXMLCon.Add(#9+#9+'<Coppers>');
-     lbProcess.Caption := 'Coppers'; Form1.Refresh;
+     lbProcess.Caption := 'Coppers'; Form1.Update;
      //Полигоны
      BoardIterator := Board.BoardIterator_Create;
      BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
@@ -2829,7 +2834,7 @@ begin
      Stack := Board.LayerStack;
 
      //Получение текущего типа метрики
-     lbProcess.Caption := 'Add DisplayControl'; Form1.Refresh;
+     lbProcess.Caption := 'Add DisplayControl'; Form1.Update;
      UnitsDist := UnitToString2(Board.DisplayUnit);
      FileXMLDispC.Add(#9+'<DisplayControl version="1.3">');
      If (UnitsDist = 'mm') then
@@ -2850,7 +2855,7 @@ begin
      FileXMLDispC.Add(#9+#9+'<Show');
      FileXMLDispC.Add(#9+#9+'showBoardOutline="on"');
      FileXMLDispC.Add(#9+#9+'showWires="on"');
-     FileXMLDispC.Add(#9+#9+'showCoppers="on"');
+     //FileXMLDispC.Add(#9+#9+'showCoppers="on"');
      FileXMLDispC.Add(#9+#9+'showTexts="on"');
      FileXMLDispC.Add(#9+#9+'throughVia="on" burriedVia="on" blindVia="on" fixedVia="on"');
      FileXMLDispC.Add(#9+#9+'showVias="on"');
@@ -2966,6 +2971,7 @@ Var
    ut8str      : UTF8String;
 
 Begin
+
      bt_ConfSave.Enabled := false;
      b_GO.Enabled := false;
      b_Import.Enabled := false;
@@ -3008,7 +3014,7 @@ Begin
      l_R.Font.Color := clRed;
      l_D.Font.Color := clRed;
 
-     //StartTime := GetCurrentTimeString();
+     StartTime := GetCurrentTimeString();
 
      Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
      TextStyleAll := '';
@@ -3021,11 +3027,11 @@ Begin
 
      //*******Создаем список слоев********//
      AddLayers(FileXML,Board,UnitsDist);
-     l_L.Font.Color := clGreen;     Form1.Refresh;
+     l_L.Font.Color := clGreen;     Form1.Update;
 
      //*******Создаем текстовые стили********//
      FileXmlTSt.Add(#9+'<TextStyles version="1.0">');
-     FileXmlTSt.Add(#9+#9+'<TextStyle name="(Default)" fontName="QUALITY" height="2.5"/>'); // дефолтный текстовый стиль
+     FileXmlTSt.Add(#9+#9+'<TextStyle name="(Default)" fontName="Arial" height="2.5"/>'); // дефолтный текстовый стиль
 
      //*******Создаем конструктив платы********//
      AddContruct(FileXMLContr,Board,FileXmlTSt);
@@ -3033,30 +3039,30 @@ Begin
 
      //*******Создаем Соединения********//
      AddConnectivity(FileXMLCon,Board,ViastacksLL);
-     l_C.Font.Color := clGreen;     Form1.Refresh;
+     l_C.Font.Color := clGreen;     Form1.Update;
 
      //*******Создаем локальную билблиотеку FileXmlLL********//
      //*******Дополняются текстовые стили********//
      //*******Создается информация о установке компонентов на плату********//
      AddLL(FileXmlLL,Board,UnitsDist,FileXmlTSt, FileXMLCOB, ViastacksLL);
      FileXmlTSt.Add(#9+'</TextStyles>');
-     l_LL.Font.Color := clGreen;     Form1.Refresh;
+     l_LL.Font.Color := clGreen;     Form1.Update;
 
      //*******Создаем Нетлист********//
      AddNetList(FileXMLNList,Board);
-     l_N.Font.Color := clGreen;     Form1.Refresh;
+     l_N.Font.Color := clGreen;     Form1.Update;
 
      //*******Создаем Группы********//
      AddGroups(FileXMLGroup,Board);
-     l_G.Font.Color := clGreen;      Form1.Refresh;
+     l_G.Font.Color := clGreen;      Form1.Update;
 
      //*******Создаем Правила********//
      AddRules(FileXMLRul,FileXMLHSRul,Board);
-     l_R.Font.Color := clGreen;  Form1.Refresh;
+     l_R.Font.Color := clGreen;  Form1.Update;
 
      //*******Создаем параметры отображения******//
      AddDispControl(FileXMLDispC, Board);
-     l_D.Font.Color := clGreen;  Form1.Refresh;
+     l_D.Font.Color := clGreen;  Form1.Update;
      //*******Объединяем все в 1 файл********//
      FileXml.AddStrings(FileXmlTSt);   // подгружаем итоговый список текстовых стилей
      FileXml.AddStrings(FileXmlLL);    // подгружаем локальную библиотеку компонентов
@@ -3070,7 +3076,7 @@ Begin
      FileXml.AddStrings(FileXMLDispC); // подгружаем  контроль отображения
      FileXml.Add('</TopoR_PCB_File>'); // закрываем тег формата данных
 
-
+     lbProcess.Caption := 'Start: '+StartTime+' End:'+GetCurrentTimeString(); Form1.Update;
      //*******Сохранение XML Файла********//
      if cbStartTopoR.Checked then   // если нужно то сразу запускаем топор и импортируем
      //!!!!!!!!!!Не работает
@@ -3095,7 +3101,6 @@ Begin
        TopoRCommand.Add('</Commands>');
 
        TopoRCommand.SaveToFile(Board.FileName+'.fsa');
-
        // Тут нужно каким то образом запустить топор
      end
      else // просто сохраняем файл
@@ -3129,7 +3134,7 @@ Begin
        end;
      end;
 
-     lbProcess.Caption := 'End'; Form1.Refresh;
+
      //*******Уборка********//
      FileXml.Free;
      FileXmlTSt.Free;
@@ -3233,7 +3238,7 @@ Begin
   PadIteratorHandle.AddFilter_ObjectSet(MkSet(ePadObject));
   PadIteratorHandle.AddFilter_LayerSet(AllLayers);
   PadIteratorHandle.AddFilter_Method(eProcessAll);
-  Pad := PadIteratorHandle.FirstPCBObject; //первая цепь
+  Pad := PadIteratorHandle.FirstPCBObject; //первый пад
     While (pad <> Nil) Do
     Begin
       if (pad.Component = Nil) then
@@ -3242,6 +3247,29 @@ Begin
       end;
       Pad := PadIteratorHandle.NextPCBObject;
     end;
+  Board.BoardIterator_Destroy(PadIteratorHandle);
+
+end;
+
+Procedure RemoveTextAll(Board : IPCB_Board;);
+var
+  IteratorHandle    : IPCB_BoardIterator;
+  Text              : IPCB_Text;
+begin
+  IteratorHandle := Board.BoardIterator_Create;
+  IteratorHandle.AddFilter_ObjectSet(MkSet(eTextObject));
+  IteratorHandle.AddFilter_LayerSet(AllLayers);
+  IteratorHandle.AddFilter_Method(eProcessAll);
+  Text := IteratorHandle.FirstPCBObject; //первый Текст
+    While (Text <> Nil) Do
+    Begin
+      if (Text.Component = Nil) then
+      Begin//если текст не принадлежит компоненту
+        Board.RemovePCBObject(Text);
+      end;
+      Text := IteratorHandle.NextPCBObject;
+    end;
+    Board.BoardIterator_Destroy(IteratorHandle);
 end;
 
 // получить значение аттрибута
@@ -3284,6 +3312,30 @@ begin
            if LayerName = InLyrName then begin result := LyrObj.layerID; break; end;
            LyrObj := Stack.Next(LyrClass, LyrObj);
      Until LyrObj = Nil;
+end;
+
+Function GetLyrAllId (InLyrName : String; Stack : IPCB_LayerStack) : integer;
+var
+LyrObj     : IPCB_LayerObject;
+LayerName  : String;
+LyrClass   : TlayerClassID;
+LayerType  : TLayer;
+begin
+     result := Nil;
+     LyrClass := eLayerClass_Physical;
+     LyrObj := Stack.First(LyrClass);         // получаем первый слой
+     //сигнальные
+     Repeat
+           LayerName := LyrObj.Name;
+           if LayerName = InLyrName then begin result := LyrObj.layerID; break; end;
+           LyrObj := Stack.Next(LyrClass, LyrObj);
+     Until LyrObj = Nil;
+     for LayerType := eMechanical1 to eMechanical16 do
+     begin
+       LyrObj := Stack.LayerObject(LayerType);
+       if LyrObj.Name = InLyrName then begin result := LyrObj.layerID; break; end;
+     end;
+
 end;
 
 //импорт проводников
@@ -3541,7 +3593,7 @@ begin
           begin
             VStackName := XMLGetAttrValue(CurrentStr,'name');
             for ii:=0 to FileXML.Count - 1 do
-            if pos('<Viastack name="'+VStackName, FileXML.Strings[ii]) > 0 then begin StartStInd := ii; break; end;
+            if pos('<Viastack name="'+VStackName+'"', FileXML.Strings[ii]) > 0 then begin StartStInd := ii; break; end;
               Repeat // перебираем стек переходного отверстия
                 CurrentStrSt := FileXML.Get(ii);
                 if  pos('<LayerRange',CurrentStrSt) >0 then
@@ -3878,6 +3930,120 @@ begin
   Until i = -1;
 end;
 
+Procedure AddText(Board : IPCB_Board; FileXml : TStringList;);
+var
+  IteratorHandle : IPCB_BoardIterator;
+  i,ii        : integer;
+  StartInd    : integer;
+  StartStInd  : integer;
+  EndInd      : integer;
+  CurrentStr  : String;
+  CurrentStrSt: String;
+  bTexts      : Boolean;
+  Text        : IPCB_Text;
+  TextS       : String;
+  angle       : String;
+  mirror      : String;
+  layerID     : Tlayer;
+  OrgX        : Double;
+  OrgY        : Double;
+  Style       : String;
+  fontName    : String;
+  height      : String;
+  Bold        : String;
+  italic      : String;
+begin
+  StartInd := 0;
+  angle:='0';
+  CurrentStr :=  FileXML.Strings[0];
+  bTexts := false;
+  for i:=0 to FileXML.Count - 1 do
+  if pos('<Constructive', FileXML.Strings[i]) > 0 then begin StartInd := i; break; end;
+
+  for i:=StartInd to FileXML.Count - 1 do
+  if pos('</Constructive>', FileXML.Strings[i]) > 0 then begin EndInd := i; break; end;
+  i:=StartInd;
+  Repeat
+    if i = FileXML.Count - 2 then break;
+    CurrentStr := FileXML.Get(i);
+
+    if pos('<Texts>',CurrentStr) >0 then  bTexts := true;
+    if pos('</Texts>',CurrentStr) >0 then begin  i := -2; bTexts := false;  end;
+
+    if bTexts then //обрабатываем Текст
+    Begin
+      if pos('<Text ',CurrentStr)>0 then   // обрабатываем один текст
+      begin
+      Repeat
+        CurrentStr := FileXML.Get(i);
+        if pos('<Text ',CurrentStr) >0 then
+        Begin
+          TextS := XMLGetAttrValue(CurrentStr,'text');
+          angle := XMLGetAttrValue(CurrentStr,'angle');
+          if angle = '' then angle := '0';
+          mirror := XMLGetAttrValue(CurrentStr,'mirror');
+        end;
+
+        if pos('<LayerRef',CurrentStr) >0 then
+          layerID := GetLyrAllId(XMLGetAttrValue(CurrentStr,'name'),Board.LayerStack);
+
+        if pos('<Org',CurrentStr) >0 then
+        Begin
+          OrgX := StrToFloatDot(XMLGetAttrValue(CurrentStr,'x'));
+          OrgY := StrToFloatDot(XMLGetAttrValue(CurrentStr,'y'));
+        end;
+
+        if pos('<TextStyleRef',CurrentStr) >0 then
+        Begin
+          Style := XMLGetAttrValue(CurrentStr,'name');
+          for ii:=0 to FileXML.Count - 1 do
+            if pos('<TextStyle name="'+Style+'"', FileXML.Strings[ii]) > 0 then
+            begin
+              CurrentStrSt := FileXML.Strings[ii];
+              fontName := XMLGetAttrValue(CurrentStrSt,'fontName');
+              if fontName = 'QUALITY' then fontName := 'Arial';
+              height :=  XMLGetAttrValue(CurrentStrSt,'height');
+              Bold := XMLGetAttrValue(CurrentStrSt,'bold');
+              italic := XMLGetAttrValue(CurrentStrSt,'italic');
+              break;
+            end;
+
+        end;
+
+        if pos('</Text>',CurrentStr) >0 then
+        begin
+          Text := PCBServer.PCBObjectFactory(eTextObject, eNoDimension, eCreate_Default);
+          Text.Layer := LayerID;
+          Text.Text := TextS;
+          Text.Rotation := StrToFloatDot(angle);
+          Text.MirrorFlag := false;
+          if mirror = 'on' then Text.MirrorFlag := true;
+          Text.Layer := layerID;
+          Text.XLocation := MMsToCoord(OrgX)+Board.XOrigin;
+          Text.YLocation := MMsToCoord(OrgY)+Board.YOrigin;
+          Text.Size := MMsToCoord(StrToFloatDot(height));
+          Text.FontName := fontName;
+          //Text.FontID := 0;
+          Text.UseTTFonts := true;
+          Text.Bold := false;
+          if Bold = 'on' then Text.Bold := true;
+
+          Text.Italic := false;
+          if italic = 'on' then Text.Italic := true;
+
+          Board.AddPCBObject(Text);
+          break;
+        end;
+        inc(i);
+      Until i = -1;
+      end; // обрабатываем один текст
+
+    end;//обрабатываем Текст
+  inc(i);
+  Until i = -1;
+
+end;
+
 Procedure MoveComponents(Board : IPCB_Board; FileXml : TStringList;);
 var
  Component               : IPCB_Component;
@@ -3960,15 +4126,14 @@ Board       : IPCB_Board;
 FileXml     : TStringList; // Входной файл fst в формате xml <TopoR_PCB_File>
 FileName    : String;
 begin
-  bt_ConfSave.Enabled := false;
-  b_GO.Enabled := false;
-  b_Import.Enabled := false;
 
   FileXml := TStringList.Create;
 
   Board := PCBServer.GetCurrentPCBBoard;
-  If Board = nil then Begin ShowError('Open board!'); Exit; End; // Если платы нет то выходим
-
+  If Board = nil then Begin  ShowError('Open board!');  Exit; End; // Если платы нет то выходим
+  bt_ConfSave.Enabled := false;
+  b_GO.Enabled := false;
+  b_Import.Enabled := false;
   //*******Открытие XML Файла********//
   if tImport.Text = '' then begin
     FileName := LoadAFile();
@@ -3986,38 +4151,50 @@ begin
     ShowMessage('Присвойте имя FST файла!');
   end;
 
-
-
+  lbProcess.Caption := 'Remove Track'; Form1.Update;
   //*******Удаляем проводники*******//
   if cbTrack.Checked then begin
   RemoveTrackinSignal(Board); RemoveTrackinSignal(Board); end;
 
+  lbProcess.Caption := 'Remove Via'; Form1.Update;
   //*******Удаляем переходники*******//
   if cbVia.Checked then  RemoveViainSignal(Board);
 
+  lbProcess.Caption := 'Remove FreePad'; Form1.Update;
   //*******Удаляем FreePad*******//
-   if cbFreePad.Checked then RemoveFreePadinSignal(Board);
+  if cbFreePad.Checked then RemoveFreePadinSignal(Board);
 
-  lbProcess.Caption := 'MoveComponents'; Form1.Refresh;
+  lbProcess.Caption := 'Remove Text'; Form1.Update;
+  //*******Удаляем Text*******//
+  if cb_Text.Checked then begin
+  RemoveTextAll(Board);  RemoveTextAll(Board);   end;
+
+  lbProcess.Caption := 'Move Components'; Form1.Update;
   //*******переносим компоненты*******//
-   if cbComponent.Checked then MoveComponents(Board,FileXml);
+  if cbComponent.Checked then MoveComponents(Board,FileXml);
 
-   lbProcess.Caption := 'AddTrack'; Form1.Refresh;
+  lbProcess.Caption := 'Add Track'; Form1.Update;
   //*******Добавляем проводники*******//
   if cbTrack.Checked then AddTrackinSignal(Board,FileXml);
 
-  lbProcess.Caption := 'AddVIA'; Form1.Refresh;
+  lbProcess.Caption := 'Add Via'; Form1.Update;
   //*******Добавляем переходники*******//
-   if cbVia.Checked then  AddViainSignal(Board,FileXml);
+  if cbVia.Checked then  AddViainSignal(Board,FileXml);
 
-   lbProcess.Caption := 'AddFreePad'; Form1.Refresh;
-   //*******Добавляем FreePad*******//
-   if cbFreePad.Checked then AddFreePadinSignal(Board,FileXml);
+  lbProcess.Caption := 'Add FreePad'; Form1.Update;
+  //*******Добавляем FreePad*******//
+  if cbFreePad.Checked then AddFreePadinSignal(Board,FileXml);
 
+  lbProcess.Caption := 'Add Text'; Form1.Update;
+  //*******Добавляем Текст*******//
+  if cb_Text.Checked then AddText(Board,FileXml);
+
+  lbProcess.Caption := 'Board Redraw'; Form1.Update;
   //*******отображаем все что изменили*******//
   PolygonsRepour(Board);
   Client.SendMessage('PCB:Zoom', 'Action=Redraw' , 255, Client.CurrentView);
-  lbProcess.Caption := 'Imported!'; Form1.Refresh;
+  lbProcess.Caption := 'Imported!'; Form1.Update;
+
   //*******Уборка********//
   FileXml.Free;
   bt_ConfSave.Enabled := true;
@@ -4061,6 +4238,10 @@ Begin
   else begin cbComponent.Checked := false; end;
   if TopoRFile.Get(10) = 'True' then begin cbFreePad.Checked := true; end
   else begin cbFreePad.Checked := false; end;
+  if TopoRFile.Get(11) = 'True' then begin cb_Text.Checked := true; end
+  else begin cb_Text.Checked := false; end;
+  if TopoRFile.Get(12) = 'True' then begin cbPrimitive.Checked := true; end
+  else begin cbPrimitive.Checked := false; end;
   Form1.Show;
   TopoRFile.Free;
 End;
@@ -4106,6 +4287,7 @@ procedure TForm1.bt_ConfSaveClick(Sender: TObject);
 begin
   SaveConfig();
   lbProcess.Caption := '.scon Saved!'
+
 end;
 
 //ToDo

@@ -157,19 +157,6 @@ object Form1: TForm1
     Font.Style = []
     ParentFont = False
   end
-  object lbProcess: TLabel
-    Left = 90
-    Top = 296
-    Width = 21
-    Height = 16
-    Caption = 'Go?'
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -13
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    ParentFont = False
-  end
   object l_D: TLabel
     Left = 92
     Top = 176
@@ -179,7 +166,7 @@ object Form1: TForm1
   end
   object InstrumentCaption3: TInstrumentCaption
     Left = 8
-    Top = 296
+    Top = 293
     Width = 528
     Height = 16
     Caption = 'Status:'
@@ -187,6 +174,19 @@ object Form1: TForm1
     Font.Color = clWhite
     Font.Height = -12
     Font.Name = 'Arial Black'
+    Font.Style = []
+    ParentFont = False
+  end
+  object lbProcess: TXPLabel
+    Left = 88
+    Top = 293
+    Width = 21
+    Height = 16
+    Caption = 'Go?'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
   end
@@ -209,22 +209,13 @@ object Form1: TForm1
     TabOrder = 1
     Text = 'C:\Program Files\TopoR Lite\BIN\topor.exe'
   end
-  object b_GO: TButton
-    Left = 464
-    Top = 176
-    Width = 72
-    Height = 25
-    Caption = 'Export FST'
-    TabOrder = 2
-    OnClick = b_GOClick
-  end
   object tProject: TEdit
     Left = 96
     Top = 48
     Width = 360
     Height = 21
     Enabled = False
-    TabOrder = 3
+    TabOrder = 2
   end
   object bProject: TButton
     Left = 464
@@ -233,7 +224,7 @@ object Form1: TForm1
     Height = 25
     Caption = 'Open'
     Enabled = False
-    TabOrder = 4
+    TabOrder = 3
     OnClick = bProjectClick
   end
   object cbStartTopoR: TCheckBox
@@ -249,119 +240,138 @@ object Form1: TForm1
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    TabOrder = 5
+    TabOrder = 4
   end
-  object cb_Version: TComboBox
-    Left = 240
+  object cb_Text: TXPCheckBox
+    Left = 264
+    Top = 264
+    Width = 48
+    Height = 17
+    Caption = 'Text'
+    TabOrder = 5
+    State = cbChecked
+  end
+  object bt_ConfSave: TXPButton
+    Left = 464
     Top = 80
     Width = 72
-    Height = 21
-    ItemIndex = 1
+    Height = 24
+    Caption = 'Config Save'
+    ParentColor = False
     TabOrder = 6
-    Text = '1.1.4'
+    TabStop = False
+    OnClick = bt_ConfSaveClick
+  end
+  object cb_Version: TXPComboBox
+    Left = 240
+    Top = 80
+    Width = 64
+    Height = 21
     Items.Strings = (
       '1.1.3'
       '1.1.4'
       '1.1.5')
-  end
-  object b_Import: TButton
-    Left = 464
-    Top = 264
-    Width = 75
-    Height = 25
-    Caption = 'Import FST'
+    ItemIndex = 1
+    StretchButtonImage = False
     TabOrder = 7
-    OnClick = b_ImportClick
+    Text = '1.1.4'
   end
-  object tExport: TEdit
-    Left = 40
-    Top = 144
-    Width = 416
-    Height = 21
-    TabOrder = 8
-  end
-  object tImport: TEdit
-    Left = 40
-    Top = 232
-    Width = 416
-    Height = 21
-    TabOrder = 9
-  end
-  object b_ExportFolder: TButton
-    Left = 464
-    Top = 144
-    Width = 72
-    Height = 25
-    Caption = 'Browse..'
-    TabOrder = 10
-    OnClick = b_ExportFolderClick
-  end
-  object b_ImportFolder: TButton
-    Left = 464
-    Top = 232
-    Width = 75
-    Height = 25
-    Caption = 'Browse..'
-    TabOrder = 11
-    OnClick = b_ImportFolderClick
-  end
-  object cbFreePad: TCheckBox
-    Left = 208
+  object cbPrimitive: TXPCheckBox
+    Left = 312
     Top = 264
-    Width = 97
+    Width = 64
+    Height = 17
+    Caption = 'Primitive'
+    Enabled = False
+    TabOrder = 8
+    State = cbChecked
+  end
+  object cbFreePad: TXPCheckBox
+    Left = 192
+    Top = 264
+    Width = 64
     Height = 17
     Caption = 'Free Pad'
-    Checked = True
+    TabOrder = 9
     State = cbChecked
-    TabOrder = 12
   end
-  object cbTrack: TCheckBox
-    Left = 16
+  object cbTrack: TXPCheckBox
+    Left = 8
     Top = 264
-    Width = 48
+    Width = 56
     Height = 17
     Caption = 'Track'
-    Checked = True
+    TabOrder = 10
     State = cbChecked
-    TabOrder = 13
   end
-  object cbVia: TCheckBox
-    Left = 80
+  object cbVia: TXPCheckBox
+    Left = 72
     Top = 264
-    Width = 48
+    Width = 32
     Height = 17
     Caption = 'Via'
-    Checked = True
+    TabOrder = 11
     State = cbChecked
-    TabOrder = 14
   end
-  object cbComponent: TCheckBox
-    Left = 120
+  object cbComponent: TXPCheckBox
+    Left = 112
     Top = 264
-    Width = 80
+    Width = 72
     Height = 17
     Caption = 'Component'
-    Checked = True
+    TabOrder = 12
     State = cbChecked
-    TabOrder = 15
   end
-  object cb_FootComp: TCheckBox
-    Left = 328
-    Top = 80
+  object tImport: TXPFileNameEdit
+    Left = 40
+    Top = 232
+    Width = 496
+    Height = 21
+    Filter = 'TopoR Text Files|*.fst|All Files|'
+    FilterIndex = 0
+    StretchButtonImage = False
+    TabOrder = 13
+    Text = ''
+  end
+  object tExport: TXPFileNameEdit
+    Left = 40
+    Top = 144
+    Width = 496
+    Height = 21
+    FilterIndex = 0
+    StretchButtonImage = False
+    TabOrder = 14
+    Text = ''
+  end
+  object cb_FootComp: TXPCheckBox
+    Left = 320
+    Top = 83
     Width = 128
     Height = 17
     Caption = 'Footprint(RC) Compare'
-    Checked = True
+    TabOrder = 15
     State = cbChecked
-    TabOrder = 16
   end
-  object bt_ConfSave: TButton
+  object b_GO: TXPButton
     Left = 464
-    Top = 80
-    Width = 75
-    Height = 25
-    Caption = 'Config Save'
+    Top = 173
+    Width = 72
+    Height = 24
+    Caption = 'Export FST'
+    ParentColor = False
+    TabOrder = 16
+    TabStop = False
+    OnClick = b_GOClick
+  end
+  object b_Import: TXPButton
+    Left = 464
+    Top = 261
+    Width = 72
+    Height = 24
+    Caption = 'Import FST'
+    ParentColor = False
     TabOrder = 17
-    OnClick = bt_ConfSaveClick
+    TabStop = False
+    OnClick = b_ImportClick
   end
 end
