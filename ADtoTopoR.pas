@@ -4187,6 +4187,7 @@ begin
          if pos('<CompInstance name="'+NameComp+'"', FileXML.Strings[i]) > 0 then
          begin
            angle := XMLGetAttrValue(FileXML.Strings[i],'angle');
+           if angle = '' then angle := '0';
            if angle <> '' then
             Component.Rotation := StrToInt(angle);
 
@@ -4412,6 +4413,10 @@ begin
 end;
 
 //ToDo
+//RunProcess('PCB:Undo');
+//  RunProcess('PCB:Redo');
+// найти перерисовщик
+
 // импорт обьектов на мех слоях
 //  добавить дифф пары
 // Добавить правило зазора до края платы
