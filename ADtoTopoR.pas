@@ -1199,6 +1199,7 @@ Var // жуть...
    TBold                   : String;
    TItalic                 : String;
    Fixed                   : String;
+   Padname                 : String;
 Begin
 
      Fixed := '';
@@ -1299,14 +1300,17 @@ Begin
            While (Pad <> Nil) Do
            Begin
                 inc (PadNum);
+
+                if Pad.Name = '' then Padname := 'Nil';
+                if Pad.Name <> '' then Padname := Pad.Name;
                 PadAngle := IntToStr(Pad.Rotation-Component.Rotation);
                 PadFlip := 'off';
                 //if (Component.Layer = 32 & Pad.IsSurfaceMount = false )  then PadFlip := 'on';
                 if (Component.Layer <> Pad.Layer & Pad.IsSurfaceMount)then PadFlip := 'on';
-                if FTrue then Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'" angle="'+PadAngle+'" flipped="'+PadFlip+'">');
-                Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'"/>');
+                if FTrue then Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNum)+'" name="'+Padname+'" angle="'+PadAngle+'" flipped="'+PadFlip+'">');
+                Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNum)+'" name="'+Padname+'"/>');
                 Packages.Add(#9+#9+#9+#9+'<Pinpack pinNum="'+IntToStr(PadNum)+'" padNum="'+IntToStr(PadNum)+'"/>');
-                FileXMLCOB.Add(#9+#9+#9+#9+#9+'<Pin padNum="'+IntToStr(PadNum)+'" name="'+Pad.Name+'">');
+                FileXMLCOB.Add(#9+#9+#9+#9+#9+'<Pin padNum="'+IntToStr(PadNum)+'" name="'+Padname+'">');
                 TestString := Pad.Name;
                 // провер€ем был ли ранее пад такого же типа
                 PadStackName := PadTemplate(Pad,Board.DisplayUnit);
@@ -1553,6 +1557,56 @@ Begin
            if FTrue then Footprints.Add(#9+#9+#9+#9+'</Details>');
            //*******«аканчиваем перебор всех линий,окружностей ********//
 
+           //*******ƒобавл€ем металлизацию ********//
+           if FTrue then Footprints.Add(#9+#9+#9+#9+'<Coppers>');
+
+           // регионы
+
+           IteratorHandle := Component.GroupIterator_Create;
+           IteratorHandle.AddFilter_ObjectSet(MkSet(eRegionObject));
+           Region :=  IteratorHandle.FirstPCBObject;
+           if FTrue then
+           While (Region <> Nil) Do
+           Begin
+             if (Region.IsKeepout <> true & (Region.Layer = 1 | Region.Layer = 32)) then // если регион не зона запрета
+             begin
+                LayerName := Board.LayerName(Region.Layer);
+
+                 if component.layer = 32 then
+                 begin
+                   if Region.Layer = 32 then LayerName := Board.LayerName(1);
+                   if Region.Layer = 1 then LayerName := Board.LayerName(32);
+                 end;
+                //если парный слой то переносим с боттом на топ!
+                //if LayerIDtoStr(Region.Layer) = 'Mechanical' then
+                //  For i := 0 To LyrMehPairs.Count - 1 Do
+                //     if Region.Layer = LayerPairS[i,1] then
+                //      LayerName := Board.LayerName(LayerPairS[i,0]);
+                 Footprints.Add(#9+#9+#9+#9+#9+'<Copper lineWidth="0.001">');
+                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(Region.Layer)+
+                 '" name="'+LayerName+'"/>');
+                 Footprints.Add(#9+#9+#9+#9+#9+#9+'<Polygon>');
+                 PolyGeom := Region.GeometricPolygon;
+                 Contour := PolyGeom.Contour[0];
+
+                 For I := 0 To Contour.Count - 1 Do //перебор всех примитивов
+                 Begin
+                   XCoord := Contour.x[I] - Component.x;
+                   YCoord := Contour.y[I] - Component.y;
+                   RotateCoordsAroundXY(XCoord,YCoord,0,0,-Component.Rotation);
+                   if Component.Layer = 32 then XCoord := -XCoord;
+                   X   := FloatToStr(CoordToMMs( XCoord));
+                   Y   := FloatToStr(CoordToMMs( YCoord));
+                   Footprints.Add(#9+#9+#9+#9+#9+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+                 End;
+                 Footprints.Add(#9+#9+#9+#9+#9+#9+'</Polygon>');
+                 Footprints.Add(#9+#9+#9+#9+#9+'</Copper>');
+             end;
+             Region := IteratorHandle.NextPCBObject; //следующий регион
+           End;
+           Component.GroupIterator_Destroy(IteratorHandle);
+
+           if FTrue then Footprints.Add(#9+#9+#9+#9+'</Coppers>');
 
            //*******ƒобавл€ем запреты ********//
            if FTrue then Footprints.Add(#9+#9+#9+#9+'<KeepoutsTrace>');
@@ -1685,6 +1739,9 @@ Begin
            Component.GroupIterator_Destroy(IteratorHandle);
 
            if FTrue then Footprints.Add(#9+#9+#9+#9+'</KeepoutsTrace>');
+
+
+
 
            // следующий компонент
            Component := ComponentIteratorHandle.NextPCBObject;
@@ -2065,9 +2122,12 @@ End;
 Procedure AddNetList(FileXMLNList :TStringList; Board : IPCB_Board;);
 var
    //Net : IPCB_Net;
+   Group      : IPCB_Group;
+   groupIter  : IPCB_GroupIterator;
    Net : IPCB_Net;
    Pad : IPCB_Pad;
    PadNet : IPCB_Net;
+   prim   : IPCB_Prim;
 
    IteratorHandle : IPCB_BoardIterator;
    PadIteratorHandle : IPCB_BoardIterator;
@@ -2089,7 +2149,6 @@ Begin
      lbProcess.Caption := 'Nets'; Form1.Update;
      While (Net <> Nil) Do
      Begin
-
        FileXMLNList.Add(#9+#9+'<Net name="'+Net.Name+'">');
        FileXMLNList.Add(#9+#9+'</Net>');
        Net := IteratorHandle.NextPCBObject;
@@ -2122,12 +2181,16 @@ End;
 
 Procedure AddGroups(FileXMLGroup :TStringList; Board : IPCB_Board;);
 var
+   Groups     : IPCB_Group;
+   Diff       : IPCB_DifferentialPair;
+   Groupiter  : IPCB_GroupIterator;
    NetClass   : IPCB_ObjectClass;
    IterClass  : IPCB_BoardIterator;
    IterObj    : IPCB_BoardIterator;
    BoardSetM  : IPCB_BoardLayerSetManager;
    BoardSet   : IPCB_BoardLayerSet;
    Net        : IPCB_Net;
+   arc        : IPCB_Arc;
    Component  : IPCB_Component;
    Layer      : IPCB_LayerObject;
    GrIter     : IPCB_GroupIterator;
@@ -2157,7 +2220,6 @@ Begin
   IterClass.SetState_FilterAll;
   IterClass.AddFilter_ObjectSet(MkSet(eClassObject));
   c := IterClass.FirstPCBObject;
-
 
   While c <> NIl Do
    Begin
@@ -2196,18 +2258,48 @@ Begin
            IterObj.AddFilter_ObjectSet(MkSet(eComponentObject));
            IterObj.AddFilter_LayerSet(AllLayers);
            IterObj.AddFilter_Method(eProcessAll);
-           Component := IterObj.FirstPCBObject;
-
-           While Component <> NIl Do
+           Prim := IterObj.FirstPCBObject;
+           TestString := Prim.ObjectIDString;
+           While Prim <> NIl Do
            Begin
-              If c.IsMember(Component) Then
-                CompGroups.Add(#9+#9+#9+#9+'<CompInstanceRef name="'+Component.Name.Text+'"/>');
+              If c.IsMember(Prim) Then
+                CompGroups.Add(#9+#9+#9+#9+'<CompInstanceRef name="'+Prim.Name.Text+'"/>');
 
-              Component := IterObj.NextPCBObject;
+              Prim := IterObj.NextPCBObject;
            End;
            CompGroups.Add(#9+#9+#9+'</CompGroup>');
            Board.BoardIterator_Destroy(IterObj);
        End;// конец создани€ группы компонентов
+
+
+       //ли группа сигналов (15 шифр общий дл€ классов)
+       //If c.ObjectId = 15 Then
+       //Begin
+       //    lbProcess.Caption := 'Grooup Signal: '+c.Name; Form1.Update;
+       //    TestString := c.Name;
+       //    TestString := c.MemberName[0];
+       //    TestString := c.ObjectIDString;
+           IterObj := Board.BoardIterator_Create;
+           IterObj.AddFilter_ObjectSet(AllObjects);
+           IterObj.AddFilter_LayerSet(AllLayers);
+           IterObj.AddFilter_Method(eProcessAll);
+           Prim := IterObj.FirstPCBObject;
+
+           While Prim <> NIl Do
+           Begin
+
+              TestString := Prim.ObjectIDString;
+              TestString := Prim.ObjectID;
+              //if pos('ass',TestString) >0 then
+              //TestString := Prim.Name;
+
+              Prim := IterObj.NextPCBObject;
+           End;
+       //
+       //    TestString := c.ObjectId;
+       //    CompGroups.Add(#9+#9+#9+'</CompGroup>');
+           Board.BoardIterator_Destroy(IterObj);
+      // end;
 
        c := IterClass.NextPCBObject;
    End;
@@ -2296,8 +2388,7 @@ Begin
    RuleClearCompS.Add(#9+#9+'<RulesClearancesCompToComp>');
    RuleNetS.Add(#9+#9+'<NetProperties>');
    Viastacks.Add(#9+#9+'<RulesViastacksOfNets>');
-
-   // —оздаем итератор правил дифф пар
+   //*******ѕеребираем правила и добавл€ем********//
    BoardIterator        := Board.BoardIterator_Create;
    BoardIterator.AddFilter_ObjectSet(MkSet(eRuleObject));
    BoardIterator.AddFilter_LayerSet(AllLayers);
@@ -2312,9 +2403,6 @@ Begin
        LyrClass := eLayerClass_Electrical;        // задаем тип сло€
        LyrObj := Stack.First(LyrClass);         // получаем первый слой
        Repeat
-         Teststring := FloatToStr(CoordToMMs(RuleDiff.PreferedWidth[LyrObj.LayerID]));
-         Teststring := FloatToStr(CoordToMMs(RuleDiff.PreferedGap[LyrObj.LayerID]));
-         Teststring := LyrObj.Name;
          FileXMLHSRul.Add(#9+#9+#9+#9+'<LayerRule width="'+FloatToStr(CoordToMMs(RuleDiff.PreferedWidth[LyrObj.LayerID]))+
                                                  '" gap="'+FloatToStr(CoordToMMs(RuleDiff.PreferedGap[LyrObj.LayerID]))+'">');
          FileXMLHSRul.Add(#9+#9+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(LyrObj.LayerID)+'" name="'+LyrObj.Name+'"/>');
@@ -2323,6 +2411,21 @@ Begin
        Until LyrObj = Nil;
        FileXMLHSRul.Add(#9+#9+#9+'</ImpedanceDiff>');
      End;//конец правила дифф пар
+
+     if (Rule.RuleKind = eRule_MaxMinWidth & pos('Z0',Rule.name) >0)  Then
+     Begin// если правило сигналов
+       RuleWidth := Rule;
+       FileXMLHSRul.Add(#9+#9+#9+'<Impedance name="'+RuleWidth.name+'" Z0="50">');
+       LyrClass := eLayerClass_Electrical;        // задаем тип сло€
+       LyrObj := Stack.First(LyrClass);         // получаем первый слой
+       Repeat
+         FileXMLHSRul.Add(#9+#9+#9+#9+'<LayerRule width="'+FloatToStr(CoordToMMs(RuleWidth.FavoredWidth[LyrObj.LayerID]))+'">');
+         FileXMLHSRul.Add(#9+#9+#9+#9+#9+'<LayerRef type="'+LayerIDtoStr(LyrObj.LayerID)+'" name="'+LyrObj.Name+'"/>');
+         FileXMLHSRul.Add(#9+#9+#9+#9+'</LayerRule>');
+       LyrObj := Stack.Next(LyrClass, LyrObj)
+       Until LyrObj = Nil;
+       FileXMLHSRul.Add(#9+#9+#9+'</Impedance>');
+     End;//конец правила сигналов
 
      //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      //ѕросто создаетс€ одно общее правило на основе первого попавшегос€
@@ -2377,6 +2480,15 @@ Begin
    Rule := BoardIterator.NextPCBObject;
    End;// конец перебора всех правил
    Board.BoardIterator_Destroy(BoardIterator);
+   FileXMLHSRul.Add(#9+#9+'</RulesImpedances>');
+
+  // трансл€тор сигналов
+  //FileXMLHSRul.Add(#9+#9+'<SignalCluster>');
+
+
+
+
+  //FileXMLHSRul.Add(#9+#9+'</SignalCluster>');
 
   //*******—оздаем общее правило переходников********//
   Viastacks.Add(#9+#9+#9+'<ViastacksOfNets enabled="on">');
@@ -2388,7 +2500,7 @@ Begin
   Viastacks.Add(#9+#9+#9+#9+'</Viastacks>');
   Viastacks.Add(#9+#9+#9+'</ViastacksOfNets>');
 
-  //*******ѕеребираем неты********//
+  //*******ѕеребираем неты дл€ NetProperties********//
   IteratorNet := Board.BoardIterator_Create;
   IteratorNet.AddFilter_ObjectSet(MkSet(eNetObject));
   IteratorNet.AddFilter_LayerSet(AllLayers);
@@ -2400,8 +2512,9 @@ Begin
     RuleNetS.Add(#9+#9+#9+#9+'<NetRef name="'+Net.Name+'"/>');
     RuleNetS.Add(#9+#9+#9+'</NetProperty>');
     Net := IteratorNet.NextPCBObject;
-  End;
 
+  End;
+  Board.BoardIterator_Destroy(IteratorNet);
 
    RuleWidthS.Add(#9+#9+'</RulesWidthOfWires>');
    FileXMLRul.AddStrings(RuleWidthS); // добавл€ем группу правил ширины проводников
@@ -2419,7 +2532,7 @@ Begin
    FileXMLRul.AddStrings(RuleNetS); //добавл€ем группу правил свойств цепей
 
    FileXMLRul.Add(#9+'</Rules>');
-   FileXMLHSRul.Add(#9+#9+'</RulesImpedances>');
+
    FileXMLHSRul.Add(#9+'</HiSpeedRules>');
 
    RuleWidthS.Free;
@@ -2653,6 +2766,7 @@ var
     Track := BoardIterator.FirstPCBObject;
     While (Track <> Nil) Do
      Begin
+
        if (Track.IsKeepout <> true & Track.Polygon = Nil) then
        begin // если лини€ не киипаут
        FileXMLCon.Add(#9+#9+#9+'<Wire>');
@@ -2707,9 +2821,10 @@ var
        end        else       begin
         NetName := Arc.Net.Name;
        end;
-
+       Fixed :='off';
+       if Arc.Moveable = false then Fixed :='on';
        FileXMLCon.Add(#9+#9+#9+#9+'<NetRef name="'+NetName+'"/>');
-       FileXMLCon.Add(#9+#9+#9+#9+'<Subwire width="'+FloatToStr(CoordToMMs(Arc.LineWidth))+'">');
+       FileXMLCon.Add(#9+#9+#9+#9+'<Subwire fixed="'+Fixed+'" width="'+FloatToStr(CoordToMMs(Arc.LineWidth))+'">');
        FileXMLCon.Add(#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs(Arc.StartX-Board.XOrigin))+
                                           '" y="'+FloatToStr(CoordToMMs(Arc.StartY-Board.YOrigin))+'"/>');
        //if pos('serp_'+IntToStr(Arc.UnionIndex)+'&', Accordions) >0 then begin
