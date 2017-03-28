@@ -2970,7 +2970,7 @@ begin
      FileXMLDispC.Add(#9+#9+'<Show');
      FileXMLDispC.Add(#9+#9+'showBoardOutline="on"');
      FileXMLDispC.Add(#9+#9+'showWires="on"');
-     //FileXMLDispC.Add(#9+#9+'showCoppers="on"');
+     FileXMLDispC.Add(#9+#9+'showCoppers="on"');
      FileXMLDispC.Add(#9+#9+'showTexts="on"');
      FileXMLDispC.Add(#9+#9+'throughVia="on" burriedVia="on" blindVia="on" fixedVia="on"');
      FileXMLDispC.Add(#9+#9+'showVias="on"');
@@ -4308,7 +4308,13 @@ begin
   //*******отображаем все что изменили*******//
   PolygonsRepour(Board);
   Client.SendMessage('PCB:Zoom', 'Action=Redraw' , 255, Client.CurrentView);
+  AddStringParameter('Action', 'All');
+  RunProcess('PCB:Zoom');
+  RunProcess('PCB:Undo');
+  RunProcess('PCB:Redo');
+  ResetParameters;
   lbProcess.Caption := 'Imported!'; Form1.Update;
+
 
   //*******Уборка********//
   FileXml.Free;
