@@ -303,7 +303,7 @@ Begin
      XMLIn.Add(#9+'</Layers>');
 End;
 
-Function PadTemplate(Pad : IPCB_Pad; TUnit : TUnit;) : String;    //функция получения типа пада  !!!
+Function PadTemplate(Pad : IPCB_Pad; TUnit : TUnit;) : String;    //функция получения типа пада
 Var
  FirstSimbol    : String;
  SecondSimbol   : String;
@@ -1841,6 +1841,11 @@ Poly      : IPCB_Polygon;
 Fill      : IPCB_Fill;
 LID       : Integer;
 NetName   : String;
+Dem       : IPCB_Primitive;
+NoDem     : Boolean;
+IterDem   : IPCB_BoardIterator;
+
+
 
 BoardOutline: IPCB_BoardOutline;
 Begin
@@ -2103,9 +2108,24 @@ Begin
      MechIterH.AddFilter_ObjectSet(MkSet(eTextObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Text := MechIterH.FirstPCBObject; //первый текстовый обьект на любом слое
+
      While (Text <> Nil) Do
      Begin
-       if Text.Component = Nil then
+       //проверка на принадлежность текста обьекту "размер"
+       IterDem := Board.BoardIterator_Create;
+       IterDem.AddFilter_LayerSet(AllLayers);
+       IterDem.AddFilter_ObjectSet(MkSet(eDimensionObject));
+       IterDem.AddFilter_Method(eProcessAll);
+       Dem := IterDem.FirstPCBObject;
+       NoDem := true;
+       While (Dem <> Nil) Do
+       Begin
+         if Dem.Text = Text then NoDem := false;
+         Dem := IterDem.NextPCBObject;
+       end;
+       Board.BoardIterator_Destroy(IterDem);
+
+       if (Text.Component = Nil & NoDem = true) then
        Begin
          lbProcess.Caption := 'Texts: ' + Text.Text ; Form1.Update;
          Constructive.AddStrings(TextToXML(Board,Text,3,FileXmlTSt));
@@ -2368,6 +2388,9 @@ Var
    IteratorNet   : IPCB_BoardIterator;
    Net           : IPCB_Net;
    Viastacks     : TStringList;
+   NetRef        : String;
+   i,crdM, crdN  : integer;
+   widthAll      : boolean;
 
 Begin
    RuleWidthS := TStringList.Create;
@@ -2389,7 +2412,7 @@ Begin
    RuleNetS.Add(#9+#9+'<NetProperties>');
    Viastacks.Add(#9+#9+'<RulesViastacksOfNets>');
    //*******Перебираем правила и добавляем********//
-   BoardIterator        := Board.BoardIterator_Create;
+  BoardIterator        := Board.BoardIterator_Create;
    BoardIterator.AddFilter_ObjectSet(MkSet(eRuleObject));
    BoardIterator.AddFilter_LayerSet(AllLayers);
    BoardIterator.AddFilter_Method(eProcessAll);
@@ -2427,26 +2450,70 @@ Begin
        FileXMLHSRul.Add(#9+#9+#9+'</Impedance>');
      End;//конец правила сигналов
 
-     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     //Просто создается одно общее правило на основе первого попавшегося
 
+     // если правило ширины проводников
      if Rule.RuleKind = eRule_MaxMinWidth Then
-     Begin // если правило ширины проводников
+     Begin
        if RuleWidth = Nil Then
        Begin
          RuleWidth := Rule;
-         RuleWidthS.Add(#9+#9+#9+'<WidthOfWires enabled="on" widthMin="'+FloatToStr(CoordToMMs(RuleWidth.MinWidth[1]))+
-                                                          '" widthNom="'+FloatToStr(CoordToMMs(RuleWidth.FavoredWidth[1]))+'">');
-         RuleWidthS.Add(#9+#9+#9+#9+'<AllLayers/>');
-         RuleWidthS.Add(#9+#9+#9+#9+'<ObjectsAffected>');
-         RuleWidthS.Add(#9+#9+#9+#9+#9+'<AllNets/>');
+         crdM := RuleWidth.MinWidth[1];
+         crdN := RuleWidth.FavoredWidth[1];
+         widthAll := true;
+         for i := 1 to 32 do
+           if board.LayerIsUsed[i] then
+           begin
+             if (crdM <>RuleWidth.MinWidth[i] | crdM <>RuleWidth.FavoredWidth[i]) then
+             widthAll := false;
+             crdM := RuleWidth.MinWidth[i];
+             crdN := RuleWidth.FavoredWidth[i];
+
+
+           end;
+
+         if widthAll  then
+         begin
+          RuleWidthS.Add(#9+#9+#9+'<WidthOfWires enabled="on" widthMin="'+FloatToStr(CoordToMMs(RuleWidth.MinWidth[1]))+
+                                     '" widthNom="'+FloatToStr(CoordToMMs(RuleWidth.FavoredWidth[1]))+'">');
+          RuleWidthS.Add(#9+#9+#9+#9+'<AllLayers/>');
+          RuleWidthS.Add(#9+#9+#9+#9+'<ObjectsAffected>');
+          if pos('InNet(',RuleWidth.Scope1Expression)>0 then begin  // если цепь
+           NetRef := XMLGetAttrValue(RuleWidth.Scope1Expression,'InNet');
+           RuleWidthS.Add(#9+#9+#9+#9+#9+'<NetRef name="'+NetRef+'"/>');
+          end else begin
+           if pos('InNetClass(',RuleWidth.Scope1Expression)>0 then begin    //если класс цепей
+             NetRef := XMLGetAttrValue(RuleWidth.Scope1Expression,'InNetClass');
+             RuleWidthS.Add(#9+#9+#9+#9+#9+'<NetGroupRef name="'+NetRef+'"/>');
+           end else begin
+             RuleWidthS.Add(#9+#9+#9+#9+#9+'<AllNets/>');
+           end;
+         end;
+
          RuleWidthS.Add(#9+#9+#9+#9+'</ObjectsAffected>');
          RuleWidthS.Add(#9+#9+#9+'</WidthOfWires>');
+
+         end;
+
+         if widthAll = false then  begin
+          for i := 1 to 32 do
+           if board.LayerIsUsed[i] then
+           begin
+             if (crdM <>RuleWidth.MinWidth[i] | crdM <>RuleWidth.FavoredWidth[i]) then
+             widthAll := false;
+             crdM := RuleWidth.MinWidth[i];
+             crdN := RuleWidth.FavoredWidth[i];
+           end;
+
+         end;
+
+
+
        End;
      End; // конец создания правила ширины проводников
 
+     // если правило зазора проводников
      if Rule.RuleKind = eRule_Clearance Then
-     Begin // если правило зазора проводников
+     Begin
        if RuleClear = Nil Then
        Begin
          RuleClear := Rule;
@@ -2456,13 +2523,37 @@ Begin
 
          RuleClearS.Add(#9+#9+#9+#9+'<AllLayers/>');
          RuleClearS.Add(#9+#9+#9+#9+'<ObjectsAffected>');
-         RuleClearS.Add(#9+#9+#9+#9+#9+'<AllNets/>');
-         RuleClearS.Add(#9+#9+#9+#9+#9+'<AllNets/>');
+         // первый обьект
+         if pos('InNet(',RuleClear.Scope1Expression)>0 then begin  // если цепь
+           NetRef := XMLGetAttrValue(RuleClear.Scope1Expression,'InNet');
+           RuleClearS.Add(#9+#9+#9+#9+#9+'<NetRef name="'+NetRef+'"/>');
+         end else begin
+           if pos('InNetClass(',RuleClear.Scope1Expression)>0 then begin    //если класс цепей
+             NetRef := XMLGetAttrValue(RuleClear.Scope1Expression,'InNetClass');
+             RuleClearS.Add(#9+#9+#9+#9+#9+'<NetGroupRef name="'+NetRef+'"/>');
+           end else begin
+             RuleClearS.Add(#9+#9+#9+#9+#9+'<AllNets/>');
+           end;
+         end;
+         // второй обьект
+         if pos('InNet(',RuleClear.Scope2Expression)>0 then begin
+           NetRef := XMLGetAttrValue(RuleClear.Scope2Expression,'InNet');
+           RuleClearS.Add(#9+#9+#9+#9+#9+'<NetRef name="'+NetRef+'"/>');
+         end else begin
+           if pos('InNetClass(',RuleClear.Scope2Expression)>0 then begin
+             NetRef := XMLGetAttrValue(RuleClear.Scope2Expression,'InNetClass');
+             RuleClearS.Add(#9+#9+#9+#9+#9+'<NetGroupRef name="'+NetRef+'"/>');
+           end else begin
+             RuleClearS.Add(#9+#9+#9+#9+#9+'<AllNets/>');
+           end;
+         end;
          RuleClearS.Add(#9+#9+#9+#9+'</ObjectsAffected>');
          RuleClearS.Add(#9+#9+#9+'</ClearanceNetToNet>');
        End;
      End; // конец создания правила зазора проводников
 
+     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     //Просто создается одно общее правило на основе первого попавшегося
      if Rule.RuleKind = eRule_ComponentClearance Then
      Begin // если правило зазора Компонентов
        if RuleClearComp = Nil Then
@@ -3370,6 +3461,10 @@ Procedure RemoveTextAll(Board : IPCB_Board;);
 var
   IteratorHandle    : IPCB_BoardIterator;
   Text              : IPCB_Text;
+  Dem               : IPCB_Primitive;
+  NoDem             : Boolean;
+  IterDem           : IPCB_BoardIterator;
+
 begin
   IteratorHandle := Board.BoardIterator_Create;
   IteratorHandle.AddFilter_ObjectSet(MkSet(eTextObject));
@@ -3378,7 +3473,21 @@ begin
   Text := IteratorHandle.FirstPCBObject; //первый Текст
     While (Text <> Nil) Do
     Begin
-      if (Text.Component = Nil) then
+       //проверка на принадлежность текста обьекту "размер"
+       IterDem := Board.BoardIterator_Create;
+       IterDem.AddFilter_LayerSet(AllLayers);
+       IterDem.AddFilter_ObjectSet(MkSet(eDimensionObject));
+       IterDem.AddFilter_Method(eProcessAll);
+       Dem := IterDem.FirstPCBObject;
+       NoDem := true;
+       While (Dem <> Nil) Do
+       Begin
+         if Dem.Text = Text then NoDem := false;
+         Dem := IterDem.NextPCBObject;
+       end;
+       Board.BoardIterator_Destroy(IterDem);
+
+      if (Text.Component = Nil & NoDem = true) then
       Begin//если текст не принадлежит компоненту
         Board.RemovePCBObject(Text);
       end;
@@ -4307,12 +4416,12 @@ begin
 
   lbProcess.Caption := 'Board Redraw'; Form1.Update;
   //*******отображаем все что изменили*******//
-  PolygonsRepour(Board);
   Client.SendMessage('PCB:Zoom', 'Action=Redraw' , 255, Client.CurrentView);
   AddStringParameter('Action', 'All');
   RunProcess('PCB:Zoom');
   RunProcess('PCB:Undo');
   RunProcess('PCB:Redo');
+  PolygonsRepour(Board);
   ResetParameters;
   lbProcess.Caption := 'Imported!'; Form1.Update;
 
@@ -4413,22 +4522,22 @@ begin
 end;
 
 //ToDo
+
+// Добавить Plane слои
+// импорт обьектов на мех слоях
+// добавить дифф пары
+// Добавить правило зазора до края платы
+// Обработать правила проектирования
+// Обработать слои маски и пасты для КП и сами по себе
+
 //RunProcess('PCB:Undo');
 //  RunProcess('PCB:Redo');
 // найти перерисовщик
 
-// импорт обьектов на мех слоях
-//  добавить дифф пары
-// Добавить правило зазора до края платы
-// Добавить Plane слои
-// Обработать правила проектирования
-// Обработать слои маски и пасты для КП и сами по себе
+
 
 //*****Приятные мелочи****//
 // Мб добавить не метрическую систему измерения
 // Мб сделать красивую шапку
-
-//для 1.1.4
-// Обработать срезанные и скругленные КП
 
 
