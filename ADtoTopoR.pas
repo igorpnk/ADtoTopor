@@ -2416,6 +2416,7 @@ Var
    i,crdM, crdN  : integer;
    widthAll      : boolean;
 
+
 Begin
    RuleWidthS := TStringList.Create;
    RuleClearS := TStringList.Create;
@@ -2482,14 +2483,14 @@ Begin
          crdM := RuleWidth.MinWidth[1];
          crdN := RuleWidth.FavoredWidth[1];
          widthAll := true;
-         for i := 1 to 32 do
-           if board.LayerIsUsed[i] then
-           begin
-             if (crdM <>RuleWidth.MinWidth[i] | crdM <>RuleWidth.FavoredWidth[i]) then
+         LyrObj := Stack.First(LyrClass);
+         Repeat
+             if (crdM <>RuleWidth.MinWidth[LyrObj.LayerID] | crdM <>RuleWidth.FavoredWidth[LyrObj.LayerID]) then
              widthAll := false;
-             crdM := RuleWidth.MinWidth[i];
-             crdN := RuleWidth.FavoredWidth[i];
-           end;
+             crdM := RuleWidth.MinWidth[LyrObj.LayerID];
+             crdN := RuleWidth.FavoredWidth[LyrObj.LayerID];
+             LyrObj := Stack.Next(LyrClass, LyrObj)
+         Until LyrObj = Nil;
 
          if widthAll  then
          begin
@@ -2513,19 +2514,16 @@ Begin
          RuleWidthS.Add(#9+#9+#9+'</WidthOfWires>');
 
          end;
-         
-         if widthAll = false then  begin
-          for i := 1 to 32 do
-           if board.LayerIsUsed[i] then
-           begin
-             if (crdM <>RuleWidth.MinWidth[i] | crdM <>RuleWidth.FavoredWidth[i]) then
-             widthAll := false;
-             crdM := RuleWidth.MinWidth[i];
-             crdN := RuleWidth.FavoredWidth[i];
 
-             RuleWidthS.Add(#9+#9+#9+'<WidthOfWires enabled="on" widthMin="'+FloatToStr(CoordToMMs(RuleWidth.MinWidth[i]))+
-                                     '" widthNom="'+FloatToStr(CoordToMMs(RuleWidth.FavoredWidth[i]))+'">');
-             RuleWidthS.Add(#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(i)+'"/>');
+
+
+
+         if widthAll = false then  begin
+           LyrObj := Stack.First(LyrClass);
+           Repeat
+             RuleWidthS.Add(#9+#9+#9+'<WidthOfWires enabled="on" widthMin="'+FloatToStr(CoordToMMs(RuleWidth.MinWidth[LyrObj.LayerID]))+
+                                     '" widthNom="'+FloatToStr(CoordToMMs(RuleWidth.FavoredWidth[LyrObj.LayerID]))+'">');
+             RuleWidthS.Add(#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrObj.LayerID)+'"/>');
              RuleWidthS.Add(#9+#9+#9+#9+'<ObjectsAffected>');
              if pos('InNet(',RuleWidth.Scope1Expression)>0 then begin  // если цепь
                NetRef := XMLGetAttrValue(RuleWidth.Scope1Expression,'InNet');
@@ -2542,7 +2540,8 @@ Begin
              RuleWidthS.Add(#9+#9+#9+#9+'</ObjectsAffected>');
              RuleWidthS.Add(#9+#9+#9+'</WidthOfWires>');
 
-           end;
+             LyrObj := Stack.Next(LyrClass, LyrObj)
+           Until LyrObj = Nil;
          end;
 
      End; // конец создания правила ширины проводников
