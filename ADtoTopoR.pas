@@ -2368,6 +2368,30 @@ Begin
    CompGroups.Free;
 End;
 
+// получить значение аттрибута
+Function XMLGetAttrValue (InputStr : String; AttrName : String) : String;
+Var
+i      : integer;
+WriteS : bolean;
+s      : String;
+ResultS: String;
+Begin
+ WriteS := false;
+ ResultS:= '';
+ if pos(AttrName,InputStr) >0 then
+ For i := pos(AttrName,InputStr)+length(AttrName) to length(InputStr) do
+ begin
+   s := InputStr[i];
+   if writeS then
+   begin
+     if (InputStr[i] = '"' |InputStr[i] = '''' ) then break;
+     Results := Results + InputStr[i];
+   end;
+   if (InputStr[i] = '"' |InputStr[i] = '''' )  then WriteS := true;
+ end;
+ Result := ResultS;
+end;
+
 Procedure AddRules (FileXMLRul :TStringList;FileXMLHSRul :TStringList; Board : IPCB_Board;  );
 Var
    Rule          : IPCB_Rule;
@@ -2454,8 +2478,6 @@ Begin
      // если правило ширины проводников
      if Rule.RuleKind = eRule_MaxMinWidth Then
      Begin
-       if RuleWidth = Nil Then
-       Begin
          RuleWidth := Rule;
          crdM := RuleWidth.MinWidth[1];
          crdN := RuleWidth.FavoredWidth[1];
@@ -2467,8 +2489,6 @@ Begin
              widthAll := false;
              crdM := RuleWidth.MinWidth[i];
              crdN := RuleWidth.FavoredWidth[i];
-
-
            end;
 
          if widthAll  then
@@ -2493,7 +2513,7 @@ Begin
          RuleWidthS.Add(#9+#9+#9+'</WidthOfWires>');
 
          end;
-
+         
          if widthAll = false then  begin
           for i := 1 to 32 do
            if board.LayerIsUsed[i] then
@@ -2502,20 +2522,34 @@ Begin
              widthAll := false;
              crdM := RuleWidth.MinWidth[i];
              crdN := RuleWidth.FavoredWidth[i];
-           end;
 
+             RuleWidthS.Add(#9+#9+#9+'<WidthOfWires enabled="on" widthMin="'+FloatToStr(CoordToMMs(RuleWidth.MinWidth[i]))+
+                                     '" widthNom="'+FloatToStr(CoordToMMs(RuleWidth.FavoredWidth[i]))+'">');
+             RuleWidthS.Add(#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(i)+'"/>');
+             RuleWidthS.Add(#9+#9+#9+#9+'<ObjectsAffected>');
+             if pos('InNet(',RuleWidth.Scope1Expression)>0 then begin  // если цепь
+               NetRef := XMLGetAttrValue(RuleWidth.Scope1Expression,'InNet');
+               RuleWidthS.Add(#9+#9+#9+#9+#9+'<NetRef name="'+NetRef+'"/>');
+             end else begin
+               if pos('InNetClass(',RuleWidth.Scope1Expression)>0 then begin    //если класс цепей
+                 NetRef := XMLGetAttrValue(RuleWidth.Scope1Expression,'InNetClass');
+                 RuleWidthS.Add(#9+#9+#9+#9+#9+'<NetGroupRef name="'+NetRef+'"/>');
+               end else begin
+                 RuleWidthS.Add(#9+#9+#9+#9+#9+'<AllNets/>');
+               end;
+             end;
+
+             RuleWidthS.Add(#9+#9+#9+#9+'</ObjectsAffected>');
+             RuleWidthS.Add(#9+#9+#9+'</WidthOfWires>');
+
+           end;
          end;
 
-
-
-       End;
      End; // конец создания правила ширины проводников
 
      // если правило зазора проводников
      if Rule.RuleKind = eRule_Clearance Then
      Begin
-       if RuleClear = Nil Then
-       Begin
          RuleClear := Rule;
          RuleClearS.Add(#9+#9+#9+'<ClearanceNetToNet enabled="on" clrnMin="'+FloatToStr(CoordToMMs(RuleClear.Gap ))+
                                                                '" clrnNom="'+FloatToStr(CoordToMMs(RuleClear.Gap *3))+'">');
@@ -2549,7 +2583,7 @@ Begin
          end;
          RuleClearS.Add(#9+#9+#9+#9+'</ObjectsAffected>');
          RuleClearS.Add(#9+#9+#9+'</ClearanceNetToNet>');
-       End;
+
      End; // конец создания правила зазора проводников
 
      //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3496,29 +3530,6 @@ begin
     Board.BoardIterator_Destroy(IteratorHandle);
 end;
 
-// получить значение аттрибута
-Function XMLGetAttrValue (InputStr : String; AttrName : String) : String;
-Var
-i      : integer;
-WriteS : bolean;
-s      : String;
-ResultS: String;
-Begin
- WriteS := false;
- ResultS:= '';
- if pos(AttrName,InputStr) >0 then
- For i := pos(AttrName,InputStr)+length(AttrName) to length(InputStr) do
- begin
-   s := InputStr[i];
-   if writeS then
-   begin
-     if InputStr[i] = '"' then break;
-     Results := Results + InputStr[i];
-   end;
-   if InputStr[i] = '"'  then WriteS := true;
- end;
- Result := ResultS;
-end;
 
 // получить ID слоя по имени
 Function GetLyrId (InLyrName : String; Stack : IPCB_LayerStack) : integer;
