@@ -244,7 +244,7 @@ Begin
      //сигнальные
      Repeat
            LayerName := LyrObj.Name;
-
+           lbProcess.Caption := LayerName;
            LayerThickness := FloatToStrF(0,ffFixed,3,3);
            LayerTypeStr := LayerIDtoStr(LyrObj.LayerID);
 
@@ -2279,7 +2279,7 @@ Begin
            IterObj.AddFilter_LayerSet(AllLayers);
            IterObj.AddFilter_Method(eProcessAll);
            Prim := IterObj.FirstPCBObject;
-           TestString := Prim.ObjectIDString;
+           //TestString := Prim.ObjectIDString;
            While Prim <> NIl Do
            Begin
               If c.IsMember(Prim) Then
@@ -2877,7 +2877,9 @@ var
      // Board.BoardIterator_Destroy(BoardIterator);
      // FileXMLCon.Add(#9+#9+'</Serpents>');
 
-
+    //Track := Board.GetObjectAtCursor(AllObjects,AllLayers,eEditAction_Select);
+   // TestString := Track.Name;
+    //TestString := Track.Layer;
 
     FileXMLCon.Add(#9+#9+'<Wires>');
     lbProcess.Caption := 'Wires - Track'; Form1.Update;
@@ -3441,6 +3443,53 @@ begin
      Board.BoardIterator_Destroy(BoardIterator);
 end;
 
+ // ”дал€ем все проводники с механических слоев
+Procedure RemovePriminMeh(Board       : IPCB_Board;);
+var
+  BoardIterator : IPCB_BoardIterator;
+  LyrObj        : IPCB_LayerObject;
+  Track         : IPCB_Track;
+  Arc           : IPCB_Arc;
+  Prim          : IPCB_Primitive;
+begin
+
+    // —оздаем итератор перебора ѕроводников
+    BoardIterator        := Board.BoardIterator_Create;
+    BoardIterator.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,
+                         66,67,68,69,70,71,22));
+    BoardIterator.AddFilter_ObjectSet(MkSet(eTrackObject));
+    BoardIterator.AddFilter_Method(eProcessAll);
+    Track := BoardIterator.FirstPCBObject;
+
+    While (Track <> Nil) Do
+     Begin
+       if Track.IsKeepout <> true then
+       begin // если лини€ не киипаут
+        Board.RemovePCBObject(Track);
+       end;//если лини€ не кипаут то следующа€ лини€
+       Track := BoardIterator.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(BoardIterator);
+
+    // —оздаем итератор перебора дуг
+    BoardIterator        := Board.BoardIterator_Create;
+    BoardIterator.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,
+                         66,67,68,69,70,71,22));
+    BoardIterator.AddFilter_ObjectSet(MkSet(eArcObject));
+    BoardIterator.AddFilter_Method(eProcessAll);
+    Arc := BoardIterator.FirstPCBObject;
+
+    While (Arc <> Nil) Do
+     Begin
+       if Arc.IsKeepout <> true then
+       begin // если дуга не киипаут
+        Board.RemovePCBObject(Arc);
+       end;//если дуга не кипаут то следующа€ дуга
+       Arc := BoardIterator.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(BoardIterator);
+end;
+
 // ”дал€ем все переходники с сигнальных слоев
 Procedure RemoveViainSignal(Board       : IPCB_Board;);
 var
@@ -3531,7 +3580,7 @@ end;
 
 
 // получить ID сло€ по имени
-Function GetLyrId (InLyrName : String; Stack : IPCB_LayerStack) : integer;
+Function GetLyrId (InLyrName : String; Stack : IPCB_LayerStack;) : integer;
 var
 LyrObj     : IPCB_LayerObject;
 LayerName  : String;
@@ -3546,6 +3595,8 @@ begin
            if LayerName = InLyrName then begin result := LyrObj.layerID; break; end;
            LyrObj := Stack.Next(LyrClass, LyrObj);
      Until LyrObj = Nil;
+
+
 end;
 
 Function GetLyrAllId (InLyrName : String; Stack : IPCB_LayerStack) : integer;
@@ -3569,6 +3620,9 @@ begin
        LyrObj := Stack.LayerObject(LayerType);
        if LyrObj.Name = InLyrName then begin result := LyrObj.layerID; break; end;
      end;
+
+    LyrObj := Stack.LayerObject(eKeepOutLayer);
+    if LyrObj.Name = InLyrName then begin result := LyrObj.layerID; end;
 
 end;
 
@@ -3766,6 +3820,196 @@ begin
 
 
 end;
+
+//импорт примитивов на механических сло€х
+Procedure AddPriminMeh(Board : IPCB_Board; FileXml : TStringList;);
+var
+
+IteratorHandle : IPCB_BoardIterator;
+i           : integer;
+StartInd    : integer;
+EndInd      : integer;
+CurrentStr  : String;
+bWires      : Boolean;
+Track       : IPCB_Track;
+Arc         : IPCB_Arc;
+Net         : IPCB_Net;
+layerID     : TLayer;
+NetName     : String;
+StartX      : Double;
+StartY      : Double;
+EndX        : Double;
+EndY        : Double;
+CenterX     : Double;
+CenterY     : Double;
+Width       : Double;
+i2          : integer;
+r           : Double;
+d           : Double;
+angle       : Double;
+testDouble  : Double;
+
+begin
+  StartInd := 0;
+  CurrentStr :=  FileXML.Strings[0];
+
+  for i:=0 to FileXML.Count - 1 do
+  if pos('<Constructive', FileXML.Strings[i]) > 0 then begin StartInd := i; break; end;
+
+  for i:=StartInd to FileXML.Count - 1 do
+  if pos('</Constructive>', FileXML.Strings[i]) > 0 then begin EndInd := i; break; end;
+
+  //For i := StartInd to EndInd do FileXMLCon.Add(FileXml.Get(i));
+
+  //******** »мпортируем ѕроводники *********//
+  bWires := false;
+  i:=StartInd;
+  try
+  Repeat
+    if i = FileXML.Count - 2 then break;
+    CurrentStr := FileXML.Get(i);
+    if pos('<MechLayerObjects>',CurrentStr) >0 then
+    bWires := true;
+    if pos('</MechLayerObjects>',CurrentStr) >0 then begin  i := -2; bWires := false;  end;
+    if bWires then //обрабатываем проводники
+    Begin
+     if pos('<Detail ',CurrentStr)>0 then   // обрабатываем одну ветку
+     begin
+       Repeat
+         CurrentStr := FileXML.Get(i);
+
+         if pos('<LayerRef',CurrentStr) >0 then
+         layerID := GetLyrAllId(XMLGetAttrValue(CurrentStr,'name'),Board.LayerStack);
+
+
+         if pos('<Detail',CurrentStr) >0 then
+         width := StrToFloatDot(XMLGetAttrValue(CurrentStr,'lineWidth'));
+
+         if pos('<Line>',CurrentStr) >0 then
+         Begin
+           inc(i);
+           CurrentStr := FileXML.Get(i);
+           StartX := StrToFloatDot(XMLGetAttrValue(CurrentStr,'x'));
+           StartY := StrToFloatDot(XMLGetAttrValue(CurrentStr,'y'));
+           inc(i);
+           CurrentStr := FileXML.Get(i);
+           EndX := StrToFloatDot(XMLGetAttrValue(CurrentStr,'x'));
+           EndY := StrToFloatDot(XMLGetAttrValue(CurrentStr,'y'));
+         end;
+
+         if pos('<Start',CurrentStr) >0 then
+         Begin
+           StartX := StrToFloatDot(XMLGetAttrValue(CurrentStr,'x'));
+           StartY := StrToFloatDot(XMLGetAttrValue(CurrentStr,'y'));
+         end;
+
+         if pos('<End',CurrentStr) >0 then
+         Begin
+           EndX := StrToFloatDot(XMLGetAttrValue(CurrentStr,'x'));
+           EndY := StrToFloatDot(XMLGetAttrValue(CurrentStr,'y'));
+         end;
+
+         if pos('<Center',CurrentStr) >0 then
+         Begin
+           CenterX := StrToFloatDot(XMLGetAttrValue(CurrentStr,'x'));
+           CenterY := StrToFloatDot(XMLGetAttrValue(CurrentStr,'y'));
+         end;
+
+         if pos ('</Line>',CurrentStr) >0 then
+         begin
+           Track := PCBServer.PCBObjectFactory(eTrackObject, eNoDimension, eCreate_Default);
+           Track.Layer := LayerID;
+           Track.Net := Net;
+           Track.x1 := MMsToCoord(StartX)+Board.XOrigin;
+           Track.y1 := MMsToCoord(StartY)+Board.YOrigin;
+           Track.x2 := MMsToCoord(EndX)+Board.XOrigin;
+           Track.y2 := MMsToCoord(EndY)+Board.YOrigin;
+           Track.Width := MMsToCoord(Width);
+           Board.AddPCBObject(Track);
+           StartX := EndX;
+           StartY := EndY;
+         end;
+
+         if pos('</Arc>',CurrentStr) >0 then
+         begin
+           Arc := PCBServer.PCBObjectFactory(eArcObject, eNoDimension, eCreate_Default);
+           Arc.Layer := LayerID;
+           Arc.Net := Net;
+           Arc.LineWidth  := MMsToCoord(Width);
+           Arc.XCenter := MMsToCoord(CenterX)+Board.XOrigin;
+           Arc.YCenter := MMsToCoord(CenterY)+Board.YOrigin;
+           r := abs(Sqrt((CenterX - StartX)*(CenterX - StartX) + (CenterY - StartY)*(CenterY - StartY))); // находим радиус
+           // находим рассто€ние от точки старта до точки равному углу 0.
+           d := abs(Sqrt((CenterX+r - StartX)*(CenterX+r - StartX) + (CenterY - StartY)*(CenterY - StartY)));
+           angle := (d*d)/(2*r*r);
+           if angle >2 then angle := 2;
+           angle := RadToDeg(ArcCos(1-angle));
+           if StartY < CenterY then angle := 360-angle;
+           Arc.StartAngle := angle;
+
+           // находим рассто€ние от точки конца до точки равному углу 0.
+           d := abs(Sqrt((CenterX+r - EndX)*(CenterX+r - EndX) + (CenterY - EndY)*(CenterY - EndY)));
+
+           angle := (d*d)/(2*r*r);
+           if angle >2 then angle := 2;
+           angle := RadToDeg(ArcCos(1-angle));
+           if EndY < CenterY then angle := 360-angle;
+           Arc.EndAngle := angle;
+
+           Arc.Radius := MMsToCoord(r);
+           //Arc.StartAngle :=
+           Board.AddPCBObject(Arc);
+           StartX := EndX;
+           StartY := EndY;
+         end;
+
+         if pos('</TrackArcCW>',CurrentStr) >0 then
+         begin
+           Arc := PCBServer.PCBObjectFactory(eArcObject, eNoDimension, eCreate_Default);
+           Arc.Layer := LayerID;
+           Arc.Net := Net;
+           Arc.LineWidth  := MMsToCoord(Width);
+           Arc.XCenter := MMsToCoord(CenterX)+Board.XOrigin;
+           Arc.YCenter := MMsToCoord(CenterY)+Board.YOrigin;
+           r := abs(Sqrt((CenterX - StartX)*(CenterX - StartX) + (CenterY - StartY)*(CenterY - StartY))); // находим радиус
+           // находим рассто€ние от точки старта до точки равному углу 0.
+           d := abs(Sqrt((CenterX+r - StartX)*(CenterX+r - StartX) + (CenterY - StartY)*(CenterY - StartY)));
+           angle := (d*d)/(2*r*r);
+           if angle >2 then angle := 2;
+           angle := RadToDeg(ArcCos(1-angle));
+           if StartY < CenterY then angle := 360-angle;
+
+           Arc.EndAngle := angle;
+
+           // находим рассто€ние от точки конца до точки равному углу 0.
+           d := abs(Sqrt((CenterX+r - EndX)*(CenterX+r - EndX) + (CenterY - EndY)*(CenterY - EndY)));
+           angle := (d*d)/(2*r*r);
+           if angle >2 then angle := 2;
+           angle := RadToDeg(ArcCos(1-angle));
+           if EndY < CenterY then angle := 360-angle;
+           Arc.StartAngle := angle;
+
+           Arc.Radius := MMsToCoord(r);
+           //Arc.StartAngle :=
+           Board.AddPCBObject(Arc);
+           StartX := EndX;
+           StartY := EndY;
+         end;
+
+         if pos ('</Detail>',CurrentStr) >0 then  break;
+         inc(i);
+       Until i = -1;
+     end;
+    end;
+
+    inc(i);
+  Until i = -1;
+  except
+    ShowMessage('ќшибка при попытке чтени€ строки: є'+IntToStr(i));
+  end;
+end;
+
+
 
 Procedure AddViainSignal(Board : IPCB_Board; FileXml : TStringList;);
 var
@@ -4404,6 +4648,11 @@ begin
   if cb_Text.Checked then begin
   RemoveTextAll(Board);  RemoveTextAll(Board);   end;
 
+   lbProcess.Caption := 'Remove primitive'; Form1.Update;
+  //*******”дал€ем примитивы с механических слоев*******//
+  if cbPrimitive.Checked then RemovePriminMeh(Board);
+
+
   lbProcess.Caption := 'Move Components'; Form1.Update;
   //*******переносим компоненты*******//
   if cbComponent.Checked then MoveComponents(Board,FileXml);
@@ -4411,6 +4660,10 @@ begin
   lbProcess.Caption := 'Add Track'; Form1.Update;
   //*******ƒобавл€ем проводники*******//
   if cbTrack.Checked then AddTrackinSignal(Board,FileXml);
+
+   lbProcess.Caption := 'Add primitive'; Form1.Update;
+  //*******ƒобавл€ем примитивы на механических сло€х*******//
+  if cbTrack.Checked then AddPriminMeh(Board,FileXml);
 
   lbProcess.Caption := 'Add Via'; Form1.Update;
   //*******ƒобавл€ем переходники*******//
@@ -4532,13 +4785,12 @@ begin
 end;
 
 //ToDo
-
-// ƒобавить Plane слои
-// импорт обьектов на мех сло€х
 // добавить дифф пары
 // ƒобавить правило зазора до кра€ платы
 // ќбработать правила проектировани€
 // ќбработать слои маски и пасты дл€  ѕ и сами по себе
+// трансл€ци€ механических слоев с 17 по 32
+
 
 //RunProcess('PCB:Undo');
 //  RunProcess('PCB:Redo');

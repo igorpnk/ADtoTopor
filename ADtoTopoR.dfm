@@ -282,7 +282,6 @@ object Form1: TForm1
     Width = 64
     Height = 17
     Caption = 'Primitive'
-    Enabled = False
     TabOrder = 8
     State = cbChecked
   end
