@@ -2519,6 +2519,7 @@ Begin
 
 
          if widthAll = false then  begin
+           LyrClass := eLayerClass_Electrical;
            LyrObj := Stack.First(LyrClass);
            Repeat
              RuleWidthS.Add(#9+#9+#9+'<WidthOfWires enabled="on" widthMin="'+FloatToStr(CoordToMMs(RuleWidth.MinWidth[LyrObj.LayerID]))+
@@ -3100,7 +3101,6 @@ begin
      FileXMLDispC.Add(#9+#9+'showTexts="on"');
      FileXMLDispC.Add(#9+#9+'throughVia="on" burriedVia="on" blindVia="on" fixedVia="on"');
      FileXMLDispC.Add(#9+#9+'showVias="on"');
-     FileXMLDispC.Add(#9+#9+'showTopMechDetails="on" showBotMechDetails="on"');
      FileXMLDispC.Add(#9+#9+'showSignalLayers="on" showTopMechLayers="on" showBotMechLayers="on" showDocLayers="on"');
      FileXMLDispC.Add(#9+#9+'showTopMechDetails="on" showBotMechDetails="on"');
      FileXMLDispC.Add(#9+#9+'showMetalPads="on" showTopMechPads="on" showBotMechPads="on"');
