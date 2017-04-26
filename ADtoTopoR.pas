@@ -4025,6 +4025,7 @@ EndInd      : integer;
 CurrentStr  : String;
 CurrentStrSt: String;
 bVias       : Boolean;
+ViaFix      : Boolean;
 VStackName  : String;
 NetName     : String;
 Net         : IPCB_Net;
@@ -4060,13 +4061,24 @@ begin
 
     if bVias then //обрабатываем переходники
     Begin
-      if pos('<Via>',CurrentStr)>0 then   // обрабатываем один переходник
+      if pos('<Via',CurrentStr)>0 then   // обрабатываем один переходник
       begin
       For j := 0 to 31 do
       DiamLayers[j] := -1;
         Repeat
 
           CurrentStr := FileXML.Get(i);
+
+          if pos('<Via',CurrentStr)>0 then
+          begin
+
+          if  pos('fixed',CurrentStr)>0 then
+           if XMLGetAttrValue(CurrentStr,'fixed') = 'on' then  ViaFix := false;
+          if  pos('<Via>',CurrentStr)>0 then
+          ViaFix := true;
+
+          end;
+
           if pos('<ViastackRef',CurrentStr) >0 then
           begin
             VStackName := XMLGetAttrValue(CurrentStr,'name');
@@ -4178,6 +4190,7 @@ begin
            Via.HighLayer  := StartLayer;
            Via.LowLayer   := EndLayer;
            Via.HoleSize := MMsToCoord(HoleDiam);
+           Via.Moveable := ViaFix;
            Via.x := MMsToCoord(OrgX)+Board.XOrigin;
            Via.y := MMsToCoord(OrgY)+Board.YOrigin;
            For ii:= 1 to 32 do
