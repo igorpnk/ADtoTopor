@@ -2723,7 +2723,7 @@ var
 
   Begin
     Accordions :='';
-    Fixed := 'off';
+
     FileXMLCon.Add(#9+'<Connectivity version="1.2">');
     FileXMLCon.Add(#9+#9+'<Vias>');
     lbProcess.Caption := 'Vias'; Form1.Update;
@@ -2827,7 +2827,7 @@ var
           ViastacksLL.Add(#9+#9+#9+#9+'</ViaPads>');
           ViastacksLL.Add(#9+#9+#9+'</Viastack>');
       end;//конец создания нового переходника
-
+      Fixed := 'off';
       if Via.Moveable = false then Fixed := 'on';
       FileXMLCon.Add(#9+#9+#9+'<Via fixed="'+Fixed+'">');
       FileXMLCon.Add(#9+#9+#9+#9+'<ViastackRef name="'+ViaName+'"/>');
