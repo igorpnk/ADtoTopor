@@ -2723,6 +2723,7 @@ var
 
   Begin
     Accordions :='';
+    Fixed := 'off';
     FileXMLCon.Add(#9+'<Connectivity version="1.2">');
     FileXMLCon.Add(#9+#9+'<Vias>');
     lbProcess.Caption := 'Vias'; Form1.Update;
@@ -2827,7 +2828,8 @@ var
           ViastacksLL.Add(#9+#9+#9+'</Viastack>');
       end;//конец создания нового переходника
 
-      FileXMLCon.Add(#9+#9+#9+'<Via>');
+      if Via.Moveable = false then Fixed := 'on';
+      FileXMLCon.Add(#9+#9+#9+'<Via fixed="'+Fixed+'">');
       FileXMLCon.Add(#9+#9+#9+#9+'<ViastackRef name="'+ViaName+'"/>');
       if Via.Net <> nil then NetName := Via.Net.Name;
       if Via.Net = nil then NetName := 'No_Net';
@@ -4009,8 +4011,6 @@ begin
   end;
 end;
 
-
-
 Procedure AddViainSignal(Board : IPCB_Board; FileXml : TStringList;);
 var
 Via       : IPCB_Via;
@@ -4071,12 +4071,9 @@ begin
 
           if pos('<Via',CurrentStr)>0 then
           begin
-
-          if  pos('fixed',CurrentStr)>0 then
-           if XMLGetAttrValue(CurrentStr,'fixed') = 'on' then  ViaFix := false;
-          if  pos('<Via>',CurrentStr)>0 then
-          ViaFix := true;
-
+            if  pos('fixed',CurrentStr)>0 then
+              if XMLGetAttrValue(CurrentStr,'fixed') = 'on' then  ViaFix := false;
+            if  pos('<Via>',CurrentStr)>0 then  ViaFix := true;
           end;
 
           if pos('<ViastackRef',CurrentStr) >0 then
