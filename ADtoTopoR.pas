@@ -3422,7 +3422,7 @@ begin
        begin // если линия не киипаут
         Board.RemovePCBObject(Track);
        end;//если линия не кипаут то следующая линия
-       Track := BoardIterator.NextPCBObject;
+       Track := BoardIterator.FirstPCBObject;
      End;
      Board.BoardIterator_Destroy(BoardIterator);
 
@@ -3440,7 +3440,7 @@ begin
        begin // если дуга не киипаут
         Board.RemovePCBObject(Arc);
        end;//если дуга не кипаут то следующая дуга
-       Arc := BoardIterator.NextPCBObject;
+       Arc := BoardIterator.FirstPCBObject;
      End;
      Board.BoardIterator_Destroy(BoardIterator);
 end;
@@ -4642,8 +4642,7 @@ begin
 
   lbProcess.Caption := 'Remove Track'; Form1.Update;
   //*******Удаляем проводники*******//
-  if cbTrack.Checked then begin
-  RemoveTrackinSignal(Board); RemoveTrackinSignal(Board); end;
+  if cbTrack.Checked then   RemoveTrackinSignal(Board);
 
   lbProcess.Caption := 'Remove Via'; Form1.Update;
   //*******Удаляем переходники*******//
