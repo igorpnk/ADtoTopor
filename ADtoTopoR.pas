@@ -1938,10 +1938,11 @@ Begin
      MechIterH.AddFilter_Method(eProcessAll);
      Track := MechIterH.FirstPCBObject; //первый трэк на механическом слое
 
+
      lbProcess.Caption := 'Tracks In Mechanical Layers'; Form1.Update;
      While (Track <> Nil) Do
      Begin
-       if Track.Component = Nil then
+       if (Track.Component = Nil & Track.InDimension = false) then
        Begin
          Constructive.AddStrings(TrackToXML(Board,Track,3));
          LID := Track.Layer;
@@ -3457,7 +3458,7 @@ begin
 
     // Создаем итератор перебора Проводников
     BoardIterator        := Board.BoardIterator_Create;
-    BoardIterator.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,
+    BoardIterator.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,
                          66,67,68,69,70,71,22));
     BoardIterator.AddFilter_ObjectSet(MkSet(eTrackObject));
     BoardIterator.AddFilter_Method(eProcessAll);
@@ -3475,7 +3476,7 @@ begin
 
     // Создаем итератор перебора дуг
     BoardIterator        := Board.BoardIterator_Create;
-    BoardIterator.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,
+    BoardIterator.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,
                          66,67,68,69,70,71,22));
     BoardIterator.AddFilter_ObjectSet(MkSet(eArcObject));
     BoardIterator.AddFilter_Method(eProcessAll);
@@ -3707,7 +3708,11 @@ begin
 
 
          if pos('<Subwire',CurrentStr) >0 then
-         width := StrToFloatDot(XMLGetAttrValue(CurrentStr,'width'));
+         Begin
+          if XMLGetAttrValue(CurrentStr,'width') <> '' then
+            begin width := StrToFloatDot(XMLGetAttrValue(CurrentStr,'width')); end
+            else begin  width := 0 end;
+         end;
 
          if pos('<Start',CurrentStr) >0 then
          Begin
