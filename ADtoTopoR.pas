@@ -298,6 +298,7 @@ Begin
           XMLIn.Add(#9+#9+#9+'<Layer name="'+LyrMeh.Name+'" type="Doc"/>');
         end;
      end;
+
      XMLIn.Add(#9+#9+#9+'<Layer name="'+Board.LayerName(56)+'" type="Doc"/>');
      XMLIn.Add(#9+#9+'</UnStackLayers>');
      XMLIn.Add(#9+'</Layers>');
@@ -1933,7 +1934,7 @@ Begin
 
      //*******Перебираем трэки********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72, 74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89));
      MechIterH.AddFilter_ObjectSet(MkSet(eTrackObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Track := MechIterH.FirstPCBObject; //первый трэк на механическом слое
