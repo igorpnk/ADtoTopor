@@ -928,7 +928,7 @@ Begin
   Result := ResultString;
 
 End;
-
+  
 Procedure PadstacksAdd(Padstacks : TStringList;  Pad: IPCB_Pad; PadStackName : String;);
 var
    Pad2                    : IPCB_Pad2;
@@ -3407,6 +3407,7 @@ var
   Track         : IPCB_Track;
   Arc           : IPCB_Arc;
   Prim          : IPCB_Primitive;
+  TestString    : String;
 begin
 
     // —оздаем итератор перебора ѕроводников
@@ -3423,7 +3424,7 @@ begin
        begin // если лини€ не киипаут
         Board.RemovePCBObject(Track);
        end;//если лини€ не кипаут то следующа€ лини€
-       Track := BoardIterator.FirstPCBObject;
+       Track := BoardIterator.NextPCBObject;
      End;
      Board.BoardIterator_Destroy(BoardIterator);
 
@@ -3441,7 +3442,7 @@ begin
        begin // если дуга не киипаут
         Board.RemovePCBObject(Arc);
        end;//если дуга не кипаут то следующа€ дуга
-       Arc := BoardIterator.FirstPCBObject;
+       Arc := BoardIterator.NextPCBObject;
      End;
      Board.BoardIterator_Destroy(BoardIterator);
 end;
@@ -4804,7 +4805,7 @@ end;
 // ќбработать правила проектировани€
 // ќбработать слои маски и пасты дл€  ѕ и сами по себе
 // трансл€ци€ механических слоев с 17 по 32
-
+// Board Outlone Clearence
 
 //RunProcess('PCB:Undo');
 //  RunProcess('PCB:Redo');
