@@ -3423,8 +3423,13 @@ begin
        if Track.IsKeepout <> true then
        begin // если линия не киипаут
         Board.RemovePCBObject(Track);
-       end;//если линия не кипаут то следующая линия
+        Track := BoardIterator.FirstPCBObject;
+       end//если линия не кипаут то следующая линия
+       else
+       begin
        Track := BoardIterator.NextPCBObject;
+       end;
+
      End;
      Board.BoardIterator_Destroy(BoardIterator);
 
@@ -3441,8 +3446,13 @@ begin
        if Arc.IsKeepout <> true then
        begin // если дуга не киипаут
         Board.RemovePCBObject(Arc);
-       end;//если дуга не кипаут то следующая дуга
+        Arc := BoardIterator.FirstPCBObject;
+       end//если дуга не кипаут то следующая дуга
+       else
+       begin
        Arc := BoardIterator.NextPCBObject;
+       end;
+
      End;
      Board.BoardIterator_Destroy(BoardIterator);
 end;
@@ -3470,10 +3480,15 @@ begin
        if Track.IsKeepout <> true then
        begin // если линия не киипаут
         Board.RemovePCBObject(Track);
-       end;//если линия не кипаут то следующая линия
+        Track := BoardIterator.FirstPCBObject;
+        end//если линия не кипаут то следующая линия
+       else
+       begin
        Track := BoardIterator.NextPCBObject;
+       end;
      End;
      Board.BoardIterator_Destroy(BoardIterator);
+
 
     // Создаем итератор перебора дуг
     BoardIterator        := Board.BoardIterator_Create;
@@ -3488,10 +3503,16 @@ begin
        if Arc.IsKeepout <> true then
        begin // если дуга не киипаут
         Board.RemovePCBObject(Arc);
-       end;//если дуга не кипаут то следующая дуга
+        Arc := BoardIterator.FirstPCBObject;
+       end//если дуга не кипаут то следующая дуга
+       else
+       begin
        Arc := BoardIterator.NextPCBObject;
+       end;
      End;
      Board.BoardIterator_Destroy(BoardIterator);
+
+
 end;
 
 // Удаляем все переходники с сигнальных слоев
@@ -3750,6 +3771,7 @@ begin
 
          if pos('</TrackArc>',CurrentStr) >0 then
          begin
+
            Arc := PCBServer.PCBObjectFactory(eArcObject, eNoDimension, eCreate_Default);
            Arc.Layer := LayerID;
            Arc.Net := Net;
@@ -3779,6 +3801,7 @@ begin
            Board.AddPCBObject(Arc);
            StartX := EndX;
            StartY := EndY;
+
          end;
 
          if pos('</TrackArcCW>',CurrentStr) >0 then
@@ -3925,6 +3948,8 @@ begin
 
          if pos ('</Line>',CurrentStr) >0 then
          begin
+           if LayerID <> eKeepOutLayer then
+           begin
            Track := PCBServer.PCBObjectFactory(eTrackObject, eNoDimension, eCreate_Default);
            Track.Layer := LayerID;
            Track.Net := Net;
@@ -3936,10 +3961,13 @@ begin
            Board.AddPCBObject(Track);
            StartX := EndX;
            StartY := EndY;
+           end;
          end;
 
          if pos('</Arc>',CurrentStr) >0 then
          begin
+           if LayerID <> eKeepOutLayer then
+           begin
            Arc := PCBServer.PCBObjectFactory(eArcObject, eNoDimension, eCreate_Default);
            Arc.Layer := LayerID;
            Arc.Net := Net;
@@ -3969,10 +3997,13 @@ begin
            Board.AddPCBObject(Arc);
            StartX := EndX;
            StartY := EndY;
+           end;
          end;
 
          if pos('</TrackArcCW>',CurrentStr) >0 then
          begin
+           if LayerID <> eKeepOutLayer then
+           begin
            Arc := PCBServer.PCBObjectFactory(eArcObject, eNoDimension, eCreate_Default);
            Arc.Layer := LayerID;
            Arc.Net := Net;
@@ -4002,6 +4033,7 @@ begin
            Board.AddPCBObject(Arc);
            StartX := EndX;
            StartY := EndY;
+           end;
          end;
 
          if pos ('</Detail>',CurrentStr) >0 then  break;
