@@ -13,12 +13,32 @@ Begin
      OpenDialog.Free;
 End;
 
+Procedure LogShow();
+begin
+  if b_Log.Caption = ' \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/ ' then
+  begin
+    b_Log.Caption := ' /\  /\  /\  /\  /\  /\  /\  /\  /\  /\  /\  /\  /\  /\  /\  /\ ';
+    Form1.Height := 540;
+  end
+  else
+  begin
+    b_Log.Caption := ' \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/ ';
+    Form1.Height := 355;
+  end;
+end;
+
+procedure TForm1.b_LogClick(Sender: TObject);
+begin
+  LogShow();
+end;
+
 Procedure SaveConfig ();
 var
   Board       : IPCB_Board;
   TopoRFile   :TStringList;
 
 begin
+
   Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
   TopoRFile := TStringList.Create;
   TopoRFile.Add(tTopor.Text);     // 0 - Путь к топору
@@ -106,6 +126,32 @@ Begin
      Result := SaveDialog.Filename;
      SaveDialog.Free;
 End;
+
+Function GetADVer : Double;
+var
+   VerStr  : string;
+   FullVer : String;
+   i       : integer;
+   s       : String;
+   countDot: integer;
+Begin
+   FullVer := GetCurrentProductBuild;
+   countDot := 0;
+   VerStr := '';
+   For i := 1 to length(FullVer) do
+   begin
+     s := FullVer[i];
+
+     if s = '.' then
+     if countDot = 1 then  // записываем версию в Double xx.xx
+     begin
+       Result := StrToFloatDot(VerStr);
+       break;
+     end else begin inc(countDot);  end;
+
+     VerStr := VerStr + s;
+   end;
+end;
 
 Function UnitToString2(U : TUnit;) : TPCBString;
 var
@@ -244,7 +290,7 @@ Begin
      //сигнальные
      Repeat
            LayerName := LyrObj.Name;
-           lbProcess.Caption := LayerName;
+           //lbProcess.Caption := LayerName;
            LayerThickness := FloatToStrF(0,ffFixed,3,3);
            LayerTypeStr := LayerIDtoStr(LyrObj.LayerID);
 
@@ -929,7 +975,7 @@ Begin
   Result := ResultString;
 
 End;
-  
+
 Procedure PadstacksAdd(Padstacks : TStringList;  Pad: IPCB_Pad; PadStackName : String;);
 var
    Pad2                    : IPCB_Pad2;
@@ -972,7 +1018,7 @@ Begin
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                 Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
                 end;  //1.1.3
-                if cb_Version.Text = '1.1.4' | cb_Version.Text = '1.1.5' then
+                if cb_Version.Text = '1.1.4' | cb_Version.Text = '1.2.0' then
                 begin // 1.1.4
                 if Pad.XSizeOnLayer[Pad.Layer] > Pad.YSizeOnLayer[Pad.Layer] then begin
                 handlingValue := 0.25*Pad.YSizeOnLayer[Pad.Layer];
@@ -1018,7 +1064,7 @@ Begin
                 floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
 
-                if (cb_Version.Text = '1.1.4' | cb_Version.Text = '1.1.5') then
+                if (cb_Version.Text = '1.1.4' | cb_Version.Text = '1.2.0') then
                 Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
                 floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
@@ -1058,7 +1104,7 @@ Begin
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                 Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
                 end;  //1.1.3
-                if cb_Version.Text = '1.1.4' | cb_Version.Text = '1.1.5' then
+                if cb_Version.Text = '1.1.4' | cb_Version.Text = '1.2.0' then
                 begin  //1.1.4
                 if Pad.XSizeOnLayer[Pad.Layer] > Pad.YSizeOnLayer[Pad.Layer] then begin
                 handlingValue := 0.25*Pad.YSizeOnLayer[Pad.Layer];
@@ -2401,6 +2447,7 @@ Var
    RuleWidth     : IPCB_MaxMinWidthConstraint;
    RuleClear     : IPCB_ClearanceConstraint;
    RuleClearComp : IPCB_ComponentClearanceConstraint;
+   RuleClearBoard: IPCB_BoardOutlineClearanceConstraint;
    BoardIterator : IPCB_BoardIterator;
    Teststring    : String;
    oldRuleName   : String;
@@ -2417,6 +2464,7 @@ Var
    NetRef        : String;
    i,crdM, crdN  : integer;
    widthAll      : boolean;
+   ClearToBoard  : String;
 
 
 Begin
@@ -2428,6 +2476,7 @@ Begin
    RuleWidth := Nil;
    RuleClear := Nil;
    RuleClearComp := Nil;
+   ClearToBoard := '0';
    lbProcess.Caption := 'Rules'; Form1.Update;
    Stack := Board.LayerStack;
    FileXMLHSRul.Add(#9+'<HiSpeedRules version="2.1">');
@@ -2588,6 +2637,16 @@ Begin
 
      End; // конец создания правила зазора проводников
 
+     // если правило зазора до края платы
+     if GetADVer >= 16 then
+     if Rule.RuleKind = eRule_BoardOutlineClearance Then
+     Begin
+       RuleClearBoard := Rule;
+       ClearToBoard := FloatToStr(CoordToMMs(RuleClearBoard.Gap));
+     end;
+
+
+
      //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      //Просто создается одно общее правило на основе первого попавшегося
      if Rule.RuleKind = eRule_ComponentClearance Then
@@ -2651,6 +2710,9 @@ Begin
 
    RuleClearCompS.Add(#9+#9+'</RulesClearancesCompToComp>');
    FileXMLRul.AddStrings(RuleClearCompS);  //добавляем группу правил компонент-компонент
+
+
+   FileXMLRul.Add(#9+#9+'<RulesClearancesToBoard wires="'+ClearToBoard+'" comps="0"/>');  //добавляем правило Зазора до края платы
 
    Viastacks.Add(#9+#9+'</RulesViastacksOfNets>');
    FileXMLRul.AddStrings(Viastacks); //добавляем группу правил переходных отверстий
@@ -2885,6 +2947,7 @@ var
     //Track := Board.GetObjectAtCursor(AllObjects,AllLayers,eEditAction_Select);
    // TestString := Track.Name;
     //TestString := Track.Layer;
+    //TestString := Track.Layer_V6;
 
     FileXMLCon.Add(#9+#9+'<Wires>');
     lbProcess.Caption := 'Wires - Track'; Form1.Update;
@@ -3225,17 +3288,22 @@ Begin
      UTF8BOM[1] := $BB;
      UTF8BOM[2] := $BF;
      FileXml := TStringList.Create;                      // Создание обьекта класса
-     try
-       // If you see this then just press F9
-       // если вы видете это то просто нажмите F9
-       FileXml.DefaultEncoding := TEncoding.UTF8;
-     except
-       ShowMessage('You use the Altium Designer version below 17.'+
-       'For correct work of the translator, you must use version 17 or higher.'+
-       'However, you can still perform the translation if you change the encoding'+
-       ' of the generated .fst file to utf8 (For example, using the "Notepad++" program).'+
-       ' This is due to the fact that support for utf8 is added only in version 17. ');
-     end;
+
+     // Установка кодировки UTF8 возможна только после 17 версии.
+     if GetADVer < 17 then
+     begin
+       Log.Lines.Add('Warning!');
+       Log.Lines.Add('You use the Altium Designer version below 17.');
+       Log.Lines.Add('For correct work of the translator, you must use version 17 or higher.');
+       Log.Lines.Add('However, you can still perform the translation if you change the encoding');
+       Log.Lines.Add('of the generated .fst file to utf8 (For example, using the "Notepad++" program).');
+       Log.Lines.Add('This is due to the fact that support for utf8 is added only in version 17.');
+       LogShow();
+     end
+     else
+     begin FileXml.DefaultEncoding := TEncoding.UTF8;     end;
+
+
      FileXml2:= TStringList.Create;
      FileXmlTSt := TStringList.Create;
      FileXmlLL := TStringList.Create;
@@ -3260,6 +3328,8 @@ Begin
      l_D.Font.Color := clRed;
 
      StartTime := GetCurrentTimeString();
+     Log.Lines.Add('Translate to Altium');
+     Log.Lines.Add('Start: ' + StartTime);
 
      Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
      TextStyleAll := '';
@@ -3321,7 +3391,10 @@ Begin
      FileXml.AddStrings(FileXMLDispC); // подгружаем  контроль отображения
      FileXml.Add('</TopoR_PCB_File>'); // закрываем тег формата данных
 
-     lbProcess.Caption := 'Start: '+StartTime+' End:'+GetCurrentTimeString(); Form1.Update;
+     lbProcess.Caption := 'Translated!';
+
+     Log.Lines.Add('End: ' + GetCurrentTimeString());
+     Form1.Update;
      //*******Сохранение XML Файла********//
      if cbStartTopoR.Checked then   // если нужно то сразу запускаем топор и импортируем
      //!!!!!!!!!!Не работает
@@ -3470,7 +3543,7 @@ begin
 
     // Создаем итератор перебора Проводников
     BoardIterator        := Board.BoardIterator_Create;
-    BoardIterator.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,
+    BoardIterator.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,
                          66,67,68,69,70,71,22));
     BoardIterator.AddFilter_ObjectSet(MkSet(eTrackObject));
     BoardIterator.AddFilter_Method(eProcessAll);
@@ -3493,7 +3566,7 @@ begin
 
     // Создаем итератор перебора дуг
     BoardIterator        := Board.BoardIterator_Create;
-    BoardIterator.AddFilter_LayerSet(MkSet(56,57,58,59,60,61,62,63,64,65,
+    BoardIterator.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,
                          66,67,68,69,70,71,22));
     BoardIterator.AddFilter_ObjectSet(MkSet(eArcObject));
     BoardIterator.AddFilter_Method(eProcessAll);
@@ -3603,7 +3676,6 @@ begin
     end;
     Board.BoardIterator_Destroy(IteratorHandle);
 end;
-
 
 // получить ID слоя по имени
 Function GetLyrId (InLyrName : String; Stack : IPCB_LayerStack;) : integer;
@@ -4750,7 +4822,6 @@ var
   TopoRFile   :TStringList;
 
 Begin
-
   TopoRFile := TStringList.Create;
   Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
   If Board = nil then Begin ShowError('Open board!'); Exit; End; // Если платы нет то выходим
@@ -4784,6 +4855,7 @@ Begin
   else begin cb_Text.Checked := false; end;
   if TopoRFile.Get(12) = 'True' then begin cbPrimitive.Checked := true; end
   else begin cbPrimitive.Checked := false; end;
+
   Form1.Show;
   TopoRFile.Free;
 End;
@@ -4828,26 +4900,42 @@ end;
 procedure TForm1.bt_ConfSaveClick(Sender: TObject);
 begin
   SaveConfig();
-  lbProcess.Caption := '.scon Saved!'
-
+  lbProcess.Caption := '.scon Saved!';
+  log.Lines.Add('Config Saved');
 end;
 
 //ToDo
 // добавить дифф пары
-// Добавить правило зазора до края платы
 // Обработать правила проектирования
 // Обработать слои маски и пасты для КП и сами по себе
 // трансляция механических слоев с 17 по 32
-// Board Outlone Clearence
+
+//для версии 1.2.0
+// Добавить трансляцию в TopoR уникального имени компонента uniqueId в CompInstance. // Использовать uniqueId при импорте из TopoR
+// Проверить влияние изменения имен контактов компонентов.
+// у разделов, в которых используются имена контактов (NetList, Rules и HiSpeedRules), изменилась мажорная версия.
+// Сделать вывод дуг с использованием ArcCW и ArcCCW
+
 
 //RunProcess('PCB:Undo');
 //  RunProcess('PCB:Redo');
 // найти перерисовщик
-
-
 
 //*****Приятные мелочи****//
 // Мб добавить не метрическую систему измерения
 // Мб сделать красивую шапку
 
 
+procedure TForm1.b_file_exportClick(Sender: TObject);
+begin
+  tExport.Text := SaveAFile;
+end;
+
+procedure TForm1.b_file_importClick(Sender: TObject);
+begin
+  tImport.Text := LoadAFileFst;
+end;
+
+
+//Track := Board.GetObjectAtCursor(AllObjects,AllLayers,eEditAction_Select);
+// TestString := Track.Name;
