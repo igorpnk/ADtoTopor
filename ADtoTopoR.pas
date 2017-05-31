@@ -1331,8 +1331,15 @@ Begin
 
            if Component.Layer = 1 then begin CompSide := 'Top'; end else begin CompSide := 'Bottom'; end;
 
-           FileXMLCOB.Add(#9+#9+#9+'<CompInstance name="'+NameComp+'" side="'+CompSide+
+           if cb_Version.Text = '1.2.0' then   // В версии 1.2.0 добавлен атрибут uniqueId в тег CompInstance
+           Begin
+             FileXMLCOB.Add(#9+#9+#9+'<CompInstance name="'+NameComp+'" uniqueId="'+IDcomp+'" side="'+CompSide+
                                     '" angle="'+inttostr(Component.Rotation)+'" fixed="'+CompFix+'">');
+           end else begin
+             FileXMLCOB.Add(#9+#9+#9+'<CompInstance name="'+NameComp+'" side="'+CompSide+
+                                    '" angle="'+inttostr(Component.Rotation)+'" fixed="'+CompFix+'">');
+           end;
+
            FileXMLCOB.Add(#9+#9+#9+#9+'<ComponentRef name="'+NameComp+'"/>');
            FileXMLCOB.Add(#9+#9+#9+#9+'<FootprintRef name="'+FootName+ '"/>');
            FileXMLCOB.Add(#9+#9+#9+#9+'<Org x="'+FloatToStr(CoordToMMs(Component.x-Board.XOrigin))+'" y="'+FloatToStr(CoordToMMs(Component.y-Board.YOrigin))+'"/>');
@@ -4904,6 +4911,16 @@ begin
   log.Lines.Add('Config Saved');
 end;
 
+procedure TForm1.b_file_exportClick(Sender: TObject);
+begin
+  tExport.Text := SaveAFile;
+end;
+
+procedure TForm1.b_file_importClick(Sender: TObject);
+begin
+  tImport.Text := LoadAFileFst;
+end;
+
 //ToDo
 // добавить дифф пары
 // Обработать правила проектирования
@@ -4911,7 +4928,7 @@ end;
 // трансляция механических слоев с 17 по 32
 
 //для версии 1.2.0
-// Добавить трансляцию в TopoR уникального имени компонента uniqueId в CompInstance. // Использовать uniqueId при импорте из TopoR
+// Использовать uniqueId при импорте из TopoR
 // Проверить влияние изменения имен контактов компонентов.
 // у разделов, в которых используются имена контактов (NetList, Rules и HiSpeedRules), изменилась мажорная версия.
 // Сделать вывод дуг с использованием ArcCW и ArcCCW
@@ -4924,18 +4941,6 @@ end;
 //*****Приятные мелочи****//
 // Мб добавить не метрическую систему измерения
 // Мб сделать красивую шапку
-
-
-procedure TForm1.b_file_exportClick(Sender: TObject);
-begin
-  tExport.Text := SaveAFile;
-end;
-
-procedure TForm1.b_file_importClick(Sender: TObject);
-begin
-  tImport.Text := LoadAFileFst;
-end;
-
 
 //Track := Board.GetObjectAtCursor(AllObjects,AllLayers,eEditAction_Select);
 // TestString := Track.Name;

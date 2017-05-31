@@ -3,7 +3,7 @@ object Form1: TForm1
   Top = 0
   BorderStyle = bsSingle
   Caption = 'AD to TopoR Interface'
-  ClientHeight = 312
+  ClientHeight = 327
   ClientWidth = 545
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -262,27 +262,13 @@ object Form1: TForm1
     TabStop = False
     OnClick = bt_ConfSaveClick
   end
-  object cb_Version: TXPComboBox
-    Left = 240
-    Top = 80
-    Width = 64
-    Height = 21
-    Items.Strings = (
-      '1.1.3'
-      '1.1.4'
-      '1.1.5')
-    ItemIndex = 1
-    StretchButtonImage = False
-    TabOrder = 7
-    Text = '1.1.4'
-  end
   object cbPrimitive: TXPCheckBox
     Left = 312
     Top = 264
     Width = 64
     Height = 17
     Caption = 'Primitive'
-    TabOrder = 8
+    TabOrder = 7
     State = cbChecked
   end
   object cbFreePad: TXPCheckBox
@@ -291,7 +277,7 @@ object Form1: TForm1
     Width = 64
     Height = 17
     Caption = 'Free Pad'
-    TabOrder = 9
+    TabOrder = 8
     State = cbChecked
   end
   object cbTrack: TXPCheckBox
@@ -300,7 +286,7 @@ object Form1: TForm1
     Width = 56
     Height = 17
     Caption = 'Track'
-    TabOrder = 10
+    TabOrder = 9
     State = cbChecked
   end
   object cbVia: TXPCheckBox
@@ -309,7 +295,7 @@ object Form1: TForm1
     Width = 32
     Height = 17
     Caption = 'Via'
-    TabOrder = 11
+    TabOrder = 10
     State = cbChecked
   end
   object cbComponent: TXPCheckBox
@@ -318,29 +304,8 @@ object Form1: TForm1
     Width = 72
     Height = 17
     Caption = 'Component'
-    TabOrder = 12
+    TabOrder = 11
     State = cbChecked
-  end
-  object tImport: TXPFileNameEdit
-    Left = 40
-    Top = 232
-    Width = 496
-    Height = 21
-    Filter = 'TopoR Text Files|*.fst|All Files|'
-    FilterIndex = 0
-    StretchButtonImage = False
-    TabOrder = 13
-    Text = ''
-  end
-  object tExport: TXPFileNameEdit
-    Left = 40
-    Top = 144
-    Width = 496
-    Height = 21
-    FilterIndex = 0
-    StretchButtonImage = False
-    TabOrder = 14
-    Text = ''
   end
   object cb_FootComp: TXPCheckBox
     Left = 320
@@ -348,7 +313,7 @@ object Form1: TForm1
     Width = 128
     Height = 17
     Caption = 'Footprint(RC) Compare'
-    TabOrder = 15
+    TabOrder = 12
     State = cbChecked
   end
   object b_GO: TXPButton
@@ -358,7 +323,7 @@ object Form1: TForm1
     Height = 24
     Caption = 'Export FST'
     ParentColor = False
-    TabOrder = 16
+    TabOrder = 13
     TabStop = False
     OnClick = b_GOClick
   end
@@ -369,8 +334,68 @@ object Form1: TForm1
     Height = 24
     Caption = 'Import FST'
     ParentColor = False
-    TabOrder = 17
+    TabOrder = 14
     TabStop = False
     OnClick = b_ImportClick
+  end
+  object cb_Version: TComboBox
+    Left = 240
+    Top = 80
+    Width = 56
+    Height = 21
+    TabOrder = 15
+    Text = '1.1.4'
+    Items.Strings = (
+      '1.1.3'
+      '1.1.4'
+      '1.2.0')
+  end
+  object tExport: TEdit
+    Left = 40
+    Top = 144
+    Width = 416
+    Height = 21
+    TabOrder = 16
+  end
+  object b_file_export: TButton
+    Left = 464
+    Top = 144
+    Width = 75
+    Height = 25
+    Caption = 'Change File'
+    TabOrder = 17
+    OnClick = b_file_exportClick
+  end
+  object b_file_import: TButton
+    Left = 464
+    Top = 232
+    Width = 75
+    Height = 25
+    Caption = 'Open'
+    TabOrder = 18
+    OnClick = b_file_importClick
+  end
+  object tImport: TEdit
+    Left = 40
+    Top = 232
+    Width = 416
+    Height = 21
+    TabOrder = 19
+  end
+  object Log: TMemo
+    Left = 8
+    Top = 328
+    Width = 528
+    Height = 176
+    TabOrder = 20
+  end
+  object b_Log: TButton
+    Left = 8
+    Top = 312
+    Width = 528
+    Height = 16
+    Caption = ' \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/ '
+    TabOrder = 21
+    OnClick = b_LogClick
   end
 end
