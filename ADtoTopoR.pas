@@ -244,6 +244,9 @@ var
  i                        : Integer;
  Stack                    : IPCB_LayerStack;
  LayerPairS               : array[0..16,0..2] of Tlayer;
+ TestString               : String;
+ TestInt                  : integer;
+ LayerPairSCount          : integer;
 
 
 
@@ -251,7 +254,7 @@ Begin
      Stack := Board.LayerStack;
      LyrClass := eLayerClass_Physical;        // задаем тип сло€
      LyrMehPairs := Board.MechanicalPairs;
-
+     i := LyrMehPairs.Count;
 
      XMLIn.Add(#9+'<Layers version="1.1">');
      XMLIn.Add(#9+#9+'<StackUpLayers>');
@@ -262,7 +265,7 @@ Begin
      End;
 
      //*******ѕолучаем все физические и парные механические слои********//
-
+      LogShow();
      //находим все пары слоев перебором потому что LayerPair[I : Integer] возвращает TMechanicalLayerPair  с которой непон€тно что делать.
       i := 0;
       for LayerType := eMechanical1 to eMechanical16 do
@@ -270,16 +273,22 @@ Begin
         begin
           if LyrMehPairs.PairDefined(LayerType,LayerType2) then
           begin
+           Log.Lines.Add(IntToStr(i));
+           Log.Lines.Add(IntToStr(LayerType));
+           Log.Lines.Add(IntToStr(LayerType2));
            LayerPairS[i,0] := LayerType;
            LayerPairS[i,1] := LayerType2;
            inc(i);
           end;
         end;
-
+     LayerPairSCount := i;
      //механические “оп
-     For i := 0 To LyrMehPairs.Count - 1 Do
+     For i := 0 To LayerPairSCount-1  Do
      Begin
-       LyrObj := Stack.LayerObject[LayerPairS[LyrMehPairs.Count - 1 -i,0]];
+       LyrObj := Stack.LayerObject[LayerPairS[LayerPairSCount-1 -i,0]];
+       Log.Lines.Add(IntToStr(i));
+       Log.Lines.Add(IntToStr(LayerPairS[LayerPairSCount-1 -i,0]));
+
        LayerName := LyrObj.Name;
        LayerTypeStr := 'Mechanical';
        LayerThickness := FloatToStrF(0,ffFixed,3,3);
@@ -322,7 +331,7 @@ Begin
      Until LyrObj = Nil;
 
      //механические Ѕоттом
-     For i := 0 To LyrMehPairs.Count - 1 Do
+     For i := 0 To LayerPairSCount-1 Do
      Begin
        LyrObj := Stack.LayerObject[LayerPairS[i,1]];
        LayerName := LyrObj.Name;
@@ -4836,8 +4845,17 @@ Begin
   if FileExists(Board.FileName+'.scon') then begin
     TopoRFile.LoadFromFile(Board.FileName+'.scon');
   end else begin
-    tExport.Text :=StringReplace(Board.FileName,'.PcbDoc','.fst',rfReplaceAll);
-    tImport.Text :=StringReplace(Board.FileName,'.PcbDoc','.fst',rfReplaceAll);
+    if pos('.PcbDoc', Board.FileName) > 0 then
+    begin
+      tExport.Text :=StringReplace(Board.FileName,'.PcbDoc','.fst',rfReplaceAll);
+      tImport.Text :=StringReplace(Board.FileName,'.PcbDoc','.fst',rfReplaceAll);
+    end;
+    if pos('.PCBDOC', Board.FileName) > 0 then
+    begin
+      tExport.Text :=StringReplace(Board.FileName,'.PCBDOC','.fst',rfReplaceAll);
+      tImport.Text :=StringReplace(Board.FileName,'.PCBDOC','.fst',rfReplaceAll);
+    end;
+
     SaveConfig;
     TopoRFile.LoadFromFile(Board.FileName+'.scon');
   end;
