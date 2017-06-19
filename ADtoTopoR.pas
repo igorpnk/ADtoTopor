@@ -265,7 +265,7 @@ Begin
      End;
 
      //*******ѕолучаем все физические и парные механические слои********//
-      LogShow();
+
      //находим все пары слоев перебором потому что LayerPair[I : Integer] возвращает TMechanicalLayerPair  с которой непон€тно что делать.
       i := 0;
       for LayerType := eMechanical1 to eMechanical16 do
@@ -273,9 +273,6 @@ Begin
         begin
           if LyrMehPairs.PairDefined(LayerType,LayerType2) then
           begin
-           Log.Lines.Add(IntToStr(i));
-           Log.Lines.Add(IntToStr(LayerType));
-           Log.Lines.Add(IntToStr(LayerType2));
            LayerPairS[i,0] := LayerType;
            LayerPairS[i,1] := LayerType2;
            inc(i);
@@ -286,9 +283,6 @@ Begin
      For i := 0 To LayerPairSCount-1  Do
      Begin
        LyrObj := Stack.LayerObject[LayerPairS[LayerPairSCount-1 -i,0]];
-       Log.Lines.Add(IntToStr(i));
-       Log.Lines.Add(IntToStr(LayerPairS[LayerPairSCount-1 -i,0]));
-
        LayerName := LyrObj.Name;
        LayerTypeStr := 'Mechanical';
        LayerThickness := FloatToStrF(0,ffFixed,3,3);
@@ -2456,6 +2450,29 @@ Begin
  Result := ResultS;
 end;
 
+Function XMLGetNumberAttrValue (InputStr : String; AttrName : String) : String;
+Var
+i      : integer;
+WriteS : bolean;
+s      : String;
+ResultS: String;
+Begin
+ WriteS := false;
+ ResultS:= '0';
+ if pos(AttrName,InputStr) >0 then
+ For i := pos(AttrName,InputStr)+length(AttrName) to length(InputStr) do
+ begin
+   s := InputStr[i];
+   if writeS then
+   begin
+     if (InputStr[i] = '"' |InputStr[i] = '''' ) then break;
+     Results := Results + InputStr[i];
+   end;
+   if (InputStr[i] = '"' |InputStr[i] = '''' )  then WriteS := true;
+ end;
+ Result := ResultS;
+end;
+
 Procedure AddRules (FileXMLRul :TStringList;FileXMLHSRul :TStringList; Board : IPCB_Board;  );
 Var
    Rule          : IPCB_Rule;
@@ -3555,23 +3572,29 @@ var
   Track         : IPCB_Track;
   Arc           : IPCB_Arc;
   Prim          : IPCB_Primitive;
+  TestString    : String;
+  i             : integer;
 begin
+    Board.SelectedObjects_Clear;
 
     // —оздаем итератор перебора ѕроводников
     BoardIterator        := Board.BoardIterator_Create;
     BoardIterator.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,
                          66,67,68,69,70,71,22));
+    //BoardIterator.AddFilter_LayerSet(MkSet(69));
     BoardIterator.AddFilter_ObjectSet(MkSet(eTrackObject));
     BoardIterator.AddFilter_Method(eProcessAll);
     Track := BoardIterator.FirstPCBObject;
 
     While (Track <> Nil) Do
      Begin
-       if Track.IsKeepout <> true then
+       if (Track.IsKeepout <> true) then
        begin // если лини€ не киипаут
-        Board.RemovePCBObject(Track);
-        Track := BoardIterator.FirstPCBObject;
-        end//если лини€ не кипаут то следующа€ лини€
+         if (Track.Component = nil & Track.Dimension = nil) then
+           //Board.RemovePCBObject(Track);
+           Track.Selected := true;
+         Track := BoardIterator.NextPCBObject;
+       end//если лини€ не кипаут то следующа€ лини€
        else
        begin
        Track := BoardIterator.NextPCBObject;
@@ -3584,23 +3607,32 @@ begin
     BoardIterator        := Board.BoardIterator_Create;
     BoardIterator.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,
                          66,67,68,69,70,71,22));
+    //BoardIterator.AddFilter_LayerSet(MkSet(69));
     BoardIterator.AddFilter_ObjectSet(MkSet(eArcObject));
     BoardIterator.AddFilter_Method(eProcessAll);
     Arc := BoardIterator.FirstPCBObject;
 
     While (Arc <> Nil) Do
-     Begin
-       if Arc.IsKeepout <> true then
-       begin // если дуга не киипаут
-        Board.RemovePCBObject(Arc);
-        Arc := BoardIterator.FirstPCBObject;
-       end//если дуга не кипаут то следующа€ дуга
-       else
-       begin
-       Arc := BoardIterator.NextPCBObject;
-       end;
-     End;
-     Board.BoardIterator_Destroy(BoardIterator);
+    Begin
+        if (Arc.IsKeepout <> true) then
+        begin // если дуга не киипаут
+         if (Arc.Component = nil) then
+           //Board.RemovePCBObject(Arc);
+           Arc.Selected := true;
+         Arc := BoardIterator.NextPCBObject;
+        end//если дуга не кипаут то следующа€ дуга
+        else
+        begin
+        Arc := BoardIterator.NextPCBObject;
+        end;
+    End;
+    Board.BoardIterator_Destroy(BoardIterator);
+
+    While (Board.SelectecObjectCount>0) Do
+    begin
+       Prim :=  Board.SelectecObject[0];
+       Board.RemovePCBObject(Prim);
+    end;
 
 
 end;
@@ -4416,8 +4448,8 @@ begin
 
     if pos('<Org',CurrentStr) >0 then
       Begin
-           OrgX := StrToFloatDot(XMLGetAttrValue(CurrentStr,'x'));
-           OrgY := StrToFloatDot(XMLGetAttrValue(CurrentStr,'y'));
+           OrgX := StrToFloatDot(XMLGetNumberAttrValue(CurrentStr,'x'));
+           OrgY := StrToFloatDot(XMLGetNumberAttrValue(CurrentStr,'y'));
       end;
 
     if pos('<PadstackRef',CurrentStr) >0 then
@@ -4448,7 +4480,7 @@ begin
                 if pos('<PadCircle',CurrentStrSt) >0  then
                 begin
                   ShapeType := eRounded;
-                  PadDiam :=  StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'diameter'));
+                  PadDiam :=  StrToFloatDot(XMLGetNumberAttrValue(CurrentStrSt,'diameter'));
                   Width := PadDiam;
                   Height := PadDiam;
                 end;
@@ -4456,14 +4488,14 @@ begin
                 if pos('<PadRect',CurrentStrSt) >0  then
                 begin
                   ShapeType := eRectangular;
-                  Width :=  StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'width'));
-                  Height :=  StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'height'));
+                  Width :=  StrToFloatDot(XMLGetNumberAttrValue(CurrentStrSt,'width'));
+                  Height :=  StrToFloatDot(XMLGetNumberAttrValue(CurrentStrSt,'height'));
                 end;
 
                 if pos('<PadOval',CurrentStrSt) >0  then
                 begin
                   ShapeType := eRounded;
-                  PadDiam :=  StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'diameter'));
+                  PadDiam :=  StrToFloatDot(XMLGetNumberAttrValue(CurrentStrSt,'diameter'));
                 end;
 
                 if pos('<Stretch',CurrentStrSt) >0  then // если овал то определ€ем ширину и высоту
@@ -4471,11 +4503,11 @@ begin
                   if StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'x')) <> 0 then
                   begin
                     Height := PadDiam;
-                    Width := (StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'x'))) +  Height;
+                    Width := (StrToFloatDot(XMLGetNumberAttrValue(CurrentStrSt,'x'))) +  Height;
                   end else
                   begin
                    Width := PadDiam;
-                   Height := (StrToFloatDot(XMLGetAttrValue(CurrentStrSt,'y'))) +  Width;
+                   Height := (StrToFloatDot(XMLGetNumberAttrValue(CurrentStrSt,'y'))) +  Width;
                   end;
                 end;
 
@@ -4506,12 +4538,12 @@ begin
             end;
             if side = 'Bottom' then begin
               Pad.Layer := eBottomLayer;
-              Pad.BotXSize := MMsToCoord(Width);
-              Pad.BotYSize := MMsToCoord(Height);
-              Pad.BotShape := ShapeType;
+              Pad.TopXSize := MMsToCoord(Width);
+              Pad.TopYSize := MMsToCoord(Height);
+              Pad.TopShape := ShapeType;
             end;
             Pad.HoleSize := 0;
-            Pad.Rotation := MMsToCoord(angle);
+            Pad.Rotation := angle;
             Pad.x := MMsToCoord(OrgX)+Board.XOrigin;
             Pad.y := MMsToCoord(OrgY)+Board.YOrigin;
 
@@ -4519,7 +4551,7 @@ begin
           else  // ¬рубные  ѕ
           begin
             Pad.Layer := eMultiLayer ;
-            Pad.Rotation := MMsToCoord(angle);
+            Pad.Rotation := angle;
             Pad.x := MMsToCoord(OrgX)+Board.XOrigin;
             Pad.y := MMsToCoord(OrgY)+Board.YOrigin;
             Pad.TopXSize := MMsToCoord(Width);
@@ -4536,6 +4568,7 @@ begin
           end;
 
       Board.AddPCBObject(Pad);
+      Net := Nil;
     end;
 
     if pos('</FreePads>',CurrentStr) >0 then begin
@@ -4799,7 +4832,7 @@ begin
 
    lbProcess.Caption := 'Add primitive'; Form1.Update;
   //*******ƒобавл€ем примитивы на механических сло€х*******//
-  if cbTrack.Checked then AddPriminMeh(Board,FileXml);
+  if cbPrimitive.Checked then AddPriminMeh(Board,FileXml);
 
   lbProcess.Caption := 'Add Via'; Form1.Update;
   //*******ƒобавл€ем переходники*******//
@@ -4854,6 +4887,11 @@ Begin
     begin
       tExport.Text :=StringReplace(Board.FileName,'.PCBDOC','.fst',rfReplaceAll);
       tImport.Text :=StringReplace(Board.FileName,'.PCBDOC','.fst',rfReplaceAll);
+    end;
+    if pos('.pcbdoc', Board.FileName) > 0 then
+    begin
+      tExport.Text :=StringReplace(Board.FileName,'.pcbdoc','.fst',rfReplaceAll);
+      tImport.Text :=StringReplace(Board.FileName,'.pcbdoc','.fst',rfReplaceAll);
     end;
 
     SaveConfig;
@@ -4940,6 +4978,7 @@ begin
 end;
 
 //ToDo
+// исключить удаление проводников из посадочных
 // добавить дифф пары
 // ќбработать правила проектировани€
 // ќбработать слои маски и пасты дл€  ѕ и сами по себе
