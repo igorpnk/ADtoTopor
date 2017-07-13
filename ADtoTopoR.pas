@@ -3429,17 +3429,19 @@ Begin
      Log.Lines.Add('End: ' + GetCurrentTimeString());
      Form1.Update;
      //*******Сохранение XML Файла********//
-     if cbStartTopoR.Checked then   // если нужно то сразу запускаем топор и импортируем
-     //!!!!!!!!!!Не работает
-     // из скрипта похоже невозможно открыть другое приложение
-     begin
-       if tExport.Text = '' then begin
-         FileName := StringReplace(Board.FileName,'.PcbDoc','_exp.fst',rfReplaceAll);
-       end else begin
+     if tExport.Text = '' then begin
+         FileName := SaveAFile()+'.fst';
+     end else begin
          FileName := tExport.Text;
-       end;
-       FileXml.SaveToFile(FileName);
+     end;
+     if FileName <> '' then begin
+         FileXml.SaveToFile(FileName);
+         log.Lines.Add('FST Файл: '+FileName+' - Создан! И состоит из ' +IntToStr(FileXml.Count) + ' строк.');
+     end else begin ShowMessage('Присвойте имя FST файла!'); end;
 
+     //*******Запуск топора********//
+     if (cbStartTopoR.Checked & tTopor.Text <> '') then
+     begin
        TopoRCommand.Add('<?xml version="1.0" encoding="UTF-8"?>');
        TopoRCommand.Add('<Version>1.0</Version>');
        TopoRCommand.Add('<Commands>');
@@ -3452,37 +3454,8 @@ Begin
        TopoRCommand.Add('</Commands>');
 
        TopoRCommand.SaveToFile(Board.FileName+'.fsa');
-       // Тут нужно каким то образом запустить топор
-     end
-     else // просто сохраняем файл
-     begin
-       if tExport.Text = '' then begin
-         FileName := SaveAFile()+'.fst';
-       end else begin
-         FileName := tExport.Text;
-       end;
-       if FileName <> '' then begin
-         FileXml.SaveToFile(FileName);
 
-         //AssignFile(F_in,'D:\Temp\PCB2.fst');
-         //Reset(F_in);
-         //AssignFile(F_out,'D:\Temp\PCB1_UTF2.fst');
-         //Rewrite(F_out);
-         //For i:= 1 to 2 do
-         //begin
-           //BlockRead(F_in,Buf,1);
-           //BlockWrite(F_out,Buf,1);
-           //Readln(F_in,ut8str);
-          // Writeln(F_out,ut8str);
-          // ShowMessage(ut8str);
-         //end;
-         //CloseFile(F_in);
-         //CloseFile(F_out);
-
-         ShowMessage('FST Файл: '+FileName+' - Создан! И состоит из ' +IntToStr(FileXml.Count) + ' строк.');
-       end else begin
-         ShowMessage('Присвойте имя FST файла!');
-       end;
+       RunSystemCommand(tTopor.Text + ' ' + Board.FileName+'.fsa' );
      end;
 
 
@@ -4877,7 +4850,7 @@ Begin
 
   if FileExists(Board.FileName+'.scon') then begin
     TopoRFile.LoadFromFile(Board.FileName+'.scon');
-  end else begin
+  end else begin // нужнапроверка расширения платы !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if pos('.PcbDoc', Board.FileName) > 0 then
     begin
       tExport.Text :=StringReplace(Board.FileName,'.PcbDoc','.fst',rfReplaceAll);
@@ -4918,9 +4891,11 @@ Begin
   else begin cb_Text.Checked := false; end;
   if TopoRFile.Get(12) = 'True' then begin cbPrimitive.Checked := true; end
   else begin cbPrimitive.Checked := false; end;
-
   Form1.Show;
   TopoRFile.Free;
+
+  //RunSystemCommand('start /d"C:\Temp" Word');
+
 End;
 
 procedure TForm1.b_GOClick(Sender: TObject);

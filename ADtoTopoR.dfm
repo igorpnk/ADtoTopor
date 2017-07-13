@@ -21,7 +21,6 @@ object Form1: TForm1
     Width = 53
     Height = 19
     Caption = 'TopoR:'
-    Enabled = False
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -16
@@ -35,7 +34,6 @@ object Form1: TForm1
     Width = 55
     Height = 19
     Caption = 'Project:'
-    Enabled = False
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -16
@@ -44,7 +42,7 @@ object Form1: TForm1
     ParentFont = False
   end
   object Label3: TLabel
-    Left = 144
+    Left = 8
     Top = 80
     Width = 91
     Height = 19
@@ -190,13 +188,33 @@ object Form1: TForm1
     Font.Style = []
     ParentFont = False
   end
+  object Label6: TLabel
+    Left = 168
+    Top = 101
+    Width = 90
+    Height = 12
+    Caption = '1.2.0 = TopoR 6.2'
+  end
+  object Label7: TLabel
+    Left = 168
+    Top = 89
+    Width = 100
+    Height = 13
+    Caption = '1.1.4 = TopoR 6.1.5'
+  end
+  object Label8: TLabel
+    Left = 168
+    Top = 77
+    Width = 100
+    Height = 13
+    Caption = '1.1.3 = TopoR 6.1.4'
+  end
   object bTopoR: TButton
     Left = 464
     Top = 16
     Width = 75
     Height = 21
     Caption = 'Open'
-    Enabled = False
     TabOrder = 0
     OnClick = bTopoRClick
   end
@@ -205,16 +223,13 @@ object Form1: TForm1
     Top = 16
     Width = 360
     Height = 21
-    Enabled = False
     TabOrder = 1
-    Text = 'C:\Program Files\TopoR Lite\BIN\topor.exe'
   end
   object tProject: TEdit
     Left = 96
     Top = 48
     Width = 360
     Height = 21
-    Enabled = False
     TabOrder = 2
   end
   object bProject: TButton
@@ -223,17 +238,15 @@ object Form1: TForm1
     Width = 75
     Height = 25
     Caption = 'Open'
-    Enabled = False
     TabOrder = 3
     OnClick = bProjectClick
   end
   object cbStartTopoR: TCheckBox
-    Left = 8
-    Top = 80
+    Left = 144
+    Top = 176
     Width = 112
     Height = 17
     Caption = 'Run TopoR?'
-    Enabled = False
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -16
@@ -308,8 +321,8 @@ object Form1: TForm1
     State = cbChecked
   end
   object cb_FootComp: TXPCheckBox
-    Left = 320
-    Top = 83
+    Left = 272
+    Top = 179
     Width = 128
     Height = 17
     Caption = 'Footprint(RC) Compare'
@@ -339,7 +352,7 @@ object Form1: TForm1
     OnClick = b_ImportClick
   end
   object cb_Version: TComboBox
-    Left = 240
+    Left = 104
     Top = 80
     Width = 56
     Height = 21
