@@ -242,8 +242,8 @@ object Form1: TForm1
     OnClick = bProjectClick
   end
   object cbStartTopoR: TCheckBox
-    Left = 144
-    Top = 176
+    Left = 288
+    Top = 80
     Width = 112
     Height = 17
     Caption = 'Run TopoR?'
@@ -321,8 +321,8 @@ object Form1: TForm1
     State = cbChecked
   end
   object cb_FootComp: TXPCheckBox
-    Left = 272
-    Top = 179
+    Left = 288
+    Top = 99
     Width = 128
     Height = 17
     Caption = 'Footprint(RC) Compare'
@@ -410,5 +410,13 @@ object Form1: TForm1
     Caption = ' \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/ '
     TabOrder = 21
     OnClick = b_LogClick
+  end
+  object cbExpPoly: TXPCheckBox
+    Left = 120
+    Top = 176
+    Width = 64
+    Height = 17
+    Caption = 'Polygon'
+    TabOrder = 22
   end
 end

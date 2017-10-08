@@ -2043,6 +2043,9 @@ Begin
      Board.BoardIterator_Destroy(MechIterH);
 
      lbProcess.Caption := 'Poly In Mechanical Layers'; Form1.Update;
+
+     if cbExpPoly.Checked = true then
+     begin
      //*******Перебираем Полигоны********//
      MechIterH := Board.BoardIterator_Create;
      MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
@@ -2059,7 +2062,7 @@ Begin
        Poly := MechIterH.NextPCBObject;
      End;
      Board.BoardIterator_Destroy(MechIterH);
-
+     end;
      lbProcess.Caption := 'Region In Mechanical Layers'; Form1.Update;
      //*******Перебираем Регионы********//
      MechIterH := Board.BoardIterator_Create;
@@ -3075,6 +3078,8 @@ var
      FileXMLCon.Add(#9+#9+'<Coppers>');
      lbProcess.Caption := 'Coppers'; Form1.Update;
      //Полигоны
+     if cbExpPoly.Checked = true then
+     begin
      BoardIterator := Board.BoardIterator_Create;
      BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
                          16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
@@ -3088,7 +3093,7 @@ var
        Poly := BoardIterator.NextPCBObject;
      End;
      Board.BoardIterator_Destroy(BoardIterator);
-
+     end;
 
      // филы
      BoardIterator := Board.BoardIterator_Create;
@@ -3109,12 +3114,14 @@ var
      Board.BoardIterator_Destroy(BoardIterator);
 
      // Регионы
+     if cbExpPoly.Checked = true then
+     begin
      BoardIterator := Board.BoardIterator_Create;
      BoardIterator.AddFilter_LayerSet(MkSet(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
                        16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32));
      BoardIterator.AddFilter_ObjectSet(MkSet(eRegionObject));
      BoardIterator.AddFilter_Method(eProcessAll);
-     Region := BoardIterator.FirstPCBObject; //первый филл
+     Region := BoardIterator.FirstPCBObject; //первый регион
 
      While (Region <> Nil) Do
      Begin
@@ -3125,7 +3132,7 @@ var
        Region := BoardIterator.NextPCBObject;
      End;
      Board.BoardIterator_Destroy(BoardIterator);
-
+     end;
 
     FileXMLCon.Add(#9+#9+'</Coppers>');
 
