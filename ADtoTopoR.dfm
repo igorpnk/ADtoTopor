@@ -192,7 +192,7 @@ object Form1: TForm1
     Left = 168
     Top = 101
     Width = 90
-    Height = 12
+    Height = 13
     Caption = '1.2.0 = TopoR 6.2'
   end
   object Label7: TLabel

@@ -1618,17 +1618,15 @@ Begin
            if FTrue then Footprints.Add(#9+#9+#9+#9+'<Coppers>');
 
            // регионы
-
            IteratorHandle := Component.GroupIterator_Create;
            IteratorHandle.AddFilter_ObjectSet(MkSet(eRegionObject));
            Region :=  IteratorHandle.FirstPCBObject;
            if FTrue then
            While (Region <> Nil) Do
            Begin
-             if (Region.IsKeepout <> true & (Region.Layer = 1 | Region.Layer = 32)) then // если регион не зона запрета
+             if (Region.Kind = 0 & Region.IsKeepout <> true & (Region.Layer = 1 | Region.Layer = 32)) then // если регион не зона запрета
              begin
                 LayerName := Board.LayerName(Region.Layer);
-
                  if component.layer = 32 then
                  begin
                    if Region.Layer = 32 then LayerName := Board.LayerName(1);
