@@ -193,14 +193,14 @@ object Form1: TForm1
     Top = 101
     Width = 90
     Height = 13
-    Caption = '1.2.0 = TopoR 6.2'
+    Caption = '1.2.0 = TopoR 6.3'
   end
   object Label7: TLabel
     Left = 168
     Top = 89
-    Width = 100
+    Width = 120
     Height = 13
-    Caption = '1.1.4 = TopoR 6.1.5'
+    Caption = '1.1.4 = TopoR 6.1.5/6.2'
   end
   object Label8: TLabel
     Left = 168
@@ -242,8 +242,8 @@ object Form1: TForm1
     OnClick = bProjectClick
   end
   object cbStartTopoR: TCheckBox
-    Left = 288
-    Top = 80
+    Left = 336
+    Top = 88
     Width = 112
     Height = 17
     Caption = 'Run TopoR?'
@@ -321,8 +321,8 @@ object Form1: TForm1
     State = cbChecked
   end
   object cb_FootComp: TXPCheckBox
-    Left = 288
-    Top = 99
+    Left = 320
+    Top = 179
     Width = 128
     Height = 17
     Caption = 'Footprint(RC) Compare'
