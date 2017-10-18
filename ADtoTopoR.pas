@@ -1299,9 +1299,13 @@ Begin
            IDcomp := Component.UniqueId;                           // вместо имени уникальный ID
            PadFlip := 'off';
            FTrue := true;
-           if pos('"'+NameComp+'"',Components.Text) <> 0 then begin
-           ShowMessage('Components with the same name: '+NameComp);
+           i:=0;
+           i := pos('<Component name="'+NameComp+'"',Components.Text);
+           if i <> 0 then begin
+           Log.Lines.Add('!!! Components with the same name: '+NameComp);
+           //Log.Lines.Add('pos' + IntToStr(i));
            NameComp := NameComp +'$' +IDcomp;
+           //Components.SaveToFile(tExport.Text);
            end;
            lbProcess.Caption := 'Component: ' + NameComp;
            Form1.Update;
@@ -2469,7 +2473,7 @@ Begin
      if (InputStr[i] = '"' |InputStr[i] = '''' ) then break;
      Results := Results + InputStr[i];
    end;
-   if (InputStr[i] = '"' |InputStr[i] = '''' )  then WriteS := true;
+   if (InputStr[i] = '"' |InputStr[i] = '''' )  then begin ResultS:= ''; WriteS := true; end;
  end;
  Result := ResultS;
 end;
@@ -3188,7 +3192,7 @@ begin
      Begin
        FileXMLDispC.Add(#9+#9+'<Units preference="Metric"/>');
      End
-     Else Begin ShowError('Switch to metric units!'); Exit; End; // Пока поддерживается только метрическая система
+     Else Begin FileXMLDispC.Add(#9+#9+'<Units preference="Imperial"/>'); End;
 
      // информация о цветах отображения платы
      FileXMLDispC.Add(#9+#9+'<Colors hilightRate="42" darkRate="0"');
@@ -3372,6 +3376,12 @@ Begin
      Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
      TextStyleAll := '';
      If Board = nil then Begin ShowError('Open board!'); Exit; End; // Если платы нет то выходим
+
+     If (UnitToString2(Board.DisplayUnit) <> 'mm') then
+     Begin
+     Board.DisplayUnit := eImperial;
+     Log.Lines.Add('To perform the conversion, the units of your PCB are changed to metric.');
+     End; // Пока поддерживается только метрическая система
 
      UnitsDist := UnitToString2(Board.DisplayUnit);
      //*******Создаем Шапку (Header)********//
@@ -4847,15 +4857,24 @@ Procedure StartScript ();
 var
   Board       : IPCB_Board;
   TopoRFile   :TStringList;
+  meas        : TUnit;
 
 Begin
   TopoRFile := TStringList.Create;
   Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
   If Board = nil then Begin ShowError('Open board!'); Exit; End; // Если платы нет то выходим
 
+
+  If (UnitToString2(Board.DisplayUnit) <> 'mm') then
+  Begin
+    //Board.DisplayUnit := eImperial;
+    Log.Lines.Add('Warning!: To perform the conversion, the units of your PCB will be changed to metric.');
+    LogShow();
+  End; // Пока поддерживается только метрическая система
+
   if FileExists(Board.FileName+'.scon') then begin
     TopoRFile.LoadFromFile(Board.FileName+'.scon');
-  end else begin // нужнапроверка расширения платы !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  end else begin // нужна проверка расширения платы !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if pos('.PcbDoc', Board.FileName) > 0 then
     begin
       tExport.Text :=StringReplace(Board.FileName,'.PcbDoc','.fst',rfReplaceAll);
