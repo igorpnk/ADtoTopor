@@ -2126,7 +2126,7 @@ Begin
 
      While (Region <> Nil) Do
      Begin
-       if (Region.Layer = eMultiLayer & pos('Region 1',Region.Name) >0 ) then begin end else begin
+       if (Region.Layer = eMultiLayer & pos('Layer Stack Region',Region.Name) >0 ) then begin end else begin
        Constructive.AddStrings(RegionToXML(Board,Region,3)); end;
        Region := MechIterH.NextPCBObject;
      End;
