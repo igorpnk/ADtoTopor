@@ -349,6 +349,10 @@ Begin
      end;
 
      XMLIn.Add(#9+#9+#9+'<Layer name="'+Board.LayerName(56)+'" type="Doc"/>');
+     XMLIn.Add(#9+#9+#9+'<Layer name="'+Board.LayerName(eDrillDrawing)+'" type="Doc"/>');
+     XMLIn.Add(#9+#9+#9+'<Layer name="'+Board.LayerName(eDrillGuide)+'" type="Doc"/>');
+     XMLIn.Add(#9+#9+#9+'<Layer name="'+Board.LayerName(eMultiLayer)+'" type="Doc"/>');
+
      XMLIn.Add(#9+#9+'</UnStackLayers>');
      XMLIn.Add(#9+'</Layers>');
 End;
@@ -459,26 +463,6 @@ Begin
   Result := ResultString;
 End;
 
-Function FillToXML(Board :IPCB_Board; Fill : IPCB_Fill; TabCount: integer;) : TStringList;
-Var
- ResultString : TStringList;
- StringTab    : String;
- I            : integer;
-Begin
-  StringTab := '';
-  For I:=0 to TabCount-1 do StringTab := StringTab + #9;
-  ResultString := TStringList.Create;
-  ResultString.Add(StringTab+'<Detail lineWidth="0.001">');
-  ResultString.Add(StringTab+#9+'<LayerRef type="'+LayerIDtoStr(Fill.Layer)+'" name="'+Board.LayerName(Fill.Layer)+'"/>');//ИМя!
-  ResultString.Add(StringTab+#9+'<Polygon>');
-  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X1Location-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y1Location-Board.YOrigin))+ '"/>');
-  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X1Location-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y2Location-Board.YOrigin))+ '"/>');
-  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X2Location-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y2Location-Board.YOrigin))+ '"/>');
-  ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X2Location-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y1Location-Board.YOrigin))+ '"/>');
-  ResultString.Add(StringTab+#9+'</Polygon>');
-  ResultString.Add(StringTab+'</Detail>');
-  Result := ResultString;
-End;
 
 Function FillKeepoutToXML(Board :IPCB_Board; Fill : IPCB_Fill; TabCount: integer;) : TStringList;
 Var
@@ -675,6 +659,61 @@ Begin
   ResultString.Add(StringTab+#9+'<Voids/>');
   ResultString.Add(StringTab+#9+'<Islands/>');
   ResultString.Add(StringTab+'</Copper>');
+  Result := ResultString;
+End;
+
+Function FillToXML(Board :IPCB_Board; Fill : IPCB_Fill; TabCount: integer;) : TStringList;
+Var
+ ResultString : TStringList;
+ StringTab    : String;
+ X            : String;
+ Y            : String;
+ XCoord       : Tcoord;
+ YCoord       : Tcoord;
+ I            : integer;
+Begin
+  StringTab := '';
+  For I:=0 to TabCount-1 do StringTab := StringTab + #9;
+  ResultString := TStringList.Create;
+  ResultString.Add(StringTab+'<Detail lineWidth="0.001">');
+  ResultString.Add(StringTab+#9+'<LayerRef type="'+LayerIDtoStr(Fill.Layer)+'" name="'+Board.LayerName(Fill.Layer)+'"/>');//ИМя!
+  ResultString.Add(StringTab+#9+'<Polygon>');
+
+  XCoord := Fill.X1Location;
+  YCoord := Fill.Y1Location;
+  RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
+  X   := FloatToStr(CoordToMMs( XCoord-Board.XOrigin));
+  Y   := FloatToStr(CoordToMMs( YCoord-Board.YOrigin));
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+
+  XCoord := Fill.X1Location;
+  YCoord := Fill.Y2Location;
+  RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
+  X   := FloatToStr(CoordToMMs( XCoord-Board.XOrigin));
+  Y   := FloatToStr(CoordToMMs( YCoord-Board.YOrigin));
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+
+  XCoord := Fill.X2Location;
+  YCoord := Fill.Y2Location;
+  RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
+  X   := FloatToStr(CoordToMMs( XCoord-Board.XOrigin));
+  Y   := FloatToStr(CoordToMMs( YCoord-Board.YOrigin));
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+
+  XCoord := Fill.X2Location;
+  YCoord := Fill.Y1Location;
+  RotateCoordsAroundXY(XCoord,YCoord,(Fill.X1Location+(Fill.X2Location-Fill.X1Location)/2),Fill.Y1Location+(Fill.Y2Location-Fill.Y1Location)/2,Fill.Rotation);
+  X   := FloatToStr(CoordToMMs( XCoord-Board.XOrigin));
+  Y   := FloatToStr(CoordToMMs( YCoord-Board.YOrigin));
+  ResultString.Add(StringTab+#9+#9+'<Dot x="'+X+'" y="'+Y+ '"/>');
+
+  //ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X1Location-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y1Location-Board.YOrigin))+ '"/>');
+  //ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X1Location-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y2Location-Board.YOrigin))+ '"/>');
+  //ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X2Location-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y2Location-Board.YOrigin))+ '"/>');
+  //ResultString.Add(StringTab+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( Fill.X2Location-Board.XOrigin ))+'" y="'+FloatToStr(CoordToMMs( Fill.Y1Location-Board.YOrigin))+ '"/>');
+
+  ResultString.Add(StringTab+#9+'</Polygon>');
+  ResultString.Add(StringTab+'</Detail>');
   Result := ResultString;
 End;
 
@@ -880,6 +919,8 @@ Var
  TestString   : String;
  TBold        : String;
  TItalic      : String;
+ StrText      : String;
+
 Begin
   TBold := '';
   TItalic := '';
@@ -903,7 +944,11 @@ Begin
   TextMirror := 'off';
   if Text.MirrorFlag = true then TextMirror := 'on';
 
-  ResultString.Add(StringTab+'<Text text="'+Text.Text+'" align="LB" angle="'+inttostr(Text.Rotation)+'" mirror="'+TextMirror+'">');
+  StrText :=  Text.Text; //конвертируем кавычки в &quot;
+  StrText := StringReplace(StrText,'"','&quot;',rfReplaceAll); // экспорт ковычек
+  StrText := StringReplace(StrText,'&','&amp;',rfReplaceAll);  // экспорт амперсанта
+
+  ResultString.Add(StringTab+'<Text text="'+StrText+'" align="LB" angle="'+inttostr(Text.Rotation)+'" mirror="'+TextMirror+'">');
   ResultString.Add(StringTab+#9+'<LayerRef type="'+LayerIDtoStr(Text.Layer)+'" name="'+Board.LayerName(Text.Layer)+'"/>');//ИМя!
   ResultString.Add(StringTab+#9+'<TextStyleRef name="'+TextStyle+'"/>');
 
@@ -990,13 +1035,18 @@ var
    PadYReal                : Treal;
    Board                   : IPCB_Board;
    handlingValue           : Double;
+   LyrNumber               : integer;
 Begin
     Board := PCBServer.GetCurrentPCBBoard;
     Pad2 := Pad;
     PadPlated := 'off';
     if Pad2.plated then PadPlated := 'on';
-    If Pad.IsSurfaceMount = True then // поверхностномонтируемая КП
+
+    If Pad.Layer <> eMultiLayer then //  КП в 1 слое
     Begin
+       LyrNumber := 1;
+       if (Pad.Layer <> eTopLayer & Pad.Layer <> eBottomLayer) then LyrNumber := Pad.Layer;
+
        PadTypeSurf := 'SMD';
        Padstacks.Add(#9+#9+#9+'<Padstack name="'+PadStackName+'" type="'+PadTypeSurf+'" metallized="'+PadPlated+'">');
        Padstacks.Add(#9+#9+#9+#9+'<Thermal/>');
@@ -1009,7 +1059,7 @@ Begin
                 Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
                 floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
-                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
+                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
               End;
             eOctagonal      :
               Begin
@@ -1019,9 +1069,9 @@ Begin
                 Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
                 floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
-                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
+                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
                 end;  //1.1.3
-                if cb_Version.Text = '1.1.4' | cb_Version.Text = '1.2.0' then
+                if (cb_Version.Text = '1.1.4' | cb_Version.Text = '1.2.0') then
                 begin // 1.1.4
                 if Pad.XSizeOnLayer[Pad.Layer] > Pad.YSizeOnLayer[Pad.Layer] then begin
                 handlingValue := 0.25*Pad.YSizeOnLayer[Pad.Layer];
@@ -1034,7 +1084,7 @@ Begin
                 floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
                 ' handling="Chamfer" handlingValue="'+floattostr(CoordToMMs(handlingValue))+'">');
-                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
+                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
                 end; //1.1.4
 
               End;
@@ -1046,14 +1096,14 @@ Begin
                 if PadXReal < PadYReal then
                 Begin
                   Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadXReal)+'">');
-                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="0.000" y="'+floattostr(PadYReal-PadXReal)+'"/>');
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
                 End
                 Else
                 Begin
                   Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadYReal)+'">');
-                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(1)+'"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="'+floattostr(PadXReal - PadYReal)+'" y="0.000"/>');
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
                 End;
@@ -1073,12 +1123,12 @@ Begin
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
                 ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[Pad.Layer]))+'">');
 
-                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef type="Signal" name="'+Board.LayerName(eTopLayer)+'"/>');
+                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
               end;
        End;
        End; // конец поверхностномонтируемых
 
-       If Pad.IsSurfaceMount = false then  // Сквозная КП
+       If Pad.Layer = eMultiLayer then  // Сквозная КП
        Begin
        PadTypeSurf := 'Through';
 
@@ -1107,7 +1157,7 @@ Begin
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                 Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
                 end;  //1.1.3
-                if cb_Version.Text = '1.1.4' | cb_Version.Text = '1.2.0' then
+                if (cb_Version.Text = '1.1.4' | cb_Version.Text = '1.2.0') then
                 begin  //1.1.4
                 if Pad.XSizeOnLayer[Pad.Layer] > Pad.YSizeOnLayer[Pad.Layer] then begin
                 handlingValue := 0.25*Pad.YSizeOnLayer[Pad.Layer];
@@ -1154,7 +1204,7 @@ Begin
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                 Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
                 end; //1.1.3
-                if cb_Version.Text = '1.1.4' then
+                if (cb_Version.Text = '1.1.4' | cb_Version.Text = '1.2.0') then
                 begin  //1.1.4
                 PadType := 'PadRect';
                 Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
@@ -1814,7 +1864,7 @@ Begin
      //*******перебор всех Free Падов********//
      PadIteratorHandle2 := Board.BoardIterator_Create;
      PadIteratorHandle2.AddFilter_ObjectSet(MkSet(ePadObject));
-     PadIteratorHandle2.AddFilter_LayerSet(AllLayers);
+     PadIteratorHandle2.AddFilter_LayerSet(MkSet(eTopLayer,eBottomLayer));
      PadIteratorHandle2.AddFilter_Method(eProcessAll);
      Pad := PadIteratorHandle2.FirstPCBObject; //первая цепь
           While (pad <> Nil) Do
@@ -1915,7 +1965,6 @@ Begin
      Constructive.Add(#9+#9+#9+'<Contour>');
      BoardOutline  := Board.BoardOutline;
      Count         := BoardOutline.PointCount;
-
      X0 := BoardOutline.Segments[0].vx;
      Y0 := BoardOutline.Segments[0].vy;
      XEnd := X0;
@@ -1992,7 +2041,7 @@ Begin
 
      //*******Перебираем трэки********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72, 74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer));
      MechIterH.AddFilter_ObjectSet(MkSet(eTrackObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Track := MechIterH.FirstPCBObject; //первый трэк на механическом слое
@@ -2013,7 +2062,7 @@ Begin
      lbProcess.Caption := 'Arc In Mechanical Layers'; Form1.Update;
      //*******Перебираем окружности********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer));
      MechIterH.AddFilter_ObjectSet(MkSet(eArcObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Arc := MechIterH.FirstPCBObject; //первая окружность на механическом слое
@@ -2031,7 +2080,7 @@ Begin
      lbProcess.Caption := 'Fill In Mechanical Layers'; Form1.Update;
      //*******Перебираем Филы********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer));
      MechIterH.AddFilter_ObjectSet(MkSet(eFillObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Fill := MechIterH.FirstPCBObject; //первый филл на механическом слое
@@ -2052,7 +2101,7 @@ Begin
      begin
      //*******Перебираем Полигоны********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer));
      MechIterH.AddFilter_ObjectSet(MkSet(ePolyObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Poly := MechIterH.FirstPCBObject; //первый полигон на механическом слое
@@ -2070,14 +2119,15 @@ Begin
      lbProcess.Caption := 'Region In Mechanical Layers'; Form1.Update;
      //*******Перебираем Регионы********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer));
      MechIterH.AddFilter_ObjectSet(MkSet(eRegionObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Region := MechIterH.FirstPCBObject; //первый регион на механическом слое
 
      While (Region <> Nil) Do
      Begin
-       Constructive.AddStrings(RegionToXML(Board,Region,3));
+       if (Region.Layer = eMultiLayer & pos('Region 1',Region.Name) >0 ) then begin end else begin
+       Constructive.AddStrings(RegionToXML(Board,Region,3)); end;
        Region := MechIterH.NextPCBObject;
      End;
      Board.BoardIterator_Destroy(MechIterH);
@@ -2172,6 +2222,7 @@ Begin
      MechIterH.AddFilter_Method(eProcessAll);
      Text := MechIterH.FirstPCBObject; //первый текстовый обьект на любом слое
 
+
      While (Text <> Nil) Do
      Begin
        //проверка на принадлежность текста обьекту "размер"
@@ -2180,9 +2231,12 @@ Begin
        IterDem.AddFilter_ObjectSet(MkSet(eDimensionObject));
        IterDem.AddFilter_Method(eProcessAll);
        Dem := IterDem.FirstPCBObject;
+
+
        NoDem := true;
        While (Dem <> Nil) Do
        Begin
+         if pos('Center',Dem.Descriptor) = 0 then
          if Dem.Text = Text then NoDem := false;
          Dem := IterDem.NextPCBObject;
        end;
@@ -2284,11 +2338,14 @@ var
    NetGroups  : TStringList;
    CompGroups : TStringList;
    TestString : String;
+   NetGrName  : String;
    LyrGrName  : String;
+   CompGrName : String;
    I          : integer;
    LyrObj     : IPCB_LayerObject;
    LyrID      : Integer;
    LyrSet     : IPCB_LayerSet;
+   MemberName : String;
 Begin
   LayerGroups := TStringList.Create;
   NetGroups := TStringList.Create;
@@ -2310,9 +2367,37 @@ Begin
        If c.MemberKind = eClassMemberKind_Net Then
        Begin
            lbProcess.Caption := 'Grooup Net: '+c.Name; Form1.Update;
-           TestString := c.Name;
-           NetGroups.Add(#9+#9+#9+'<NetGroup name="'+c.Name+'">');
+           NetGrName := c.Name;
+           NetGrName := StringReplace(NetGrName,'&','&amp;',rfReplaceAll);
+           NetGrName := StringReplace(NetGrName,'"','&quot;',rfReplaceAll);
+           NetGroups.Add(#9+#9+#9+'<NetGroup name="'+NetGrName+'">');
 
+           if c.Name <> 'All Nets' then
+           begin
+                MemberName := c.MemberName[0];
+                I :=0;
+                while MemberName <> '' Do
+                begin
+                      NetGroups.Add(#9+#9+#9+#9+'<NetRef name="'+MemberName+'"/>');
+                      I:=I+1;
+                      MemberName := c.MemberName[I];
+                end;
+           end
+           else
+           begin
+                IterObj := Board.BoardIterator_Create; // перебираем цепи
+                IterObj.SetState_FilterAll;
+                IterObj.AddFilter_ObjectSet(MkSet(eNetObject));
+                Net := IterObj.FirstPCBObject;
+                While Net <> NIl Do
+                Begin
+                     NetGroups.Add(#9+#9+#9+#9+'<NetRef name="'+Net.Name+'"/>');
+                     Net := IterObj.NextPCBObject;
+                End;
+                Board.BoardIterator_Destroy(IterObj);
+           end;
+
+           {
            IterObj := Board.BoardIterator_Create; // перебираем цепи
            IterObj.SetState_FilterAll;
            IterObj.AddFilter_ObjectSet(MkSet(eNetObject));
@@ -2326,22 +2411,54 @@ Begin
 
               Net := IterObj.NextPCBObject;
            End;
+           }
            NetGroups.Add(#9+#9+#9+'</NetGroup>');
-           Board.BoardIterator_Destroy(IterObj);
+           //Board.BoardIterator_Destroy(IterObj);
        End;// конец создания группы цепей
 
        //Если группа компонентов
        If c.MemberKind = eClassMemberKind_Component Then
        Begin
            lbProcess.Caption := 'Grooup Component: '+c.Name; Form1.Update;
-           TestString := c.Name;
-           CompGroups.Add(#9+#9+#9+'<CompGroup name="'+c.Name+'">');
+           //TestString := c.Name;
+           CompGrName := c.Name;
+           CompGrName := StringReplace(CompGrName,'&','&amp;',rfReplaceAll);
+           CompGrName := StringReplace(CompGrName,'"','&quot;',rfReplaceAll);
+           CompGroups.Add(#9+#9+#9+'<CompGroup name="'+CompGrName+'">');
 
+           if c.Name <> 'All Components' then
+           begin
+                MemberName := c.MemberName[0];
+                I :=0;
+                while MemberName <> '' Do
+                begin
+                      CompGroups.Add(#9+#9+#9+#9+'<CompInstanceRef name="'+MemberName+'"/>');
+                      I:=I+1;
+                      MemberName := c.MemberName[I];
+                end;
+           end
+           else // если группа All Components
+           begin
+                IterObj := Board.BoardIterator_Create; // перебираем компоненты
+                IterObj.AddFilter_ObjectSet(MkSet(eComponentObject));
+                IterObj.AddFilter_LayerSet(AllLayers);
+                IterObj.AddFilter_Method(eProcessAll);
+                Prim := IterObj.FirstPCBObject;
+                While Prim <> NIl Do
+                Begin
+                     CompGroups.Add(#9+#9+#9+#9+'<CompInstanceRef name="'+Prim.Name.Text+'"/>');
+                     Prim := IterObj.NextPCBObject;
+                End;
+                Board.BoardIterator_Destroy(IterObj);
+           end;
+
+           {
            IterObj := Board.BoardIterator_Create; // перебираем компоненты
            IterObj.AddFilter_ObjectSet(MkSet(eComponentObject));
            IterObj.AddFilter_LayerSet(AllLayers);
            IterObj.AddFilter_Method(eProcessAll);
            Prim := IterObj.FirstPCBObject;
+           //TestString := c.MemberName[0];
            //TestString := Prim.ObjectIDString;
            While Prim <> NIl Do
            Begin
@@ -2350,8 +2467,9 @@ Begin
 
               Prim := IterObj.NextPCBObject;
            End;
+           }
            CompGroups.Add(#9+#9+#9+'</CompGroup>');
-           Board.BoardIterator_Destroy(IterObj);
+           //Board.BoardIterator_Destroy(IterObj);
        End;// конец создания группы компонентов
 
 
@@ -2362,26 +2480,26 @@ Begin
        //    TestString := c.Name;
        //    TestString := c.MemberName[0];
        //    TestString := c.ObjectIDString;
-           IterObj := Board.BoardIterator_Create;
-           IterObj.AddFilter_ObjectSet(AllObjects);
-           IterObj.AddFilter_LayerSet(AllLayers);
-           IterObj.AddFilter_Method(eProcessAll);
-           Prim := IterObj.FirstPCBObject;
+       //    IterObj := Board.BoardIterator_Create;
+       //    IterObj.AddFilter_ObjectSet(AllObjects);
+        //   IterObj.AddFilter_LayerSet(AllLayers);
+        //   IterObj.AddFilter_Method(eProcessAll);
+        //   Prim := IterObj.FirstPCBObject;
 
-           While Prim <> NIl Do
-           Begin
+        //   While Prim <> NIl Do
+        //   Begin
 
-              TestString := Prim.ObjectIDString;
-              TestString := Prim.ObjectID;
+        //      TestString := Prim.ObjectIDString;
+         //     TestString := Prim.ObjectID;
               //if pos('ass',TestString) >0 then
               //TestString := Prim.Name;
 
-              Prim := IterObj.NextPCBObject;
-           End;
+       //       Prim := IterObj.NextPCBObject;
+       //    End;
        //
        //    TestString := c.ObjectId;
        //    CompGroups.Add(#9+#9+#9+'</CompGroup>');
-           Board.BoardIterator_Destroy(IterObj);
+       //    Board.BoardIterator_Destroy(IterObj);
       // end;
 
        c := IterClass.NextPCBObject;
@@ -2404,7 +2522,8 @@ Begin
      If LyrSet.IsEmpty = false then
      Begin
      LyrGrName := BoardSet.Name;
-     Delete(LyrGrName,Pos('&',LyrGrName),1); // топор не поддерживает в названиях символ '&'
+     //Delete(LyrGrName,Pos('&',LyrGrName),1); // топор не поддерживает в названиях символ '&'
+     LyrGrName := StringReplace(LyrGrName,'&','&amp;',rfReplaceAll); // замена амперсанта на его мнемоническое обозначение
      LayerGroups.Add(#9+#9+#9+'<LayerGroup name="'+LyrGrName+'">');
      LyrObj := Board.LayerStack.LayerObject(LyrIter.Layer);
      TestString := LyrObj.Name;
@@ -4650,6 +4769,8 @@ begin
         begin
           Text := PCBServer.PCBObjectFactory(eTextObject, eNoDimension, eCreate_Default);
           Text.Layer := LayerID;
+          TextS:= StringReplace(TextS,'&quot;','"',rfReplaceAll); //импорт кавычек
+          TextS:= StringReplace(TextS,'&amp;','&',rfReplaceAll);  //импорт амперсанта
           Text.Text := TextS;
           Text.Rotation := StrToFloatDot(angle);
           Text.MirrorFlag := false;
@@ -5000,5 +5121,8 @@ end;
 
 //Track := Board.GetObjectAtCursor(AllObjects,AllLayers,eEditAction_Select);
 // TestString := Track.Name;
+
+
+
 
 
