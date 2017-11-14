@@ -5004,8 +5004,23 @@ var
   Board       : IPCB_Board;
   TopoRFile   :TStringList;
   meas        : TUnit;
+  Reg         : TRegistry;
 
 Begin
+
+  //считываем путь к топору из реестра
+  Reg := TRegistry.Create;
+  Reg.RootKey := 2;
+  if Reg.OpenKeyReadOnly('SOFTWARE\Classes\TopoR.Project\shell\open\command') then
+  begin
+    if Reg.ValueExists('(По умолчанию)')  then
+      tTopor.Text := Reg.ReadString('(По умолчанию)')
+    else
+      tTopor.Text := '';
+    Reg.CloseKey;
+  end;
+  Reg.Free;
+
   TopoRFile := TStringList.Create;
   Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
   If Board = nil then Begin ShowError('Open board!'); Exit; End; // Если платы нет то выходим
@@ -5063,6 +5078,8 @@ Begin
   else begin cbPrimitive.Checked := false; end;
   Form1.Show;
   TopoRFile.Free;
+
+
 
   //RunSystemCommand('start /d"C:\Temp" Word');
 
