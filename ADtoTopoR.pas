@@ -5005,21 +5005,9 @@ var
   TopoRFile   :TStringList;
   meas        : TUnit;
   Reg         : TRegistry;
+  str         : String;
 
 Begin
-
-  //считываем путь к топору из реестра
-  Reg := TRegistry.Create;
-  Reg.RootKey := 2;
-  if Reg.OpenKeyReadOnly('SOFTWARE\Classes\TopoR.Project\shell\open\command') then
-  begin
-    if Reg.ValueExists('(По умолчанию)')  then
-      tTopor.Text := Reg.ReadString('(По умолчанию)')
-    else
-      tTopor.Text := '';
-    Reg.CloseKey;
-  end;
-  Reg.Free;
 
   TopoRFile := TStringList.Create;
   Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
@@ -5055,7 +5043,36 @@ Begin
     SaveConfig;
     TopoRFile.LoadFromFile(Board.FileName+'.scon');
   end;
-  tTopor.Text := TopoRFile.Get(0);
+
+  //считываем путь к топору из реестра
+  Reg := TRegistry.Create;
+  Reg.RootKey := 2147483650;
+  //HKEY_CLASSES_ROOT (2147483648)
+  //HKEY_CURRENT_USER (2147483649)
+  //HKEY_LOCAL_MACHINE (2147483650)
+  //HKEY_USERS (2147483651)
+  //HKEY_CURRENT_CONFIG (2147483653)
+  if Reg.OpenKeyReadOnly('SOFTWARE\Classes\TopoR.Project\shell\open\command') then
+  //if Reg.OpenKeyReadOnly('HARDWARE\DESCRIPTION\System\CentralProcessor\0\') then
+  begin
+    if Reg.ValueExists('')  then
+    begin
+      str := Reg.ReadString('');
+//Логику вырезания пути лучше сделать гибче!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      str := StringReplace(str, '" "', '', rfReplaceAll);
+      str := StringReplace(str, '"', '', rfReplaceAll);
+      str := StringReplace(str, '"', '', rfReplaceAll);
+      str := StringReplace(str, '%1', '', rfReplaceAll);
+      tTopor.Text := str;
+    end
+    else
+      tTopor.Text := TopoRFile.Get(0);
+    Reg.CloseKey;
+  end
+  else
+      tTopor.Text := TopoRFile.Get(0);
+  Reg.Free;
+
   tProject.Text := TopoRFile.Get(1);
   tExport.Text :=  TopoRFile.Get(2);
   tImport.Text :=  TopoRFile.Get(3);
