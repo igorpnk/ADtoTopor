@@ -2574,6 +2574,31 @@ Begin
  Result := ResultS;
 end;
 
+
+// получить значение аттрибута
+Function GetRuleValue (InputStr : String; RuleName : String) : String;
+Var
+i      : integer;
+WriteS : bolean;
+s      : String;
+ResultS: String;
+Begin
+ WriteS := false;
+ ResultS:= '';
+ if pos(RuleName,InputStr) >0 then
+ For i := pos(RuleName,InputStr)+length(RuleName) to length(InputStr) do
+ begin
+   s := InputStr[i];
+   if writeS then
+   begin
+     if (InputStr[i] = ')') then break;
+     Results := Results + InputStr[i];
+   end;
+   if (InputStr[i] = '(')  then WriteS := true;
+ end;
+ Result := ResultS;
+end;
+
 Function XMLGetNumberAttrValue (InputStr : String; AttrName : String) : String;
 Var
 i      : integer;
@@ -2766,12 +2791,12 @@ Begin
          RuleClearS.Add(#9+#9+#9+#9+'<AllLayers/>');
          RuleClearS.Add(#9+#9+#9+#9+'<ObjectsAffected>');
          // первый обьект
-         if pos('InNet(',RuleClear.Scope1Expression)>0 then begin  // если цепь
-           NetRef := XMLGetAttrValue(RuleClear.Scope1Expression,'InNet');
+         if (pos('InNet(',RuleClear.Scope1Expression)>0) then begin  // если цепь и вначале
+           NetRef := GetRuleValue(RuleClear.Scope1Expression,'InNet');
            RuleClearS.Add(#9+#9+#9+#9+#9+'<NetRef name="'+NetRef+'"/>');
          end else begin
            if pos('InNetClass(',RuleClear.Scope1Expression)>0 then begin    //если класс цепей
-             NetRef := XMLGetAttrValue(RuleClear.Scope1Expression,'InNetClass');
+             NetRef := GetRuleValue(RuleClear.Scope1Expression,'InNetClass');
              RuleClearS.Add(#9+#9+#9+#9+#9+'<NetGroupRef name="'+NetRef+'"/>');
            end else begin
              RuleClearS.Add(#9+#9+#9+#9+#9+'<AllNets/>');
@@ -2779,11 +2804,11 @@ Begin
          end;
          // второй обьект
          if pos('InNet(',RuleClear.Scope2Expression)>0 then begin
-           NetRef := XMLGetAttrValue(RuleClear.Scope2Expression,'InNet');
+           NetRef := GetRuleValue(RuleClear.Scope2Expression,'InNet');
            RuleClearS.Add(#9+#9+#9+#9+#9+'<NetRef name="'+NetRef+'"/>');
          end else begin
            if pos('InNetClass(',RuleClear.Scope2Expression)>0 then begin
-             NetRef := XMLGetAttrValue(RuleClear.Scope2Expression,'InNetClass');
+             NetRef := GetRuleValue(RuleClear.Scope2Expression,'InNetClass');
              RuleClearS.Add(#9+#9+#9+#9+#9+'<NetGroupRef name="'+NetRef+'"/>');
            end else begin
              RuleClearS.Add(#9+#9+#9+#9+#9+'<AllNets/>');

@@ -65,6 +65,9 @@ StartProcName=ADtoTopoR.pas>StartScript
 3=I
 4=MemberName
 5=c.Name
+6=s
+7=RuleName
+8=InputStr
 
 [OutputGroup1]
 Name=Netlist Outputs
