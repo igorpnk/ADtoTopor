@@ -1864,7 +1864,7 @@ Begin
      //*******перебор всех Free Падов********//
      PadIteratorHandle2 := Board.BoardIterator_Create;
      PadIteratorHandle2.AddFilter_ObjectSet(MkSet(ePadObject));
-     PadIteratorHandle2.AddFilter_LayerSet(MkSet(eTopLayer,eBottomLayer));
+     PadIteratorHandle2.AddFilter_LayerSet(MkSet(eTopLayer,eBottomLayer,eMultiLayer));
      PadIteratorHandle2.AddFilter_Method(eProcessAll);
      Pad := PadIteratorHandle2.FirstPCBObject; //первая цепь
           While (pad <> Nil) Do
