@@ -5072,7 +5072,6 @@ Begin
   else
       tTopor.Text := TopoRFile.Get(0);
   Reg.Free;
-
   tProject.Text := TopoRFile.Get(1);
   tExport.Text :=  TopoRFile.Get(2);
   tImport.Text :=  TopoRFile.Get(3);
