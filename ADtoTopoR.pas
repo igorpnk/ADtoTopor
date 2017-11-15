@@ -27,6 +27,15 @@ begin
   end;
 end;
 
+Procedure LogOnlyShow();
+begin
+  if b_Log.Caption = ' \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/ ' then
+  begin
+    b_Log.Caption := ' /\  /\  /\  /\  /\  /\  /\  /\  /\  /\  /\  /\  /\  /\  /\  /\ ';
+    Form1.Height := 540;
+  end;
+end;
+
 procedure TForm1.b_LogClick(Sender: TObject);
 begin
   LogShow();
@@ -1353,6 +1362,7 @@ Begin
            i := pos('<Component name="'+NameComp+'"',Components.Text);
            if i <> 0 then begin
            Log.Lines.Add('!!! Components with the same name: '+NameComp);
+           LogOnlyShow();
            //Log.Lines.Add('pos' + IntToStr(i));
            NameComp := NameComp +'$' +IDcomp;
            //Components.SaveToFile(tExport.Text);
@@ -1938,9 +1948,12 @@ XEnd      : Integer;
 YEnd      : Integer;
 AStartX   : TCoord;
 AStartY   : TCoord;
+AStartXL  : TCoord;
+AStartYL  : TCoord;
 AEndX     : TCoord;
 AEndY     : TCoord;
 StringText: String;
+ArcType   : String;
 MechIterH : IPCB_BoardIterator;
 Track     : IPCB_Track;
 Arc       : IPCB_Arc;
@@ -1987,6 +2000,7 @@ Begin
               Constructive.Add(#9+#9+#9+#9+'</Shape>');
               XEnd := BoardOutline.Segments[I].vx;
               YEnd := BoardOutline.Segments[I].vy;
+
               If I = (BoardOutline.PointCount - 1) Then
               Begin
               Constructive.Add(#9+#9+#9+#9+'<Shape lineWidth="0.001">');
@@ -2002,6 +2016,12 @@ Begin
             End
             Else // Если сегмент представляет собой дугу
             Begin
+
+              ArcType := 'Arc';
+              if (cb_Version.Text = '1.2.0') then ArcType := 'ArcCCW';
+
+
+
               AStartX := BoardOutline.Segments[I].cx+BoardOutline.Segments[I].Radius;
               AStartY := BoardOutline.Segments[I].cy;
               AEndX := BoardOutline.Segments[I].cx+BoardOutline.Segments[I].Radius;
@@ -2009,25 +2029,47 @@ Begin
 
               RotateCoordsAroundXY(AStartX,AStartY,BoardOutline.Segments[I].cx,BoardOutline.Segments[I].cy,BoardOutline.Segments[I].Angle1);
               RotateCoordsAroundXY(AEndX,AEndY,BoardOutline.Segments[I].cx,BoardOutline.Segments[I].cy,BoardOutline.Segments[I].Angle2);
+
+
+              AStartXL := AStartX;
+              AStartYL := AStartY;
+
+              if (BoardOutline.Segments[I].vx <> AStartX | BoardOutline.Segments[I].vy <> AStartY ) then  // проверка на совпадение AStart фактическому началу дуги
+              begin
+                //if (cb_Version.Text = '1.2.0') then ArcType := 'ArcCW';
+                //AEndX := AStartX;
+                //AEndY := AStartY;
+                AStartXL := BoardOutline.Segments[I].vx;
+                AStartYL := BoardOutline.Segments[I].vy;
+              end;
+
               Constructive.Add(#9+#9+#9+#9+'<Shape lineWidth="0.001">');
               Constructive.Add(#9+#9+#9+#9+#9+'<Line>');
               Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( XEnd-Board.XOrigin))+
                                                     '" y="'+FloatToStr(CoordToMMs( YEnd-Board.YOrigin))+'"/>');
-              Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AStartX-Board.XOrigin))+
-                                                    '" y="'+FloatToStr(CoordToMMs( AStartY-Board.YOrigin))+'"/>');
+              Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( AStartXL-Board.XOrigin))+
+                                                    '" y="'+FloatToStr(CoordToMMs( AStartYL-Board.YOrigin))+'"/>');
               Constructive.Add(#9+#9+#9+#9+#9+'</Line>');
               Constructive.Add(#9+#9+#9+#9+'</Shape>');
               XEnd := AEndX;
               YEnd := AEndY;
+
+              if (BoardOutline.Segments[I].vx <> AStartX | BoardOutline.Segments[I].vy <> AStartY ) then  // проверка на совпадение AStart фактическому началу дуги
+              begin
+                   XEnd := AStartX;
+                   YEnd := AStartY;
+              end;
+
+
               Constructive.Add(#9+#9+#9+#9+'<Shape lineWidth="0.001">');
-              Constructive.Add(#9+#9+#9+#9+#9+'<Arc>');
+              Constructive.Add(#9+#9+#9+#9+#9+'<'+ArcType+'>');
               Constructive.Add(#9+#9+#9+#9+#9+#9+'<Center x="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].cx-Board.XOrigin))+
               '" y="'+FloatToStr(CoordToMMs( BoardOutline.Segments[I].cy-Board.YOrigin))+'"/>');
               Constructive.Add(#9+#9+#9+#9+#9+#9+'<Start x="'+FloatToStr(CoordToMMs( AStartX-Board.XOrigin))+
               '" y="'+FloatToStr(CoordToMMs( AStartY-Board.YOrigin))+'"/>');
               Constructive.Add(#9+#9+#9+#9+#9+#9+'<End x="'+FloatToStr(CoordToMMs( AEndX-Board.XOrigin))+
               '" y="'+FloatToStr(CoordToMMs( AEndY-Board.YOrigin))+'"/>');
-              Constructive.Add(#9+#9+#9+#9+#9+'</Arc>');
+              Constructive.Add(#9+#9+#9+#9+#9+'</'+ArcType+'>');
               Constructive.Add(#9+#9+#9+#9+'</Shape>');
             End;
 
@@ -2041,7 +2083,7 @@ Begin
 
      //*******Перебираем трэки********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer,eTopPaste,eBottomPaste,eTopSolder,eBottomSolder));
      MechIterH.AddFilter_ObjectSet(MkSet(eTrackObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Track := MechIterH.FirstPCBObject; //первый трэк на механическом слое
@@ -2062,7 +2104,7 @@ Begin
      lbProcess.Caption := 'Arc In Mechanical Layers'; Form1.Update;
      //*******Перебираем окружности********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer,eTopPaste,eBottomPaste,eTopSolder,eBottomSolder));
      MechIterH.AddFilter_ObjectSet(MkSet(eArcObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Arc := MechIterH.FirstPCBObject; //первая окружность на механическом слое
@@ -2080,7 +2122,7 @@ Begin
      lbProcess.Caption := 'Fill In Mechanical Layers'; Form1.Update;
      //*******Перебираем Филы********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer,eTopPaste,eBottomPaste,eTopSolder,eBottomSolder));
      MechIterH.AddFilter_ObjectSet(MkSet(eFillObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Fill := MechIterH.FirstPCBObject; //первый филл на механическом слое
@@ -2119,7 +2161,7 @@ Begin
      lbProcess.Caption := 'Region In Mechanical Layers'; Form1.Update;
      //*******Перебираем Регионы********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer));
+     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer,eTopPaste,eBottomPaste,eTopSolder,eBottomSolder));
      MechIterH.AddFilter_ObjectSet(MkSet(eRegionObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Region := MechIterH.FirstPCBObject; //первый регион на механическом слое
@@ -3712,7 +3754,9 @@ begin
     // Создаем итератор перебора Проводников
     BoardIterator        := Board.BoardIterator_Create;
     BoardIterator.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,
-                         66,67,68,69,70,71,22));
+                         66,67,68,69,70,71,22,eTopOverlay, eBottomOverlay,
+                         eDrillDrawing,eDrillGuide,eMultiLayer,eTopPaste,
+                         eBottomPaste,eTopSolder,eBottomSolder));
     //BoardIterator.AddFilter_LayerSet(MkSet(69));
     BoardIterator.AddFilter_ObjectSet(MkSet(eTrackObject));
     BoardIterator.AddFilter_Method(eProcessAll);
@@ -3738,7 +3782,9 @@ begin
     // Создаем итератор перебора дуг
     BoardIterator        := Board.BoardIterator_Create;
     BoardIterator.AddFilter_LayerSet(MkSet(57,58,59,60,61,62,63,64,65,
-                         66,67,68,69,70,71,22));
+                         66,67,68,69,70,71,22,eTopOverlay, eBottomOverlay,
+                         eDrillDrawing,eDrillGuide,eMultiLayer,eTopPaste,
+                         eBottomPaste,eTopSolder,eBottomSolder));
     //BoardIterator.AddFilter_LayerSet(MkSet(69));
     BoardIterator.AddFilter_ObjectSet(MkSet(eArcObject));
     BoardIterator.AddFilter_Method(eProcessAll);
@@ -3902,6 +3948,14 @@ begin
     LyrObj := Stack.LayerObject(eKeepOutLayer);
     if LyrObj.Name = InLyrName then begin result := LyrObj.layerID; end;
 
+    LyrObj := Stack.LayerObject(eDrillDrawing);
+    if LyrObj.Name = InLyrName then begin result := LyrObj.layerID; end;
+
+    LyrObj := Stack.LayerObject(eDrillGuide);
+    if LyrObj.Name = InLyrName then begin result := LyrObj.layerID; end;
+
+    LyrObj := Stack.LayerObject(eMultiLayer);
+    if LyrObj.Name = InLyrName then begin result := LyrObj.layerID; end;
 end;
 
 //импорт проводников
@@ -4949,7 +5003,7 @@ begin
   lbProcess.Caption := 'Remove Text'; Form1.Update;
   //*******Удаляем Text*******//
   if cb_Text.Checked then begin
-  RemoveTextAll(Board);  RemoveTextAll(Board);   end;
+  RemoveTextAll(Board);  RemoveTextAll(Board); RemoveTextAll(Board); RemoveTextAll(Board);  end;
 
    lbProcess.Caption := 'Remove primitive'; Form1.Update;
   //*******Удаляем примитивы с механических слоев*******//
@@ -5044,7 +5098,8 @@ Begin
     TopoRFile.LoadFromFile(Board.FileName+'.scon');
   end;
 
-  //считываем путь к топору из реестра
+  //********** Ищем путь к ТопоР *************//
+ //считываем путь к топору из реестра
   Reg := TRegistry.Create;
   Reg.RootKey := 2147483650;
   //HKEY_CLASSES_ROOT (2147483648)
@@ -5052,10 +5107,11 @@ Begin
   //HKEY_LOCAL_MACHINE (2147483650)
   //HKEY_USERS (2147483651)
   //HKEY_CURRENT_CONFIG (2147483653)
+
   if Reg.OpenKeyReadOnly('SOFTWARE\Classes\TopoR.Project\shell\open\command') then
   //if Reg.OpenKeyReadOnly('HARDWARE\DESCRIPTION\System\CentralProcessor\0\') then
   begin
-    if Reg.ValueExists('')  then
+    if ( Reg.ValueExists('') & TopoRFile.Get(0) = '')  then
     begin
       str := Reg.ReadString('');
 //Логику вырезания пути лучше сделать гибче!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -5072,6 +5128,8 @@ Begin
   else
       tTopor.Text := TopoRFile.Get(0);
   Reg.Free;
+  //********** Конец поиска пути к ТопоР *************//
+
   tProject.Text := TopoRFile.Get(1);
   tExport.Text :=  TopoRFile.Get(2);
   tImport.Text :=  TopoRFile.Get(3);
@@ -5175,10 +5233,8 @@ end;
 
 //*****Приятные мелочи****//
 // Мб добавить не метрическую систему измерения
-// Мб сделать красивую шапку
 
 //Track := Board.GetObjectAtCursor(AllObjects,AllLayers,eEditAction_Select);
-// TestString := Track.Name;
 
 
 
