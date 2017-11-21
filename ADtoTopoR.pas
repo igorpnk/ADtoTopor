@@ -1990,6 +1990,12 @@ Begin
 
          If BoardOutline.Segments[I].Kind = ePolySegmentLine Then  // Если сегмент представляет собой линию
             Begin
+
+              StringText := FloatToStr(CoordToMMs( XEnd));
+              StringText := FloatToStr(CoordToMMs( YEnd));
+              StringText := FloatToStr(CoordToMMs( BoardOutline.Segments[I].vx));
+              StringText := FloatToStr(CoordToMMs( BoardOutline.Segments[I].vy));
+
               Constructive.Add(#9+#9+#9+#9+'<Shape lineWidth="0.001">');
               Constructive.Add(#9+#9+#9+#9+#9+'<Line>');
               Constructive.Add(#9+#9+#9+#9+#9+#9+'<Dot x="'+FloatToStr(CoordToMMs( XEnd-Board.XOrigin))+
@@ -2016,11 +2022,8 @@ Begin
             End
             Else // Если сегмент представляет собой дугу
             Begin
-
               ArcType := 'Arc';
               if (cb_Version.Text = '1.2.0') then ArcType := 'ArcCCW';
-
-
 
               AStartX := BoardOutline.Segments[I].cx+BoardOutline.Segments[I].Radius;
               AStartY := BoardOutline.Segments[I].cy;
@@ -2034,7 +2037,7 @@ Begin
               AStartXL := AStartX;
               AStartYL := AStartY;
 
-              if (BoardOutline.Segments[I].vx <> AStartX | BoardOutline.Segments[I].vy <> AStartY ) then  // проверка на совпадение AStart фактическому началу дуги
+              if ( abs(BoardOutline.Segments[I].vx - AStartX) >10 | abs(BoardOutline.Segments[I].vy - AStartY)>10 ) then  // проверка на совпадение AStart фактическому началу дуги
               begin
                 //if (cb_Version.Text = '1.2.0') then ArcType := 'ArcCW';
                 //AEndX := AStartX;
@@ -2042,6 +2045,9 @@ Begin
                 AStartXL := BoardOutline.Segments[I].vx;
                 AStartYL := BoardOutline.Segments[I].vy;
               end;
+
+              StringText := FloatToStr(CoordToMMs( BoardOutline.Segments[I].vx));
+              StringText := FloatToStr(CoordToMMs( BoardOutline.Segments[I].vy));
 
               Constructive.Add(#9+#9+#9+#9+'<Shape lineWidth="0.001">');
               Constructive.Add(#9+#9+#9+#9+#9+'<Line>');
@@ -2054,12 +2060,11 @@ Begin
               XEnd := AEndX;
               YEnd := AEndY;
 
-              if (BoardOutline.Segments[I].vx <> AStartX | BoardOutline.Segments[I].vy <> AStartY ) then  // проверка на совпадение AStart фактическому началу дуги
+              if ( abs(BoardOutline.Segments[I].vx - AStartX) >10 | abs(BoardOutline.Segments[I].vy - AStartY)>10 ) then  // проверка на совпадение AStart фактическому началу дуги
               begin
                    XEnd := AStartX;
                    YEnd := AStartY;
               end;
-
 
               Constructive.Add(#9+#9+#9+#9+'<Shape lineWidth="0.001">');
               Constructive.Add(#9+#9+#9+#9+#9+'<'+ArcType+'>');
