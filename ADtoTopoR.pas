@@ -1231,15 +1231,41 @@ Begin
 
 End;
 
+// получить значение аттрибута
+Function XMLGetAttrValue (InputStr : String; AttrName : String) : String;
+Var
+i      : integer;
+WriteS : bolean;
+s      : String;
+ResultS: String;
+Begin
+ WriteS := false;
+ ResultS:= '';
+ if pos(AttrName,InputStr) >0 then
+ For i := pos(AttrName,InputStr)+length(AttrName) to length(InputStr) do
+ begin
+   s := InputStr[i];
+   if writeS then
+   begin
+     if (InputStr[i] = '"' |InputStr[i] = '''' ) then break;
+     Results := Results + InputStr[i];
+   end;
+   if (InputStr[i] = '"' |InputStr[i] = '''' )  then WriteS := true;
+ end;
+ Result := ResultS;
+end;
+
 // да эту процедурку можно было разбить еще штук на 5.. но как-то несложилось;) думал что с компонентами проще будет разобраться
 Procedure AddLL(XMLInL : TStringList; Board : IPCB_Board; Units: String; FileXmlTSt : TStringList;FileXMLCOB : TStringList; ViastacksLL : TStringList;);  // Компоненты
 uses SysUtils;
 Var // жуть...
    Padstacks               : TStringList;
    Footprints              : TStringList;
+   Footprintscut           : TStringList;
    Components              : TStringList;
    Packages                : TStringList;
    Component               : IPCB_Component;
+   Component2               : IPCB_Component;
    ComponentIteratorHandle : IPCB_BoardIterator;
    TrackCount              : Integer;
    ComponentCount          : Integer;
@@ -1249,11 +1275,13 @@ Var // жуть...
    Poly                    : IPCB_Polygon;
    Text                    : IPCB_Text;
    Pad                     : IPCB_Pad;
+   Pad3                    : IPCB_Pad;
    Fill                    : IPCB_Fill;
    Region                  : IPCB_Region;
    PadSide                 : String;
    IteratorHandle          : IPCB_GroupIterator;
    PadIteratorHandle       : IPCB_GroupIterator;
+   PadIteratorHandle3      : IPCB_GroupIterator;
    TextIteratorHandle      : IPCB_GroupIterator;
    NameComp                : String;
    TestString              : String;
@@ -1286,6 +1314,7 @@ Var // жуть...
    LyrTV6                  : TV6_Layer;
    lyrObj                  : PCB_LayerObject;
    I                       : Integer;
+   D                       : Integer;
    CompFix                 : String;
    PadFlip                 : String;
    LayerName               : String;
@@ -1309,13 +1338,25 @@ Var // жуть...
    TItalic                 : String;
    Fixed                   : String;
    Padname                 : String;
-Begin
+   PadNFoot                : Integer;
+   Startindfoot            : integer;
+   Currpadname             : String;
+   CurrentStr              : String;
+   ComponentsRC            : array[0..100] of IPCB_Component; /// не забыть сделать увеличение массива в случае переполнения.
+   ComponentsRClist        : String;
+   CountFoot               : integer;
+   CurrFoot                : integer;
+   RCflag                  : boolean;
 
+Begin
+     CountFoot :=0;
+     Startindfoot := 0;
      Fixed := '';
      TrackCount := 0;
      padNum     := 0;
      ComponentCount := 0;
      PadStacksAllName := '';
+     ComponentsRClist := '';
      XMLInL.Add(#9+'<LocalLibrary version="1.1">');
      FileXMLCOB.Add(#9+'<ComponentsOnBoard version="1.1">');
      Padstacks := TStringList.Create;
@@ -1358,6 +1399,7 @@ Begin
            IDcomp := Component.UniqueId;                           // вместо имени уникальный ID
            PadFlip := 'off';
            FTrue := true;
+           RCflag := false;
            i:=0;
            i := pos('<Component name="'+NameComp+'"',Components.Text);
            if i <> 0 then begin
@@ -1372,20 +1414,33 @@ Begin
 
            FootName :=  Component.Pattern+'$' +NameComp +'$' +IDcomp;
 
-           if cb_FootComp.Checked then
+           if cb_FootComp.Checked then   // если обьединять посадочные
            begin
              if (pos('R',NameComp) >0| pos('C',NameComp) >0) then
              begin
+               RCflag := true;
                FootName := Component.Pattern;
-               if pos('"'+Component.Pattern+'"',Footprints.Text) > 0 then
+               //CurrFoot := CountFoot;
+               if pos('"'+Component.Pattern+'"', ComponentsRClist) > 0 then
                begin
-                 FTrue := false;
+               FTrue := false;  // Флаг наличия посадочного. Посадочное - не нужно.
+               //showmessage(CountFoot);
+               for i := 0 to CountFoot-1 do //поиск компонента с таким посадочным.
+                   begin
+                     if Component.Pattern = ComponentsRC[i].Pattern then
+                       begin
+                         Component2 := ComponentsRC[i]; // нашли компонент с таким посадочным
+                       break;
+                       end;
+                   end;
                end;
              end;
-
            end;
 
-           if FTrue then Footprints.Add(#9+#9+#9+'<Footprint name="'+FootName+ '">');
+           if FTrue then Footprints.Add(#9+#9+#9+'<Footprint name="'+FootName+ '">');  // добовляем футпринт
+           if (FTrue & RCflag) then ComponentsRClist := ComponentsRClist + '<Fname="'+FootName+ '">'; // создаем простой список посадочных
+           if (FTrue & RCflag) then ComponentsRC[CountFoot]:= Component;   //запоминаем текущий компонент для которого нужно посадочное
+           if (FTrue & RCflag) then inc(CountFoot); // увеличиваем счетчик посадочных.
 
            //Component.GetState_FootprintDescription;
            Components.Add(#9+#9+#9+'<Component name="'+NameComp + '">');
@@ -1402,7 +1457,7 @@ Begin
            Begin
              FileXMLCOB.Add(#9+#9+#9+'<CompInstance name="'+NameComp+'" uniqueId="'+IDcomp+'" side="'+CompSide+
                                     '" angle="'+inttostr(Component.Rotation)+'" fixed="'+CompFix+'">');
-           end else begin
+           end else begin         // для предыдущих версий без uniqueId
              FileXMLCOB.Add(#9+#9+#9+'<CompInstance name="'+NameComp+'" side="'+CompSide+
                                     '" angle="'+inttostr(Component.Rotation)+'" fixed="'+CompFix+'">');
            end;
@@ -1418,20 +1473,53 @@ Begin
            PadIteratorHandle := Component.GroupIterator_Create;
            PadIteratorHandle.AddFilter_ObjectSet(MkSet(ePadObject));
            Pad := PadIteratorHandle.FirstPCBObject;
+
            While (Pad <> Nil) Do
            Begin
                 inc (PadNum);
+                PadNFoot := PadNum;
+                if (FTrue = false) then  // если посадочное уже было, то номер посадочного нужно установить по его номеру в компоненте образце.
+                begin
+                   PadNum:=1;
+                   PadIteratorHandle3 := Component2.GroupIterator_Create;
+                   PadIteratorHandle3.AddFilter_ObjectSet(MkSet(ePadObject));
+                   Pad3 := PadIteratorHandle3.FirstPCBObject;
+                   While (Pad3 <> Nil) Do
+                   Begin 
+                      if Pad.Name = Pad3.Name then begin
+                      PadNFoot := PadNum; break; end;
+                      inc (PadNum);
+                      Pad3 := PadIteratorHandle3.NextPCBObject;
+                 end;
+                 Component2.GroupIterator_Destroy(PadIteratorHandle3);
+                //i :=  Startindfoot;
+                //Repeat
+                //  CurrentStr := Footprints.Get(i);
+                //  if pos('<Pad ',CurrentStr)>0 then
+                //  begin
+                //    Currpadname := XMLGetAttrValue(CurrentStr,'name');
+                //    if Currpadname = Pad.Name then
+                 //   begin
+                 //      PadNFoot := StrToInt(XMLGetAttrValue(CurrentStr,'padNum'));
+                //       break;
+                //    end;
+                //  end;
+                //  inc(i);
+                //Until i = -1;
 
+
+                // добавить поиск номера контакта исходя из имени контакта
+                end;
                 if Pad.Name = '' then Padname := 'Nil';
                 if Pad.Name <> '' then Padname := Pad.Name;
                 PadAngle := IntToStr(Pad.Rotation-Component.Rotation);
                 PadFlip := 'off';
                 //if (Component.Layer = 32 & Pad.IsSurfaceMount = false )  then PadFlip := 'on';
                 if (Component.Layer <> Pad.Layer & Pad.IsSurfaceMount)then PadFlip := 'on';
-                if FTrue then Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNum)+'" name="'+Padname+'" angle="'+PadAngle+'" flipped="'+PadFlip+'">');
-                Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNum)+'" name="'+Padname+'"/>');
-                Packages.Add(#9+#9+#9+#9+'<Pinpack pinNum="'+IntToStr(PadNum)+'" padNum="'+IntToStr(PadNum)+'"/>');
-                FileXMLCOB.Add(#9+#9+#9+#9+#9+'<Pin padNum="'+IntToStr(PadNum)+'" name="'+Padname+'">');
+                if FTrue then Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'" angle="'+PadAngle+'" flipped="'+PadFlip+'">');
+                Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'"/>');
+                Packages.Add(#9+#9+#9+#9+'<Pinpack pinNum="'+IntToStr(PadNFoot)+'" padNum="'+IntToStr(PadNFoot)+'"/>');
+                FileXMLCOB.Add(#9+#9+#9+#9+#9+'<Pin padNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'">');
                 TestString := Pad.Name;
                 // проверяем был ли ранее пад такого же типа
                 PadStackName := PadTemplate(Pad,Board.DisplayUnit);
@@ -1461,6 +1549,7 @@ Begin
                 if FTrue then Footprints.Add(#9+#9+#9+#9+#9+'</Pad>');
                 Pad := PadIteratorHandle.NextPCBObject;
            End;// Конец создания падов
+           Component.GroupIterator_Destroy(PadIteratorHandle);
            Components.Add(#9+#9+#9+#9+'</Pins>');
            Components.Add(#9+#9+#9+'</Component>');
            Packages.Add(#9+#9+#9+'</Package>');
@@ -1931,7 +2020,7 @@ Begin
      XMLInL.Add(#9+'</LocalLibrary>');
      FileXMLCOB.Add(#9+'</ComponentsOnBoard>');
 
-     //*******Подмитаем********//
+     //*******Подмитаем********// 
      Padstacks.Free;
      Footprints.Free;
      Components.Free;
@@ -2596,31 +2685,6 @@ Begin
    NetGroups.Free;
    CompGroups.Free;
 End;
-
-// получить значение аттрибута
-Function XMLGetAttrValue (InputStr : String; AttrName : String) : String;
-Var
-i      : integer;
-WriteS : bolean;
-s      : String;
-ResultS: String;
-Begin
- WriteS := false;
- ResultS:= '';
- if pos(AttrName,InputStr) >0 then
- For i := pos(AttrName,InputStr)+length(AttrName) to length(InputStr) do
- begin
-   s := InputStr[i];
-   if writeS then
-   begin
-     if (InputStr[i] = '"' |InputStr[i] = '''' ) then break;
-     Results := Results + InputStr[i];
-   end;
-   if (InputStr[i] = '"' |InputStr[i] = '''' )  then WriteS := true;
- end;
- Result := ResultS;
-end;
-
 
 // получить значение аттрибута
 Function GetRuleValue (InputStr : String; RuleName : String) : String;
