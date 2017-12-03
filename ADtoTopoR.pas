@@ -1265,7 +1265,7 @@ Var // жуть...
    Components              : TStringList;
    Packages                : TStringList;
    Component               : IPCB_Component;
-   Component2               : IPCB_Component;
+   Component2,Component3   : IPCB_Component;
    ComponentIteratorHandle : IPCB_BoardIterator;
    TrackCount              : Integer;
    ComponentCount          : Integer;
@@ -1342,13 +1342,18 @@ Var // жуть...
    Startindfoot            : integer;
    Currpadname             : String;
    CurrentStr              : String;
-   ComponentsRC            : array[0..100] of IPCB_Component; /// не забыть сделать увеличение массива в случае переполнения.
+   ComponentsRC            : array[0..1000] of IPCB_Component; /// увеличить массив в случае переполнения.
+   //ComponentsRC            : tlist;
    ComponentsRClist        : String;
    CountFoot               : integer;
    CurrFoot                : integer;
    RCflag                  : boolean;
+   masslength              : integer;
 
 Begin
+     //ComponentsRC := tlist.Create;
+     //masslength := 100;
+     //SetLength(ComponentsRC, masslength);
      CountFoot :=0;
      Startindfoot := 0;
      Fixed := '';
@@ -1425,12 +1430,17 @@ Begin
                begin
                FTrue := false;  // Флаг наличия посадочного. Посадочное - не нужно.
                //showmessage(CountFoot);
+               i:=0;
+               Log.Lines.Add('Component3.pattern '+ComponentsRC[0].Name.Text);
                for i := 0 to CountFoot-1 do //поиск компонента с таким посадочным.
                    begin
-                     if Component.Pattern = ComponentsRC[i].Pattern then
+                       //Component3 := ComponentsRC[i];
+                       //Log.Lines.Add(IntToStr(i) + '  ' +IntToStr(ComponentsRC.Count-1) );
+
+                       if Component.Pattern = ComponentsRC[i].Pattern then
                        begin
                          Component2 := ComponentsRC[i]; // нашли компонент с таким посадочным
-                       break;
+                         break;
                        end;
                    end;
                end;
@@ -1438,9 +1448,24 @@ Begin
            end;
 
            if FTrue then Footprints.Add(#9+#9+#9+'<Footprint name="'+FootName+ '">');  // добовляем футпринт
-           if (FTrue & RCflag) then ComponentsRClist := ComponentsRClist + '<Fname="'+FootName+ '">'; // создаем простой список посадочных
-           if (FTrue & RCflag) then ComponentsRC[CountFoot]:= Component;   //запоминаем текущий компонент для которого нужно посадочное
-           if (FTrue & RCflag) then inc(CountFoot); // увеличиваем счетчик посадочных.
+
+           if (FTrue & RCflag) then
+           begin
+             ComponentsRClist := ComponentsRClist + '<Fname="'+FootName+ '">'; // создаем простой список посадочных
+
+             //ComponentsRC.Add(Component);
+             //Log.Lines.Add('Component3.pattern '+ComponentsRC[0].Pattern);
+             //ShowMessage(ComponentsRC[ComponentsRC.Count-1].Pattern);
+
+             ComponentsRC[CountFoot]:= Component;   //запоминаем текущий компонент для которого нужно посадочное
+             inc(CountFoot); // увеличиваем счетчик посадочных.
+             //if CountFoot = masslength-1 then
+              // begin
+
+              // end;
+           end;
+
+
 
            //Component.GetState_FootprintDescription;
            Components.Add(#9+#9+#9+'<Component name="'+NameComp + '">');
@@ -1485,7 +1510,7 @@ Begin
                    PadIteratorHandle3.AddFilter_ObjectSet(MkSet(ePadObject));
                    Pad3 := PadIteratorHandle3.FirstPCBObject;
                    While (Pad3 <> Nil) Do
-                   Begin 
+                   Begin
                       if Pad.Name = Pad3.Name then begin
                       PadNFoot := PadNum; break; end;
                       inc (PadNum);
