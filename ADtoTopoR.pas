@@ -1431,7 +1431,7 @@ Begin
                FTrue := false;  // Флаг наличия посадочного. Посадочное - не нужно.
                //showmessage(CountFoot);
                i:=0;
-               Log.Lines.Add('Component3.pattern '+ComponentsRC[0].Name.Text);
+              // Log.Lines.Add('Component3.pattern '+ComponentsRC[0].Name.Text);
                for i := 0 to CountFoot-1 do //поиск компонента с таким посадочным.
                    begin
                        //Component3 := ComponentsRC[i];
