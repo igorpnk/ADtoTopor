@@ -262,7 +262,6 @@ object Form1: TForm1
     Height = 17
     Caption = 'Text'
     TabOrder = 5
-    State = cbChecked
   end
   object bt_ConfSave: TXPButton
     Left = 464
@@ -270,7 +269,13 @@ object Form1: TForm1
     Width = 72
     Height = 24
     Caption = 'Config Save'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
     ParentColor = False
+    ParentFont = False
     TabOrder = 6
     TabStop = False
     OnClick = bt_ConfSaveClick
@@ -282,7 +287,6 @@ object Form1: TForm1
     Height = 17
     Caption = 'Primitive'
     TabOrder = 7
-    State = cbChecked
   end
   object cbFreePad: TXPCheckBox
     Left = 192
@@ -291,7 +295,6 @@ object Form1: TForm1
     Height = 17
     Caption = 'Free Pad'
     TabOrder = 8
-    State = cbChecked
   end
   object cbTrack: TXPCheckBox
     Left = 8
@@ -318,7 +321,6 @@ object Form1: TForm1
     Height = 17
     Caption = 'Component'
     TabOrder = 11
-    State = cbChecked
   end
   object cb_FootComp: TXPCheckBox
     Left = 320
@@ -335,7 +337,13 @@ object Form1: TForm1
     Width = 72
     Height = 24
     Caption = 'Export FST'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
     ParentColor = False
+    ParentFont = False
     TabOrder = 13
     TabStop = False
     OnClick = b_GOClick
@@ -346,7 +354,13 @@ object Form1: TForm1
     Width = 72
     Height = 24
     Caption = 'Import FST'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
     ParentColor = False
+    ParentFont = False
     TabOrder = 14
     TabStop = False
     OnClick = b_ImportClick
@@ -357,7 +371,7 @@ object Form1: TForm1
     Width = 56
     Height = 21
     TabOrder = 15
-    Text = '1.1.4'
+    Text = '1.2.0'
     Items.Strings = (
       '1.1.3'
       '1.1.4'

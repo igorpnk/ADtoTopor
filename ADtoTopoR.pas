@@ -275,6 +275,7 @@ Begin
 
      //*******Получаем все физические и парные механические слои********//
 
+     //Доступа к механическим слоям после 16го через скрипты нет.
      //находим все пары слоев перебором потому что LayerPair[I : Integer] возвращает TMechanicalLayerPair  с которой непонятно что делать.
       i := 0;
       for LayerType := eMechanical1 to eMechanical16 do
@@ -380,12 +381,24 @@ Var
  Radius         : TReal;
  ShapeType      : Tshape;
  CornerPercent  : Integer;
+ masktentSMD    : string;
+ masktentTop    : string;
+ masktentBot    : string;
+
 Begin
      Pad2 := Pad;
      Shape := '';
+     masktentSMD := 'f';
+     masktentTop := 'f';
+     masktentBot := 'f';
+
      //Нужно будет обработать случаи с разными формами в зависимости от стека
      If Pad.IsSurfaceMount = True then
      Begin
+          if Pad.IsTenting_Top = True | Pad.IsTenting_Bottom = True then
+          Begin
+               masktentSMD := 't';
+          End;
           FirstSimbol := 'r';
           XSize := CoordToMMs(Pad.XSizeOnLayer[Pad.Layer])*100;
           YSize := CoordToMMs(Pad.YSizeOnLayer[Pad.Layer])*100;
@@ -402,11 +415,15 @@ Begin
                eRounded        : Shape := 'r'+'100';
                eRoundedRectangular : Shape := 'r'+IntToStr(CornerPercent);
           End;
-     Result := FirstSimbol + XsizeStr+ '_'+YsizeStr+ Shape;
+
+     Result := FirstSimbol + XsizeStr+ '_'+YsizeStr+ '_'+ Shape+'_m'+masktentSMD;
      End;
 
      If Pad.IsSurfaceMount = False then
      Begin
+          if Pad.IsTenting_Top     = True then  masktentTop := 't';
+          if Pad.IsTenting_Bottom  = True then  masktentBot := 't';
+
           FirstSimbol := 's';
           XSize := CoordToMMs(Pad.XSizeOnLayer[Pad.Layer])*100;
           XSizeStr := floattostr(XSize);
@@ -425,7 +442,7 @@ Begin
                eRoundedRectangular : Shape := 'h90r'+IntToStr(CornerPercent);
           End;
 
-          Result := FirstSimbol + XsizeStr+ '_'+YsizeStr + Shape;
+          Result := FirstSimbol + XsizeStr+ '_'+YsizeStr + Shape+'_mt'+masktentTop +'_mb'+masktentBot;
     End;
 
 End;
@@ -929,6 +946,7 @@ Var
  TBold        : String;
  TItalic      : String;
  StrText      : String;
+ Test         : String;
 
 Begin
   TBold := '';
@@ -939,14 +957,14 @@ Begin
   StringTab := '';
   For I:=0 to TabCount-1 do StringTab := StringTab + #9;
   ResultString := TStringList.Create;
-  TextStyle := 'Arial'+ FloatToStr(CoordToMMs(Text.Size)*100)+TBold+TItalic;
+  TextStyle := Text.FontName+ FloatToStr(CoordToMMs(Text.Size)*100)+TBold+TItalic;
   PozTextStyle := 0;
   PozTextStyle := Pos('"'+TextStyle+'"', FileXmlTSt.Text);
   if  PozTextStyle = 0 then  //если текстового стиля нет то создаем
   begin
   if Text.Bold then TBold := ' bold="on"';
   if Text.Italic then TItalic := ' italic="on"';
-  FileXmlTSt.Add(#9+#9+'<TextStyle name="'+TextStyle+ '" fontName="Arial" height="'+FloatToStr(CoordToMMs(Text.Size))+'"'+TBold+TItalic+'/>');
+  FileXmlTSt.Add(#9+#9+'<TextStyle name="'+TextStyle+ '" fontName="'+Text.FontName+'" height="'+FloatToStr(CoordToMMs(Text.Size))+'"'+TBold+TItalic+'/>');
   end;  //конец созадния нового текстового стиля
 
   //заполняем текстовую информацию
@@ -1045,16 +1063,31 @@ var
    Board                   : IPCB_Board;
    handlingValue           : Double;
    LyrNumber               : integer;
+   MaskLyrNumber           : integer;
+   PasteLyrNumber          : integer;
+   handlingValue_mask      : Double;
+   PadxReal_mask           : Treal;
+   PadYReal_mask           : Treal;
+
 Begin
     Board := PCBServer.GetCurrentPCBBoard;
     Pad2 := Pad;
     PadPlated := 'off';
     if Pad2.plated then PadPlated := 'on';
+    PasteLyrNumber := -1;
+
 
     If Pad.Layer <> eMultiLayer then //  КП в 1 слое
     Begin
-       LyrNumber := 1;
-       if (Pad.Layer <> eTopLayer & Pad.Layer <> eBottomLayer) then LyrNumber := Pad.Layer;
+       LyrNumber := 1; // Все SMD пады делаются в одном слое - в верхнем.
+       if (Pad.Layer <> eTopLayer & Pad.Layer <> eBottomLayer) then
+       begin
+
+         LogOnlyShow();
+         Log.Lines.Add('Warning!');
+         Log.Lines.Add('Component '+ Pad.Component.Detail + ' contein pad in ' + Board.LayerName(Pad.Layer) + ' Layer' );
+
+       end;
 
        PadTypeSurf := 'SMD';
        Padstacks.Add(#9+#9+#9+'<Padstack name="'+PadStackName+'" type="'+PadTypeSurf+'" metallized="'+PadPlated+'">');
@@ -1065,35 +1098,111 @@ Begin
             eRectangular    :
               Begin
                 PadType := 'PadRect';
-                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
+                Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
                 floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                 Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
+
+                //добавляем маску
+                if Pad.IsTenting_Top = false & Pad.IsTenting_Bottom = false then // если маска есть
+                Begin
+                  if (Pad.XSizeOnLayer[eTopSolder]    > 0 & Pad.YSizeOnLayer[eTopSolder]    > 0) then MaskLyrNumber := eTopSolder;
+                  if (Pad.XSizeOnLayer[eBottomSolder] > 0 & Pad.YSizeOnLayer[eBottomSolder] > 0) then MaskLyrNumber := eBottomSolder;
+
+                  Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                  Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
+                  floattostr(CoordToMMs(Pad.XSizeOnLayer[MaskLyrNumber]))+
+                  '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[MaskLyrNumber]))+'">');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конце
+                End; // добавили маску
+
+                //добавляем пасту
+                if (Pad.XSizeOnLayer[eTopPaste] > 0 & Pad.YSizeOnLayer[eTopPaste] > 0) then PasteLyrNumber := eTopPaste;
+                if (Pad.XSizeOnLayer[eBottomPaste] > 0 & Pad.YSizeOnLayer[eBottomPaste] > 0) then PasteLyrNumber := eBottomPaste;
+                if PasteLyrNumber >0 then // если паста есть и не ноль
+                Begin
+                  Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                  Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
+                  floattostr(CoordToMMs(Pad.XSizeOnLayer[PasteLyrNumber]))+
+                  '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[PasteLyrNumber]))+'">');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopPaste)+'"/>'); //не закрываем, так как общее закрытие будет в конце
+                End; // добавили пасту
               End;
             eOctagonal      :
               Begin
                 if cb_Version.Text = '1.1.3' then
                 begin  //1.1.3
-                PadType := 'PadRect';
-                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
-                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
+                       PadType := 'PadRect';
+                       Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
+                       floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                       '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
+                       Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
+
+                       //добавляем маску
+                       if Pad.IsTenting_Top = false & Pad.IsTenting_Bottom = false then // если маска есть
+                       Begin
+                            if (Pad.XSizeOnLayer[eTopSolder]    > 0 & Pad.YSizeOnLayer[eTopSolder]    > 0) then MaskLyrNumber := eTopSolder;
+                            if (Pad.XSizeOnLayer[eBottomSolder] > 0 & Pad.YSizeOnLayer[eBottomSolder] > 0) then MaskLyrNumber := eBottomSolder;
+
+                            Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                            Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
+                            floattostr(CoordToMMs(Pad.XSizeOnLayer[MaskLyrNumber]))+
+                            '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[MaskLyrNumber]))+'">');
+                            Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конце
+                       End; // добавили маску
+
+                       //добавляем пасту
+                       if (Pad.XSizeOnLayer[eTopPaste] > 0 & Pad.YSizeOnLayer[eTopPaste] > 0) then PasteLyrNumber := eTopPaste;
+                       if (Pad.XSizeOnLayer[eBottomPaste] > 0 & Pad.YSizeOnLayer[eBottomPaste] > 0) then PasteLyrNumber := eBottomPaste;
+                       if PasteLyrNumber >0 then // если паста есть и не ноль
+                       Begin
+                            Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                            Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
+                            floattostr(CoordToMMs(Pad.XSizeOnLayer[PasteLyrNumber]))+
+                            '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[PasteLyrNumber]))+'">');
+                            Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopPaste)+'"/>'); //не закрываем, так как общее закрытие будет в конце
+                       End; // добавили пасту
                 end;  //1.1.3
                 if (cb_Version.Text = '1.1.4' | cb_Version.Text = '1.2.0') then
                 begin // 1.1.4
-                if Pad.XSizeOnLayer[Pad.Layer] > Pad.YSizeOnLayer[Pad.Layer] then begin
-                handlingValue := 0.25*Pad.YSizeOnLayer[Pad.Layer];
-                end else begin
-                handlingValue := 0.25*Pad.XSizeOnLayer[Pad.Layer];
-                end;
+                      if Pad.XSizeOnLayer[Pad.Layer] > Pad.YSizeOnLayer[Pad.Layer] then begin
+                         handlingValue := 0.25*Pad.YSizeOnLayer[Pad.Layer];
+                      end else begin
+                          handlingValue := 0.25*Pad.XSizeOnLayer[Pad.Layer];
+                          end;
+                      PadType := 'PadRect';
+                      Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
+                      floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                      '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
+                      ' handling="Chamfer" handlingValue="'+floattostr(CoordToMMs(handlingValue))+'">');
+                      Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
 
-                PadType := 'PadRect';
-                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
-                ' handling="Chamfer" handlingValue="'+floattostr(CoordToMMs(handlingValue))+'">');
-                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
+                      //добавляем маску
+                       if Pad.IsTenting_Top = false & Pad.IsTenting_Bottom = false then // если маска есть
+                       Begin
+                            if (Pad.XSizeOnLayer[eTopSolder]    > 0 & Pad.YSizeOnLayer[eTopSolder]    > 0) then MaskLyrNumber := eTopSolder;
+                            if (Pad.XSizeOnLayer[eBottomSolder] > 0 & Pad.YSizeOnLayer[eBottomSolder] > 0) then MaskLyrNumber := eBottomSolder;
+
+                            Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                            Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
+                            floattostr(CoordToMMs(Pad.XSizeOnLayer[MaskLyrNumber]))+
+                            '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[MaskLyrNumber]))+'"'+
+                            ' handling="Chamfer" handlingValue="'+floattostr(CoordToMMs(handlingValue))+'">');
+                            Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конце
+                       End; // добавили маску
+
+                       //добавляем пасту
+                       if (Pad.XSizeOnLayer[eTopPaste] > 0 & Pad.YSizeOnLayer[eTopPaste] > 0) then PasteLyrNumber := eTopPaste;
+                       if (Pad.XSizeOnLayer[eBottomPaste] > 0 & Pad.YSizeOnLayer[eBottomPaste] > 0) then PasteLyrNumber := eBottomPaste;
+                       if PasteLyrNumber >0 then // если паста есть и не ноль
+                       Begin
+                            Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                            Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
+                            floattostr(CoordToMMs(Pad.XSizeOnLayer[PasteLyrNumber]))+
+                            '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[PasteLyrNumber]))+'"'+
+                            ' handling="Chamfer" handlingValue="'+floattostr(CoordToMMs(handlingValue))+'">');
+                            Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopPaste)+'"/>'); //не закрываем, так как общее закрытие будет в конце
+                       End; // добавили пасту
                 end; //1.1.4
 
               End;
@@ -1104,17 +1213,70 @@ Begin
                 PadYReal := CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]);
                 if PadXReal < PadYReal then
                 Begin
-                  Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadXReal)+'">');
+                  Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' diameter="'+floattostr(PadXReal)+'">');
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="0.000" y="'+floattostr(PadYReal-PadXReal)+'"/>');
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
+
+                //добавляем маску
+                if Pad.IsTenting_Top = false & Pad.IsTenting_Bottom = false then // если маска есть
+                Begin
+                  if (Pad.XSizeOnLayer[eTopSolder]    > 0 & Pad.YSizeOnLayer[eTopSolder]    > 0) then MaskLyrNumber := eTopSolder;
+                  if (Pad.XSizeOnLayer[eBottomSolder] > 0 & Pad.YSizeOnLayer[eBottomSolder] > 0) then MaskLyrNumber := eBottomSolder;
+
+                  Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                  Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' diameter="'+floattostr(CoordToMMs(Pad.XSizeOnLayer[MaskLyrNumber]))+'">');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopSolder)+'"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="0.000" y="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[MaskLyrNumber])-CoordToMMs(Pad.XSizeOnLayer[MaskLyrNumber]))+'"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');  //не закрываем, так как общее закрытие будет в конце
+                End; // добавили маску
+
+                //добавляем пасту
+                if (Pad.XSizeOnLayer[eTopPaste] > 0 & Pad.YSizeOnLayer[eTopPaste] > 0) then PasteLyrNumber := eTopPaste;
+                if (Pad.XSizeOnLayer[eBottomPaste] > 0 & Pad.YSizeOnLayer[eBottomPaste] > 0) then PasteLyrNumber := eBottomPaste;
+                if PasteLyrNumber >0 then // если паста есть и не ноль
+                Begin
+                  Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                  Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' diameter="'+floattostr(CoordToMMs(Pad.XSizeOnLayer[PasteLyrNumber]))+'">');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopPaste)+'"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="0.000" y="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[PasteLyrNumber])-CoordToMMs(Pad.XSizeOnLayer[PasteLyrNumber]))+'"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');  //не закрываем, так как общее закрытие будет в конце
+                End; // добавили пасту
+
                 End
                 Else
-                Begin
-                  Padstacks.Add(#9+#9+#9+#9+#9+'<PadOval diameter="'+floattostr(PadYReal)+'">');
+                Begin // PadXReal > PadYReal
+                  Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' diameter="'+floattostr(PadYReal)+'">');
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="'+floattostr(PadXReal - PadYReal)+'" y="0.000"/>');
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
+
+                //добавляем маску
+                if Pad.IsTenting_Top = false & Pad.IsTenting_Bottom = false then // если маска есть
+                Begin
+                  if (Pad.XSizeOnLayer[eTopSolder]    > 0 & Pad.YSizeOnLayer[eTopSolder]    > 0) then MaskLyrNumber := eTopSolder;
+                  if (Pad.XSizeOnLayer[eBottomSolder] > 0 & Pad.YSizeOnLayer[eBottomSolder] > 0) then MaskLyrNumber := eBottomSolder;
+
+                  Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                  Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' diameter="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[MaskLyrNumber]))+'">');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopSolder)+'"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="'+floattostr(CoordToMMs(Pad.XSizeOnLayer[MaskLyrNumber])-CoordToMMs(Pad.YSizeOnLayer[MaskLyrNumber]))+'" y="0.000"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');  //не закрываем, так как общее закрытие будет в конце
+                End; // добавили маску
+
+                //добавляем пасту
+                if (Pad.XSizeOnLayer[eTopPaste] > 0 & Pad.YSizeOnLayer[eTopPaste] > 0) then PasteLyrNumber := eTopPaste;
+                if (Pad.XSizeOnLayer[eBottomPaste] > 0 & Pad.YSizeOnLayer[eBottomPaste] > 0) then PasteLyrNumber := eBottomPaste;
+                if PasteLyrNumber >0 then // если паста есть и не ноль
+                Begin
+                  Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                  Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' diameter="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[PasteLyrNumber]))+'">');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopPaste)+'"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="'+floattostr(CoordToMMs(Pad.XSizeOnLayer[PasteLyrNumber])-CoordToMMs(Pad.YSizeOnLayer[PasteLyrNumber]))+'" y="0.000"/>');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');  //не закрываем, так как общее закрытие будет в конце
+                End; // добавили пасту
+
+
                 End;
               End;
             eRoundedRectangular :
@@ -1122,22 +1284,78 @@ Begin
                 Pad2 := Pad;
                 PadType := 'PadRect';
                 if cb_Version.Text = '1.1.3' then
-                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
+                Begin
+                   Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
+                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
+
+                   //добавляем маску
+                   if Pad.IsTenting_Top = false & Pad.IsTenting_Bottom = false then // если маска есть
+                   Begin
+                        if (Pad.XSizeOnLayer[eTopSolder]    > 0 & Pad.YSizeOnLayer[eTopSolder]    > 0) then MaskLyrNumber := eTopSolder;
+                        if (Pad.XSizeOnLayer[eBottomSolder] > 0 & Pad.YSizeOnLayer[eBottomSolder] > 0) then MaskLyrNumber := eBottomSolder;
+
+                        Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                        Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
+                            floattostr(CoordToMMs(Pad.XSizeOnLayer[MaskLyrNumber]))+
+                            '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[MaskLyrNumber]))+'">');
+                            Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конце
+                   End; // добавили маску
+
+                   //добавляем пасту
+                   if (Pad.XSizeOnLayer[eTopPaste] > 0 & Pad.YSizeOnLayer[eTopPaste] > 0) then PasteLyrNumber := eTopPaste;
+                   if (Pad.XSizeOnLayer[eBottomPaste] > 0 & Pad.YSizeOnLayer[eBottomPaste] > 0) then PasteLyrNumber := eBottomPaste;
+                   if PasteLyrNumber >0 then // если паста есть и не ноль
+                   Begin
+                        Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                        Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
+                            floattostr(CoordToMMs(Pad.XSizeOnLayer[PasteLyrNumber]))+
+                            '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[PasteLyrNumber]))+'">');
+                            Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopPaste)+'"/>'); //не закрываем, так как общее закрытие будет в конце
+                        End; // добавили пасту
+
+                End; //1.1.3
 
                 if (cb_Version.Text = '1.1.4' | cb_Version.Text = '1.2.0') then
-                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
-                ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[Pad.Layer]))+'">');
+                Begin
+                   Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
+                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
+                   ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[Pad.Layer]))+'">');
+                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
 
-                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(LyrNumber)+'"/>');
+                   //добавляем маску
+                   if Pad.IsTenting_Top = false & Pad.IsTenting_Bottom = false then // если маска есть
+                   Begin
+                        if (Pad.XSizeOnLayer[eTopSolder]    > 0 & Pad.YSizeOnLayer[eTopSolder]    > 0) then MaskLyrNumber := eTopSolder;
+                        if (Pad.XSizeOnLayer[eBottomSolder] > 0 & Pad.YSizeOnLayer[eBottomSolder] > 0) then MaskLyrNumber := eBottomSolder;
+
+                        Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                        Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
+                            floattostr(CoordToMMs(Pad.XSizeOnLayer[MaskLyrNumber]))+
+                            '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[MaskLyrNumber]))+'"'+
+                            ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[MaskLyrNumber]))+'">');
+                            Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конце
+                   End; // добавили маску
+
+                   //добавляем пасту
+                   if (Pad.XSizeOnLayer[eTopPaste] > 0 & Pad.YSizeOnLayer[eTopPaste] > 0) then PasteLyrNumber := eTopPaste;
+                   if (Pad.XSizeOnLayer[eBottomPaste] > 0 & Pad.YSizeOnLayer[eBottomPaste] > 0) then PasteLyrNumber := eBottomPaste;
+                   if PasteLyrNumber >0 then // если паста есть и не ноль
+                   Begin
+                        Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                        Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType +' width="'+
+                            floattostr(CoordToMMs(Pad.XSizeOnLayer[PasteLyrNumber]))+
+                            '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[PasteLyrNumber]))+'"'+
+                            ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[PasteLyrNumber]))+'">');
+                            Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopPaste)+'"/>'); //не закрываем, так как общее закрытие будет в конце
+                   End; // добавили пасту
+                End;
               end;
        End;
        End; // конец поверхностномонтируемых
 
-       If Pad.Layer = eMultiLayer then  // Сквозная КП
+    If Pad.Layer = eMultiLayer then  // Сквозная КП
        Begin
        PadTypeSurf := 'Through';
 
@@ -1151,34 +1369,98 @@ Begin
             eRectangular    :
               Begin
                 PadType := 'PadRect';
-                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
+                Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' width="'+
                 floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
                 '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
                 Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');  //тут заменить на <LayerRef если разная толщина на слоях.
+
+                 //передаем маску
+                 if (Pad.IsTenting_Top = false & Pad.XSizeOnLayer[eTopSolder] > 0 & Pad.YSizeOnLayer[eTopSolder] > 0)  then
+                 Begin
+                     Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                     Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' width="'+
+                     floattostr(CoordToMMs(Pad.XSizeOnLayer[eTopSolder]))+
+                     '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[eTopSolder]))+'">');
+                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конц
+                 End;
+                 if (Pad.IsTenting_Bottom = false & Pad.XSizeOnLayer[eBottomSolder] > 0 & Pad.YSizeOnLayer[eBottomSolder] > 0)  then
+                 Begin
+                     Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                     Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' width="'+
+                     floattostr(CoordToMMs(Pad.XSizeOnLayer[eBottomSolder]))+
+                     '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[eBottomSolder]))+'">');
+                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eBottomSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конц
+                 End;
+
               End;
-            eOctagonal      : // !!! сделано как для прямоугольного хорощо бы исправить!
+            eOctagonal      :
               Begin
                 if cb_Version.Text = '1.1.3' then
-                begin  //1.1.3
-                PadType := 'PadRect';
-                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
-                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
-                end;  //1.1.3
+                   begin  //1.1.3
+                       PadType := 'PadRect';
+                       Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' width="'+
+                       floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                       '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
+                       Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+
+                       //передаем маску
+                       if (Pad.IsTenting_Top = false & Pad.XSizeOnLayer[eTopSolder] > 0 & Pad.YSizeOnLayer[eTopSolder] > 0)  then
+                       Begin
+                         Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                         Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' width="'+
+                         floattostr(CoordToMMs(Pad.XSizeOnLayer[eTopSolder]))+
+                         '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[eTopSolder]))+'">');
+                         Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конц
+                       End;
+                       if (Pad.IsTenting_Bottom = false & Pad.XSizeOnLayer[eBottomSolder] > 0 & Pad.YSizeOnLayer[eBottomSolder] > 0)  then
+                       Begin
+                         Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                         Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' width="'+
+                         floattostr(CoordToMMs(Pad.XSizeOnLayer[eBottomSolder]))+
+                         '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[eBottomSolder]))+'">');
+                         Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eBottomSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конц
+                       End;
+                   end;  //1.1.3
+
                 if (cb_Version.Text = '1.1.4' | cb_Version.Text = '1.2.0') then
-                begin  //1.1.4
-                if Pad.XSizeOnLayer[Pad.Layer] > Pad.YSizeOnLayer[Pad.Layer] then begin
-                handlingValue := 0.25*Pad.YSizeOnLayer[Pad.Layer];
-                end else begin
-                handlingValue := 0.25*Pad.XSizeOnLayer[Pad.Layer];
-                end;
-                PadType := 'PadRect';
-                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+
-                '" handling="Chamfer" handlingValue="'+FloatToStr(CoordToMMs(handlingValue))+'">');
-                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+                Begin  //1.1.4
+                   if Pad.XSizeOnLayer[Pad.Layer] > Pad.YSizeOnLayer[Pad.Layer] then begin
+                      handlingValue := 0.25*Pad.YSizeOnLayer[Pad.Layer];
+                   end else begin
+                      handlingValue := 0.25*Pad.XSizeOnLayer[Pad.Layer];
+                   end;
+                   PadType := 'PadRect';
+                   Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' width="'+
+                   floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                   '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+
+                   '" handling="Chamfer" handlingValue="'+FloatToStr(CoordToMMs(handlingValue))+'">');
+                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+
+                //передаем маску
+                 if (Pad.IsTenting_Top = false & Pad.XSizeOnLayer[eTopSolder] > 0 & Pad.YSizeOnLayer[eTopSolder] > 0)  then
+                 Begin
+                     if Pad.XSizeOnLayer[Pad.Layer] > Pad.YSizeOnLayer[Pad.Layer] then handlingValue_mask := 0.25*Pad.YSizeOnLayer[eTopSolder]
+                     else handlingValue_mask := 0.25*Pad.XSizeOnLayer[eTopSolder];
+
+                     Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                     Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' width="'+
+                     floattostr(CoordToMMs(Pad.XSizeOnLayer[eTopSolder]))+
+                     '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[eTopSolder]))+
+                     '" handling="Chamfer" handlingValue="'+FloatToStr(CoordToMMs(handlingValue_mask))+'">');
+                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конце
+                 End;
+                 if (Pad.IsTenting_Bottom = false & Pad.XSizeOnLayer[eBottomSolder] > 0 & Pad.YSizeOnLayer[eBottomSolder] > 0)  then
+                 Begin
+                      if Pad.XSizeOnLayer[Pad.Layer] > Pad.YSizeOnLayer[Pad.Layer] then handlingValue_mask := 0.25*Pad.YSizeOnLayer[eBottomSolder]
+                     else handlingValue_mask := 0.25*Pad.XSizeOnLayer[eBottomSolder];
+
+                     Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                     Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' width="'+
+                     floattostr(CoordToMMs(Pad.XSizeOnLayer[eBottomSolder]))+
+                     '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[eBottomSolder]))+
+                     '" handling="Chamfer" handlingValue="'+FloatToStr(CoordToMMs(handlingValue_mask))+'">');
+                     Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eBottomSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конце
+                 End;
                 end;  //1.1.4
               End;
             eRounded        :
@@ -1193,6 +1475,27 @@ Begin
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="0.000" y="'+floattostr(PadYReal-PadXReal)+'"/>');
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
+                  //передаем маску
+                  if (Pad.IsTenting_Top = false & Pad.XSizeOnLayer[eTopSolder] > 0 & Pad.YSizeOnLayer[eTopSolder] > 0)  then
+                  Begin
+                        PadXReal_mask := CoordToMMs(Pad.XSizeOnLayer[eTopSolder]);
+                        PadYReal_mask := CoordToMMs(Pad.YSizeOnLayer[eTopSolder]);
+                        Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                        Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' diameter="'+floattostr(PadXReal_mask)+'">');
+                        Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopSolder)+'"/>');
+                        Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="0.000" y="'+floattostr(PadYReal_mask-PadXReal_mask)+'"/>');
+                        Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>'); //не закрываем, так как общее закрытие будет в конце
+                  End;
+                  if (Pad.IsTenting_Bottom = false & Pad.XSizeOnLayer[eBottomSolder] > 0 & Pad.YSizeOnLayer[eBottomSolder] > 0)  then
+                  Begin
+                        PadXReal_mask := CoordToMMs(Pad.XSizeOnLayer[eBottomSolder]);
+                        PadYReal_mask := CoordToMMs(Pad.YSizeOnLayer[eBottomSolder]);
+                        Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                        Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' diameter="'+floattostr(PadXReal_mask)+'">');
+                        Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eBottomSolder)+'"/>');
+                        Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="0.000" y="'+floattostr(PadYReal_mask-PadXReal_mask)+'"/>');
+                        Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>'); //не закрываем, так как общее закрытие будет в конце
+                  End;
                 End
                 Else
                 Begin
@@ -1200,27 +1503,90 @@ Begin
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="'+floattostr(PadXReal - PadYReal)+'" y="0.000"/>');
                   Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>');
+                  //передаем маску
+                  if (Pad.IsTenting_Top = false & Pad.XSizeOnLayer[eTopSolder] > 0 & Pad.YSizeOnLayer[eTopSolder] > 0)  then
+                  Begin
+                        PadXReal_mask := CoordToMMs(Pad.XSizeOnLayer[eTopSolder]);
+                        PadYReal_mask := CoordToMMs(Pad.YSizeOnLayer[eTopSolder]);
+                        Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                        Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' diameter="'+floattostr(PadXReal_mask)+'">');
+                        Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopSolder)+'"/>');
+                        Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="'+floattostr(PadXReal_mask - PadYReal_mask)+'" y="0.000"/>');
+                        Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>'); //не закрываем, так как общее закрытие будет в конце
+                  End;
+                  if (Pad.IsTenting_Bottom = false & Pad.XSizeOnLayer[eBottomSolder] > 0 & Pad.YSizeOnLayer[eBottomSolder] > 0)  then
+                  Begin
+                        PadXReal_mask := CoordToMMs(Pad.XSizeOnLayer[eBottomSolder]);
+                        PadYReal_mask := CoordToMMs(Pad.YSizeOnLayer[eBottomSolder]);
+                        Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                        Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' diameter="'+floattostr(PadXReal_mask)+'">');
+                        Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eBottomSolder)+'"/>');
+                        Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Stretch x="'+floattostr(PadXReal_mask - PadYReal_mask)+'" y="0.000"/>');
+                        Padstacks.Add(#9+#9+#9+#9+#9+#9+'<Shift x="0.000" y="0.000"/>'); //не закрываем, так как общее закрытие будет в конце
+                  End;
                 End;
               End;
-            eRoundedRectangular :   // !!! сделано как для прямоугольного хорощо бы исправить!
+            eRoundedRectangular :
               Begin
                 Pad2 := Pad;
                 if cb_Version.Text = '1.1.3' then
                 begin  //1.1.3
-                PadType := 'PadRect';
-                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
-                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+                  PadType := 'PadRect';
+                  Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' width="'+
+                  floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                  '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'">');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+
+                 //передаем маску
+                       if (Pad.IsTenting_Top = false & Pad.XSizeOnLayer[eTopSolder] > 0 & Pad.YSizeOnLayer[eTopSolder] > 0)  then
+                       Begin
+                         Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                         Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' width="'+
+                         floattostr(CoordToMMs(Pad.XSizeOnLayer[eTopSolder]))+
+                         '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[eTopSolder]))+'">');
+                         Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конц
+                       End;
+                       if (Pad.IsTenting_Bottom = false & Pad.XSizeOnLayer[eBottomSolder] > 0 & Pad.YSizeOnLayer[eBottomSolder] > 0)  then
+                       Begin
+                         Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                         Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' width="'+
+                         floattostr(CoordToMMs(Pad.XSizeOnLayer[eBottomSolder]))+
+                         '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[eBottomSolder]))+'">');
+                         Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eBottomSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конц
+                       End;
+
+
+
                 end; //1.1.3
                 if (cb_Version.Text = '1.1.4' | cb_Version.Text = '1.2.0') then
                 begin  //1.1.4
-                PadType := 'PadRect';
-                Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
-                floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
-                '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
-                ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[Pad.Layer]))+'">');
-                Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+                  PadType := 'PadRect';
+                  Padstacks.Add(#9+#9+#9+#9+#9+'<'+PadType+' width="'+
+                  floattostr(CoordToMMs(Pad.XSizeOnLayer[Pad.Layer]))+
+                  '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[Pad.Layer]))+'"'+
+                  ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[Pad.Layer]))+'">');
+                  Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerTypeRef type="Signal"/>');
+
+                  //передаем маску
+                       if (Pad.IsTenting_Top = false & Pad.XSizeOnLayer[eTopSolder] > 0 & Pad.YSizeOnLayer[eTopSolder] > 0)  then
+                       Begin
+                        Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                        Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
+                        floattostr(CoordToMMs(Pad.XSizeOnLayer[eTopSolder]))+
+                        '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[eTopSolder]))+'"'+
+                        ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[eTopSolder]))+'">');
+                        Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eTopSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конце
+                       End;
+                       if (Pad.IsTenting_Bottom = false & Pad.XSizeOnLayer[eBottomSolder] > 0 & Pad.YSizeOnLayer[eBottomSolder] > 0)  then
+                       Begin
+                         Padstacks.Add(#9+#9+#9+#9+#9+'</'+PadType+'>'); //закрываем ранее открытую строку
+                        Padstacks.Add(#9+#9+#9+#9+#9+'<PadRect width="'+
+                        floattostr(CoordToMMs(Pad.XSizeOnLayer[eBottomSolder]))+
+                        '" height="'+floattostr(CoordToMMs(Pad.YSizeOnLayer[eBottomSolder]))+'"'+
+                        ' handling="Rounding" handlingValue="'+floattostr(CoordToMMs(Pad2.CornerRadius[eBottomSolder]))+'">');
+                        Padstacks.Add(#9+#9+#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(eBottomSolder)+'"/>'); //не закрываем, так как общее закрытие будет в конце
+                       End;
+
                 end; //1.1.4
               End;
        End;// конец Case ShapeType
@@ -1388,6 +1754,7 @@ Begin
            inc(i);
           end;
         end;
+
 
 
      //*******Инизиализация перебора всех компонентов на плате на всех слоях********//
@@ -1985,13 +2352,14 @@ Begin
      Board.BoardIterator_Destroy(ComponentIteratorHandle);
      FileXMLCOB.Add(#9+#9+'</Components>');
      FileXMLCOB.Add(#9+#9+'<FreePads>');
+
      //*******перебор всех Free Падов********//
      PadIteratorHandle2 := Board.BoardIterator_Create;
      PadIteratorHandle2.AddFilter_ObjectSet(MkSet(ePadObject));
      PadIteratorHandle2.AddFilter_LayerSet(MkSet(eTopLayer,eBottomLayer,eMultiLayer));
      PadIteratorHandle2.AddFilter_Method(eProcessAll);
      Pad := PadIteratorHandle2.FirstPCBObject; //первая цепь
-          While (pad <> Nil) Do
+     While (pad <> Nil) Do
           Begin
             if (pad.Component = Nil) then
             Begin//если пад не принадлежит компоненту
@@ -3067,7 +3435,7 @@ Procedure AddConnectivity (FileXMLCon :TStringList; Board : IPCB_Board; Viastack
 uses Classes, Generics.Collections;
 var
   BoardIterator : IPCB_BoardIterator;
-  AccordionIter : IPCB_AccordinGraphicIterator;
+  AccordionIter : IPCB_AccordinGraphicIterator; 
   AccordionMp   : IPCB_AccordionMakerProcess;
   AccordStyle   : TAccordionStyle;
   GroupIter     : IPCB_GroupIterator;
@@ -3085,6 +3453,7 @@ var
   AccordPoly    : IPCB_Polygon;
   Dimension     : IPCB_Dimension;
   AccordCoord   : IPCB_Coordinate;
+
   Rect          : TCoordRect;
   ViaName       : String;
   ViaPoz        : Integer;
@@ -3229,11 +3598,20 @@ var
     //Аккордионы    //находим через поиск обьекта в координатах линий
 
      //FileXMLCon.Add(#9+#9+'<Serpents>');
-     //BoardIterator := Board.BoardIterator_Create;
-     //BoardIterator.AddFilter_ObjectSet(MkSet(eTrackObject));
-     //BoardIterator.AddFilter_LayerSet(AllLayers);
-     //BoardIterator.AddFilter_Method(eProcessAll);
-     //Track := BoardIterator.FirstPCBObject;
+     //BoardIterator        := Board.BoardIterator_Create;
+     //BoardIterator.AddFilter_ObjectSet(MkSet(eAccordion)); // eAccordion не подходит eAccordionObject нету
+    //BoardIterator.AddFilter_LayerSet(AllLayers);
+   // BoardIterator.AddFilter_Method(eProcessAll);
+    // Accordion := BoardIterator.FirstPCBObject;
+   //  Accordion := BoardIterator.NextPCBObject;
+    // TestString := Accordion.Detail;
+   // TestString := Accordion.Descriptor;
+    // TestString := Accordion.Identifier;
+   // TestString := Accordion.ObjectIDString;
+   // TestString := Accordion.UniqueId;
+      //Accordion.Style
+      // Accordion.Dimension  Accordion.Coordinate можно не проверять
+
 
      //Accordion := PCBServer.PCBObjectFactory(eNoObject, eNoDimension, eCreate_Default);
      // так предположительно сможем создать змейку
@@ -3259,13 +3637,15 @@ var
       // end; //top
       // Track := BoardIterator.NextPcbObject;
     // end;
-     // Board.BoardIterator_Destroy(BoardIterator);
+    // Board.BoardIterator_Destroy(BoardIterator);
      // FileXMLCon.Add(#9+#9+'</Serpents>');
 
-    //Track := Board.GetObjectAtCursor(AllObjects,AllLayers,eEditAction_Select);
-   // TestString := Track.Name;
+    //Accordion := Board.GetObjectAtCursor(eAccordion,AllLayers,eEditAction_Select);
+
+    //TestString := Accordion.Identifier;
     //TestString := Track.Layer;
     //TestString := Track.Layer_V6;
+
 
     FileXMLCon.Add(#9+#9+'<Wires>');
     lbProcess.Caption := 'Wires - Track'; Form1.Update;
@@ -3611,7 +3991,7 @@ Begin
      UTF8BOM[2] := $BF;
      FileXml := TStringList.Create;                      // Создание обьекта класса
 
-     // Установка кодировки UTF8 возможна только после 17 версии.
+     // Установка кодировки UTF8 для файла возможна только c 17 версии.
      if GetADVer < 17 then
      begin
        Log.Lines.Add('Warning!');
@@ -3620,11 +4000,10 @@ Begin
        Log.Lines.Add('However, you can still perform the translation if you change the encoding');
        Log.Lines.Add('of the generated .fst file to utf8 (For example, using the "Notepad++" program).');
        Log.Lines.Add('This is due to the fact that support for utf8 is added only in version 17.');
-       LogShow();
+       LogOnlyShow();
      end
      else
      begin FileXml.DefaultEncoding := TEncoding.UTF8;     end;
-
 
      FileXml2:= TStringList.Create;
      FileXmlTSt := TStringList.Create;
@@ -5077,9 +5456,11 @@ begin
       FileXml.LoadFromFile((FileName));
     end else begin
       ShowMessage('FST файл: '+FileName+'- отсутствует!');
+      Exit;
     end;
   end else begin
     ShowMessage('Присвойте имя FST файла!');
+    Exit;
   end;
 
   lbProcess.Caption := 'Remove Track'; Form1.Update;
@@ -5147,6 +5528,54 @@ begin
   b_Import.Enabled := true;
 end;
 
+// Функция получения размеров компонентов по их боди обьекту
+Procedure GetXYcomp(Board:IPCB_Board);
+var
+Body        :IPCB_ComponentBody;
+  ComponentIteratorHandle : IPCB_BoardIterator;
+  X, Y, Z : Single;
+  X1, Y1, Z1 : Single;
+  Cuntr   : IPCB_Contour;
+  comp :  IPCB_Component;
+  str : string;
+  Files   :TStringList;
+
+Begin
+  Files := TStringList.Create;
+
+//*********temp
+  ComponentIteratorHandle := Board.BoardIterator_Create;
+  ComponentIteratorHandle.AddFilter_ObjectSet(MkSet(eComponentBodyObject));
+  ComponentIteratorHandle.AddFilter_LayerSet(AllLayers);
+  ComponentIteratorHandle.AddFilter_Method(eProcessAll);
+  Body := ComponentIteratorHandle.FirstPCBObject;
+
+  While (Body <> Nil) Do
+          Begin
+          Cuntr := Body.MainContour;
+          //str := CoordToMMs(Body.OverallHeight);
+          comp := Body.Component;
+          //Files.Add('ew');
+          //if (comp
+          Files.Add(comp.Detail + ' X:'+ FloatToStr(CoordToMMs(Cuntr.x[0]-Cuntr.x[2]))+ '  Y:'+ FloatToStr(CoordToMMs(Cuntr.y[0]-Cuntr.y[2]))+ ' height:' +FloatToStr(CoordToMMs(Body.OverallHeight) ));
+          Body := ComponentIteratorHandle.NextPCBObject;
+          end;
+  Board.BoardIterator_Destroy(ComponentIteratorHandle);
+
+   // str := Body.Descriptor;
+  //str := Body.Detail;
+
+  //str := CoordToMMs(Cuntr.x[0]-Cuntr.x[2]);
+  //str := CoordToMMs(Cuntr.y[0]-Cuntr.y[2]);
+
+  //str := comp.Descriptor;
+  //str := comp.Detail;
+
+  Files.SaveToFile(Board.FileName+'.temp');
+  Files.Free;
+  //*****endtemp
+end;
+
 Procedure StartScript ();
 var
   Board       : IPCB_Board;
@@ -5155,11 +5584,35 @@ var
   Reg         : TRegistry;
   str         : String;
 
+  comp        : IPCB_Component;
+
+
 Begin
+
+if GetADVer >= 18 then
+     begin
+       Form1.Color := clWindowFrame;
+       Form1.Ctl3D := False;
+       Form1.Font.Color := clWhite;
+       tTopor.Color :=clActiveBorder;
+       tProject.Color :=clActiveBorder;
+       tExport.Color :=clActiveBorder;
+       tImport.Color :=clActiveBorder;
+       cb_Version.Color :=clActiveBorder;
+       InstrumentCaption1.Font.Color := clSilver;
+       InstrumentCaption2.Font.Color := clSilver;
+       InstrumentCaption3.Font.Color := clSilver;
+       log.Color := clActiveBorder;
+     end;
+
 
   TopoRFile := TStringList.Create;
   Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
   If Board = nil then Begin ShowError('Open board!'); Exit; End; // Если платы нет то выходим
+
+  //GetXYcomp(Board);     //спец секретная функция для получения размеров компонентов
+  //comp := Board.GetObjectAtCursor(AllObjects,AllLayers,eEditAction_Select);
+  //IPCB_DifferentialPair
 
 
   If (UnitToString2(Board.DisplayUnit) <> 'mm') then
@@ -5171,7 +5624,7 @@ Begin
 
   if FileExists(Board.FileName+'.scon') then begin
     TopoRFile.LoadFromFile(Board.FileName+'.scon');
-  end else begin // нужна проверка расширения платы !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  end else begin
     if pos('.PcbDoc', Board.FileName) > 0 then
     begin
       tExport.Text :=StringReplace(Board.FileName,'.PcbDoc','.fst',rfReplaceAll);
@@ -5247,8 +5700,6 @@ Begin
   Form1.Show;
   TopoRFile.Free;
 
-
-
   //RunSystemCommand('start /d"C:\Temp" Word');
 
 End;
@@ -5305,14 +5756,21 @@ end;
 procedure TForm1.b_file_importClick(Sender: TObject);
 begin
   tImport.Text := LoadAFileFst;
+  bt_ConfSave.Enabled := true;
+  b_GO.Enabled := true;
+  b_Import.Enabled := true;
 end;
 
 //ToDo
+// Добавить трансляцию эквивалентности выводов
 // исключить удаление проводников из посадочных
 // добавить дифф пары
-// Обработать правила проектирования
-// Обработать слои маски и пасты для КП и сами по себе
-// трансляция механических слоев с 17 по 32
+// Добавить змейки
+// Обработать правила проектирования (нет смысла)
+// трансляция механических слоев с 17 по 32 (не возможно)
+// Сделать экспорт - импорт только для выбранных цепей
+// При нажатии на кнопку открыть: считывать пусть и сделать автоматический вход в выбранную папку
+// Для сквозных КП надо учитывать слой расположения компонента для пасты и маски (так как очень редко применяется оставил на будущее)
 
 //для версии 1.2.0
 // Использовать uniqueId при импорте из TopoR
@@ -5320,15 +5778,33 @@ end;
 // у разделов, в которых используются имена контактов (NetList, Rules и HiSpeedRules), изменилась мажорная версия.
 // Сделать вывод дуг с использованием ArcCW и ArcCCW
 
-
-//RunProcess('PCB:Undo');
-//  RunProcess('PCB:Redo');
-// найти перерисовщик
+// Вопросы в АД на форум
+// трансляция механических слоев с 17 по 32
+// Как для Аккардионов получить размеры прямоугольника в котором он состоит и как получить все примитивы входящие в змейку.
+// Как вообще получить обьект типа AccordionObject. Переменной eAccordionObject нет.
+// как добраться до Хсигналов.
+// Когда уже можно будет создать дифференциальный сигнал?.
 
 //*****Приятные мелочи****//
 // Мб добавить не метрическую систему измерения
 
 //Track := Board.GetObjectAtCursor(AllObjects,AllLayers,eEditAction_Select);
+
+
+
+//30.10.18
+//Сделан темный стиль
+
+//31.10.18
+//Исправлена функция импорта.При ошибке в наименовании пути к файлу, процесс не останавливался.
+
+
+//02.11.18
+//Сделана передача типа шрифта
+//Добавлена секретная функция позволяющая посчитать размеры компонента по его 3д модели
+
+//07.11.18
+//Добавлена трансляция маски и пасты для падов
 
 
 
