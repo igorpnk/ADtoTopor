@@ -1646,6 +1646,7 @@ var
    Component   : IComponent;
    Tesistring  : string;
 Begin
+   Result := Nil;
    Project:=GetWorkspace.DM_FocusedProject;
    if Project = NIL Then Exit;
    Project.DM_Compile;
@@ -1673,6 +1674,11 @@ var
    Tesistring  : string;
 
 Begin
+   if Component = Nil then
+   begin Result := '0';
+   end
+   else
+   Begin //если схемный компонент есть
    Pin := Component.DM_Pins(pinNum-1);
    if PadName = Pin.DM_PinNumber then // если искомый пин совпадает
    Begin
@@ -1685,6 +1691,7 @@ Begin
       Pin := Component.DM_Pins(k);
       if PadName = Pin.DM_PinNumber then Result := Pin.DM_PinSwapId;
      end;
+   end;
    end;
    //Tesistring := pinNum;
    //Tesistring := Pin.DM_PinNumber;
@@ -1702,6 +1709,11 @@ var
    Tesistring  : string;
 
 Begin
+   if Component = Nil then
+   begin Result := '0';
+   end
+   else
+   Begin //если схемный компонент есть
    Pin := Component.DM_Pins(pinNum-1);
    if PadName = Pin.DM_PinNumber then // если искомый пин совпадает
    Begin
@@ -1715,6 +1727,7 @@ Begin
       if PadName = Pin.DM_PinNumber then Result := Pin.DM_PartSwapId;
      end;
    end;
+   end;
 End;
 
 Function GetGateEqual(Component : IComponent; pinNum : integer; PadName : string) : string;
@@ -1725,6 +1738,11 @@ var
    Tesistring  : string;
 
 Begin
+   if Component = Nil then
+   begin Result := '0';
+   end
+   else
+   Begin //если схемный компонент есть
    Pin := Component.DM_Pins(pinNum-1);
    if PadName = Pin.DM_PinNumber then // если искомый пин совпадает
    Begin
@@ -1738,6 +1756,7 @@ Begin
       if PadName = Pin.DM_PinNumber then Result := Pin.DM_PartPinSwapId;
      end;
    end;
+   end;
 End;
 
 Function GetPinSymName(Component : IComponent; pinNum : integer; PadName : string) : string;
@@ -1748,6 +1767,11 @@ var
    Tesistring  : string;
 
 Begin
+   if Component = Nil then
+   begin Result := '';
+   end
+   else
+   Begin //если схемный компонент есть
    Pin := Component.DM_Pins(pinNum-1);
    if PadName = Pin.DM_PinNumber then // если искомый пин совпадает
    Begin
@@ -1760,6 +1784,7 @@ Begin
       Pin := Component.DM_Pins(k);
       if PadName = Pin.DM_PinNumber then Result := Pin.DM_PinName;
      end;
+   end;
    end;
 End;
 
@@ -1865,6 +1890,7 @@ Begin
      //ComponentsRC := tlist.Create;
      //masslength := 100;
      //SetLength(ComponentsRC, masslength);
+     Icomp := Nil;
      CountFoot :=0;
      Startindfoot := 0;
      Fixed := '';
