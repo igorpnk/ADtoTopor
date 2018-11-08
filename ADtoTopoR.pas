@@ -78,26 +78,33 @@ end;
 
 Function LoadAFileExe : String;
 Var
-   OpenDialog : TOpenDialog;
+   OpenDialog          : TOpenDialog;
+   path_to_file_import : String;
 Begin
+     if (tTopor.Text = '') then path_to_file_import := 'C:\'
+     else path_to_file_import := ExtractFileDir(tTopor.Text);
      Result := '';
      OpenDialog := TOpenDialog.Create(nil);
-     OpenDialog.InitialDir := 'C:\';
+     OpenDialog.InitialDir := path_to_file_import;
      // Display the OpenDialog component
      OpenDialog.Filter := 'EXE Files|*.exe|All Files|*';
      OpenDialog.Execute;
      // Obtain the file name of the selected file.
      Result := OpenDialog.Filename;
      OpenDialog.Free;
+
 End;
 
 Function LoadAFilePrj : String;
 Var
-   OpenDialog : TOpenDialog;
+   OpenDialog          : TOpenDialog;
+   path_to_file_import : String;
 Begin
+     if (tProject.Text = '') then path_to_file_import := 'C:\'
+     else path_to_file_import := ExtractFileDir(tProject.Text);
      Result := '';
      OpenDialog := TOpenDialog.Create(nil);
-     OpenDialog.InitialDir := 'C:\';
+     OpenDialog.InitialDir := path_to_file_import;
      // Display the OpenDialog component
      OpenDialog.Filter := 'TopoR Project Files|*.fsproj|All Files|*';
      OpenDialog.Execute;
@@ -108,11 +115,14 @@ End;
 
 Function LoadAFileFST : String;
 Var
-   OpenDialog : TOpenDialog;
+   OpenDialog          : TOpenDialog;
+   path_to_file_import : String;
 Begin
+     if (tExport.Text = '') then path_to_file_import := 'C:\'
+     else path_to_file_import := ExtractFileDir(tExport.Text);
      Result := '';
      OpenDialog := TOpenDialog.Create(nil);
-     OpenDialog.InitialDir := 'C:\';
+     OpenDialog.InitialDir := path_to_file_import;
      // Display the OpenDialog component
      OpenDialog.Filter := 'TopoR Text Files|*.fst|All Files|*';
      OpenDialog.Execute;
@@ -123,11 +133,16 @@ End;
 
 Function SaveAFile : String;
 Var
-   SaveDialog : TSaveDialog;
+   SaveDialog          : TSaveDialog;
+   path_to_file_export : String;
 Begin
+     if (Form1.tExport.Text = '') then path_to_file_export := 'C:\'
+     else path_to_file_export := ExtractFileDir(Form1.tExport.Text);
      Result := '';
      SaveDialog := TSaveDialog.Create(nil);
-     SaveDialog.InitialDir := 'C:\';
+     SaveDialog.InitialDir := path_to_file_export;
+
+     //SaveDialog.InitialDir := 'C:\';
      // Display the OpenDialog component
      SaveDialog.Filter := 'FST Files|*.fst|All Files|*';
      SaveDialog.Execute;
@@ -1621,6 +1636,134 @@ Begin
  Result := ResultS;
 end;
 
+
+// Поиск Iкомпонента в схеме
+Function GetIComponent(CompName : String):IComponent;
+var
+   Project     : IProject;
+   Document    : IDocument;
+   i,j         : integer;
+   Component   : IComponent;
+   Tesistring  : string;
+Begin
+   Project:=GetWorkspace.DM_FocusedProject;
+   if Project = NIL Then Exit;
+   Project.DM_Compile;
+   For i :=0 To Project.DM_LogicalDocumentCount - 1 do // перебор всех документов проекта
+   Begin
+      Document := Project.DM_LogicalDocuments(i);
+      //компоненты типа IComponent доступны только с электрической схемы
+      For j :=0 To Document.DM_ComponentCount - 1 do  // перебор всех компонентов документа
+      Begin
+           Component := Document.DM_Components(j);
+           if (Document.DM_DocumentKind <> 'SCH') then break;
+           // находим компонент для которого нужно сформировать сваппинг
+           if Component.DM_LogicalDesignator = CompName then Result := Component;
+      end;
+   end;
+End;
+
+
+// Получаем информацию по компонентам через WP API
+Function GetPinEqual(Component : IComponent; pinNum : integer; PadName : string) : string;
+var
+   Doc         : IServerDocument;
+   k       : integer;
+   Pin         : INetItem;
+   Tesistring  : string;
+
+Begin
+   Pin := Component.DM_Pins(pinNum-1);
+   if PadName = Pin.DM_PinNumber then // если искомый пин совпадает
+   Begin
+    Result := Pin.DM_PinSwapId;
+   end
+   else
+   begin
+     For k :=0 To Component.DM_PinCount - 1 DO
+     begin
+      Pin := Component.DM_Pins(k);
+      if PadName = Pin.DM_PinNumber then Result := Pin.DM_PinSwapId;
+     end;
+   end;
+   //Tesistring := pinNum;
+   //Tesistring := Pin.DM_PinNumber;
+   //Tesistring := Pin.DM_PinSwapId;
+   //Tesistring := Pin.DM_PartSwapId;
+   //Tesistring := Pin.DM_PartPinSwapId;
+   //Tesistring := Pin.DM_PairSwapId;
+End;
+
+Function GetGate(Component : IComponent; pinNum : integer; PadName : string) : string;
+var
+   Doc         : IServerDocument;
+   k       : integer;
+   Pin         : INetItem;
+   Tesistring  : string;
+
+Begin
+   Pin := Component.DM_Pins(pinNum-1);
+   if PadName = Pin.DM_PinNumber then // если искомый пин совпадает
+   Begin
+    Result := Pin.DM_PartSwapId;
+   end
+   else
+   begin
+     For k :=0 To Component.DM_PinCount - 1 DO
+     begin
+      Pin := Component.DM_Pins(k);
+      if PadName = Pin.DM_PinNumber then Result := Pin.DM_PartSwapId;
+     end;
+   end;
+End;
+
+Function GetGateEqual(Component : IComponent; pinNum : integer; PadName : string) : string;
+var
+   Doc         : IServerDocument;
+   k       : integer;
+   Pin         : INetItem;
+   Tesistring  : string;
+
+Begin
+   Pin := Component.DM_Pins(pinNum-1);
+   if PadName = Pin.DM_PinNumber then // если искомый пин совпадает
+   Begin
+    Result := Pin.DM_PartPinSwapId;
+   end
+   else
+   begin
+     For k :=0 To Component.DM_PinCount - 1 DO
+     begin
+      Pin := Component.DM_Pins(k);
+      if PadName = Pin.DM_PinNumber then Result := Pin.DM_PartPinSwapId;
+     end;
+   end;
+End;
+
+Function GetPinSymName(Component : IComponent; pinNum : integer; PadName : string) : string;
+var
+   Doc         : IServerDocument;
+   k       : integer;
+   Pin         : INetItem;
+   Tesistring  : string;
+
+Begin
+   Pin := Component.DM_Pins(pinNum-1);
+   if PadName = Pin.DM_PinNumber then // если искомый пин совпадает
+   Begin
+    Result := Pin.DM_PinName;
+   end
+   else
+   begin
+     For k :=0 To Component.DM_PinCount - 1 DO
+     begin
+      Pin := Component.DM_Pins(k);
+      if PadName = Pin.DM_PinNumber then Result := Pin.DM_PinName;
+     end;
+   end;
+End;
+
+
 // да эту процедурку можно было разбить еще штук на 5.. но как-то несложилось;) думал что с компонентами проще будет разобраться
 Procedure AddLL(XMLInL : TStringList; Board : IPCB_Board; Units: String; FileXmlTSt : TStringList;FileXMLCOB : TStringList; ViastacksLL : TStringList;);  // Компоненты
 uses SysUtils;
@@ -1715,6 +1858,8 @@ Var // жуть...
    CurrFoot                : integer;
    RCflag                  : boolean;
    masslength              : integer;
+   Icomp                   : IComponent;
+
 
 Begin
      //ComponentsRC := tlist.Create;
@@ -1767,7 +1912,9 @@ Begin
      //*******перебор всех компонентов********//
      While (Component <> Nil) Do
      Begin
+
            NameComp := Component.Name.Text;                        // Имя компонента
+           if Component.EnablePinSwapping then Icomp := GetIComponent(NameComp);
            IDcomp := Component.UniqueId;                           // вместо имени уникальный ID
            PadFlip := 'off';
            FTrue := true;
@@ -1909,10 +2056,35 @@ Begin
                 //if (Component.Layer = 32 & Pad.IsSurfaceMount = false )  then PadFlip := 'on';
                 if (Component.Layer <> Pad.Layer & Pad.IsSurfaceMount)then PadFlip := 'on';
                 if FTrue then Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'" angle="'+PadAngle+'" flipped="'+PadFlip+'">');
-                Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'"/>');
+                if (Component.EnablePinSwapping | Component.EnablePartSwapping)  then
+                begin
+                  if (Component.EnablePinSwapping & Component.EnablePartSwapping = False) then
+                  Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'" pinSymName="'+GetPinSymName(Icomp,PadNFoot,Padname)+'" pinEqual="'+GetPinEqual(Icomp,PadNFoot,Padname)+'"/>');
+
+                  if (Component.EnablePartSwapping & Component.EnablePinSwapping = False) then
+                  Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'" pinSymName="'+GetPinSymName(Icomp,PadNFoot,Padname)+'" gate="'+GetGate(Icomp,PadNFoot,Padname)+'" gateEqual="'+GetgateEqual(Icomp,PadNFoot,Padname)+'"/>');
+
+                  if (Component.EnablePinSwapping & Component.EnablePartSwapping)  then
+                  Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'" pinSymName="'+GetPinSymName(Icomp,PadNFoot,Padname)+'" pinEqual="'+GetPinEqual(Icomp,PadNFoot,Padname)+'" gate="'+GetGate(Icomp,PadNFoot,Padname)+'" gateEqual="'+GetgateEqual(Icomp,PadNFoot,Padname)+'"/>');
+
+                end
+                else
+                begin
+                 Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'" pinSymName="'+GetPinSymName(Icomp,PadNFoot,Padname)+'"/>');
+                end;
+
+
+
+
                 Packages.Add(#9+#9+#9+#9+'<Pinpack pinNum="'+IntToStr(PadNFoot)+'" padNum="'+IntToStr(PadNFoot)+'"/>');
                 FileXMLCOB.Add(#9+#9+#9+#9+#9+'<Pin padNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'">');
-                TestString := Pad.Name;
+                Pad.BeginModify;
+                Log.Lines.Add(Pad.Name);
+                Log.Lines.Add(Pad.SwapID_Pad);
+                Log.Lines.Add(Pad.SwapID_Part);
+                Log.Lines.Add(Pad.SwappedPadName);
+                Pad.EndModify;
+
                 // проверяем был ли ранее пад такого же типа
                 PadStackName := PadTemplate(Pad,Board.DisplayUnit);
                 PozPadstack := 0;
@@ -5576,10 +5748,12 @@ Begin
   //*****endtemp
 end;
 
+
+
 Procedure StartScript ();
 var
   Board       : IPCB_Board;
-  TopoRFile   :TStringList;
+  TopoRFile   : TStringList;
   meas        : TUnit;
   Reg         : TRegistry;
   str         : String;
@@ -5611,9 +5785,7 @@ if GetADVer >= 18 then
   If Board = nil then Begin ShowError('Open board!'); Exit; End; // Если платы нет то выходим
 
   //GetXYcomp(Board);     //спец секретная функция для получения размеров компонентов
-  //comp := Board.GetObjectAtCursor(AllObjects,AllLayers,eEditAction_Select);
-  //IPCB_DifferentialPair
-
+  str := 'U1';
 
   If (UnitToString2(Board.DisplayUnit) <> 'mm') then
   Begin
@@ -5784,6 +5956,7 @@ end;
 // Как вообще получить обьект типа AccordionObject. Переменной eAccordionObject нет.
 // как добраться до Хсигналов.
 // Когда уже можно будет создать дифференциальный сигнал?.
+// Почему через WP API нет доступа к SwapID.
 
 //*****Приятные мелочи****//
 // Мб добавить не метрическую систему измерения
