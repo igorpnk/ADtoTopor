@@ -2078,12 +2078,6 @@ Begin
 
                 Packages.Add(#9+#9+#9+#9+'<Pinpack pinNum="'+IntToStr(PadNFoot)+'" padNum="'+IntToStr(PadNFoot)+'"/>');
                 FileXMLCOB.Add(#9+#9+#9+#9+#9+'<Pin padNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'">');
-                Pad.BeginModify;
-                Log.Lines.Add(Pad.Name);
-                Log.Lines.Add(Pad.SwapID_Pad);
-                Log.Lines.Add(Pad.SwapID_Part);
-                Log.Lines.Add(Pad.SwappedPadName);
-                Pad.EndModify;
 
                 // проверяем был ли ранее пад такого же типа
                 PadStackName := PadTemplate(Pad,Board.DisplayUnit);
