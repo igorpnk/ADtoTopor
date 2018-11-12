@@ -1954,7 +1954,9 @@ Begin
      //*******перебор всех компонентов********//
      While (Component <> Nil) Do
      Begin
-           NameComp := Component.Name.Text;                        // Имя компонента
+           //NameComp := Component.Name.Text;
+           NameComp := Component.SourceDesignator; // Схемное имя компонента 
+
            if Component.EnablePinSwapping then Icomp := GetIComponent(NameComp,Component.SourceUniqueId);
            if (Icomp = NIL) then
            begin
@@ -5790,7 +5792,6 @@ Begin
   Files.Free;
   //*****endtemp
 end;
-
 
 
 Procedure StartScript ();
