@@ -1638,13 +1638,13 @@ end;
 
 
 // Поиск Iкомпонента в схеме
-Function GetIComponent(CompName : String):IComponent;
+Function GetIComponent(CompName : String; CompID: String):IComponent;
 var
    Project     : IProject;
    Document    : IDocument;
    i,j         : integer;
    Component   : IComponent;
-   Tesistring  : string;
+   IComponentID: string;
 Begin
    Result := Nil;
    Project:=GetWorkspace.DM_FocusedProject;
@@ -1653,13 +1653,20 @@ Begin
    For i :=0 To Project.DM_LogicalDocumentCount - 1 do // перебор всех документов проекта
    Begin
       Document := Project.DM_LogicalDocuments(i);
+
       //компоненты типа IComponent доступны только с электрической схемы
       For j :=0 To Document.DM_ComponentCount - 1 do  // перебор всех компонентов документа
       Begin
-           Component := Document.DM_Components(j);
            if (Document.DM_DocumentKind <> 'SCH') then break;
+           Component := Document.DM_Components(j);
+           IComponentID := '\'+ Component.DM_UniqueIdName;
            // находим компонент для которого нужно сформировать сваппинг
-           if Component.DM_LogicalDesignator = CompName then Result := Component;
+           if (Component.DM_LogicalDesignator = CompName & IComponentID = CompID) then
+           Begin
+            Result := Component;
+            Exit;
+           End;
+           //Component.DM_UniqueId
       end;
    end;
 End;
@@ -1674,6 +1681,7 @@ var
    Tesistring  : string;
 
 Begin
+
    if Component = Nil then
    begin Result := '0';
    end
@@ -1693,6 +1701,7 @@ Begin
      end;
    end;
    end;
+   if (Result = '') then Result := '0';
    //Tesistring := pinNum;
    //Tesistring := Pin.DM_PinNumber;
    //Tesistring := Pin.DM_PinSwapId;
@@ -1709,6 +1718,7 @@ var
    Tesistring  : string;
 
 Begin
+
    if Component = Nil then
    begin Result := '0';
    end
@@ -1728,6 +1738,7 @@ Begin
      end;
    end;
    end;
+   if (Result = '') then Result := '0';
 End;
 
 Function GetGateEqual(Component : IComponent; pinNum : integer; PadName : string) : string;
@@ -1738,6 +1749,7 @@ var
    Tesistring  : string;
 
 Begin
+
    if Component = Nil then
    begin Result := '0';
    end
@@ -1757,6 +1769,7 @@ Begin
      end;
    end;
    end;
+   if (Result = '') then Result := '0';
 End;
 
 Function GetPinSymName(Component : IComponent; pinNum : integer; PadName : string) : string;
@@ -1767,6 +1780,7 @@ var
    Tesistring  : string;
 
 Begin
+
    if Component = Nil then
    begin Result := '';
    end
@@ -1786,6 +1800,7 @@ Begin
      end;
    end;
    end;
+   if (Result = '') then Result := '0';
 End;
 
 
@@ -1938,9 +1953,8 @@ Begin
      //*******перебор всех компонентов********//
      While (Component <> Nil) Do
      Begin
-
            NameComp := Component.Name.Text;                        // Имя компонента
-           if Component.EnablePinSwapping then Icomp := GetIComponent(NameComp);
+           if Component.EnablePinSwapping then Icomp := GetIComponent(NameComp,Component.SourceUniqueId);
            IDcomp := Component.UniqueId;                           // вместо имени уникальный ID
            PadFlip := 'off';
            FTrue := true;
@@ -5999,7 +6013,8 @@ end;
 //07.11.18
 //Добавлена трансляция маски и пасты для падов
 
-
+//12.11.18
+//Добавлена трансляция сваппинга
 
 
 
