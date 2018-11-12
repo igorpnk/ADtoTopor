@@ -1648,6 +1648,7 @@ var
 Begin
    Result := Nil;
    Project:=GetWorkspace.DM_FocusedProject;
+
    if Project = NIL Then Exit;
    Project.DM_Compile;
    For i :=0 To Project.DM_LogicalDocumentCount - 1 do // перебор всех документов проекта
@@ -1955,6 +1956,13 @@ Begin
      Begin
            NameComp := Component.Name.Text;                        // Имя компонента
            if Component.EnablePinSwapping then Icomp := GetIComponent(NameComp,Component.SourceUniqueId);
+           if (Icomp = NIL) then
+           begin
+             LogOnlyShow();
+             Log.Lines.Add('Warning!!!');
+             Log.Lines.Add('For component: ' + NameComp + '.');
+             Log.Lines.Add('It was not possible to find the corresponding component on the electrical circuit.');
+           end;
            IDcomp := Component.UniqueId;                           // вместо имени уникальный ID
            PadFlip := 'off';
            FTrue := true;
@@ -2096,6 +2104,7 @@ Begin
                 //if (Component.Layer = 32 & Pad.IsSurfaceMount = false )  then PadFlip := 'on';
                 if (Component.Layer <> Pad.Layer & Pad.IsSurfaceMount)then PadFlip := 'on';
                 if FTrue then Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'" angle="'+PadAngle+'" flipped="'+PadFlip+'">');
+
                 if (Component.EnablePinSwapping | Component.EnablePartSwapping) & (Icomp <> NIL)  then
                 begin
                   if (Component.EnablePinSwapping & Component.EnablePartSwapping = False) then
@@ -6015,6 +6024,7 @@ end;
 
 //12.11.18
 //Добавлена трансляция сваппинга
+//Исправлена трансляция спецсимволов: амперсанта и кавычек.
 
 
 
