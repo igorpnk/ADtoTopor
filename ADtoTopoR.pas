@@ -987,8 +987,8 @@ Begin
   if Text.MirrorFlag = true then TextMirror := 'on';
 
   StrText :=  Text.Text; //конвертируем кавычки в &quot;
-  StrText := StringReplace(StrText,'"','&quot;',rfReplaceAll); // экспорт ковычек
-  StrText := StringReplace(StrText,'&','&amp;',rfReplaceAll);  // экспорт амперсанта
+  StrText := StringReplace(StrText,'&','&amp;',rfIgnoreCase);  // экспорт амперсанта
+  StrText := StringReplace(StrText,'"','&quot;',rfIgnoreCase); // экспорт ковычек
 
   ResultString.Add(StringTab+'<Text text="'+StrText+'" align="LB" angle="'+inttostr(Text.Rotation)+'" mirror="'+TextMirror+'">');
   ResultString.Add(StringTab+#9+'<LayerRef type="'+LayerIDtoStr(Text.Layer)+'" name="'+Board.LayerName(Text.Layer)+'"/>');//ИМя!
