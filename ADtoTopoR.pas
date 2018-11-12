@@ -2096,7 +2096,7 @@ Begin
                 //if (Component.Layer = 32 & Pad.IsSurfaceMount = false )  then PadFlip := 'on';
                 if (Component.Layer <> Pad.Layer & Pad.IsSurfaceMount)then PadFlip := 'on';
                 if FTrue then Footprints.Add(#9+#9+#9+#9+#9+'<Pad padNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'" angle="'+PadAngle+'" flipped="'+PadFlip+'">');
-                if (Component.EnablePinSwapping | Component.EnablePartSwapping)  then
+                if (Component.EnablePinSwapping | Component.EnablePartSwapping) & (Icomp <> NIL)  then
                 begin
                   if (Component.EnablePinSwapping & Component.EnablePartSwapping = False) then
                   Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'" pinSymName="'+GetPinSymName(Icomp,PadNFoot,Padname)+'" pinEqual="'+GetPinEqual(Icomp,PadNFoot,Padname)+'"/>');
