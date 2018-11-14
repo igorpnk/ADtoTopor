@@ -1688,7 +1688,8 @@ Begin
    end
    else
    Begin //если схемный компонент есть
-   Pin := Component.DM_Pins(pinNum-1);
+   if (Component.DM_PinCount <  pinNum) then Pin := Component.DM_Pins(1);
+   if (Component.DM_PinCount >= pinNum) then Pin := Component.DM_Pins(pinNum-1);
    if PadName = Pin.DM_PinNumber then // если искомый пин совпадает
    Begin
     Result := Pin.DM_PinSwapId;
@@ -1725,7 +1726,8 @@ Begin
    end
    else
    Begin //если схемный компонент есть
-   Pin := Component.DM_Pins(pinNum-1);
+   if (Component.DM_PinCount <  pinNum) then Pin := Component.DM_Pins(1);
+   if (Component.DM_PinCount >= pinNum) then Pin := Component.DM_Pins(pinNum-1);
    if PadName = Pin.DM_PinNumber then // если искомый пин совпадает
    Begin
     Result := Pin.DM_PartSwapId;
@@ -1756,7 +1758,8 @@ Begin
    end
    else
    Begin //если схемный компонент есть
-   Pin := Component.DM_Pins(pinNum-1);
+   if (Component.DM_PinCount <  pinNum) then Pin := Component.DM_Pins(1);
+   if (Component.DM_PinCount >= pinNum) then Pin := Component.DM_Pins(pinNum-1);
    if PadName = Pin.DM_PinNumber then // если искомый пин совпадает
    Begin
     Result := Pin.DM_PartPinSwapId;
@@ -1787,7 +1790,10 @@ Begin
    end
    else
    Begin //если схемный компонент есть
-   Pin := Component.DM_Pins(pinNum-1);
+   Tesistring := Component.DM_PinCount;
+
+   if (Component.DM_PinCount <  pinNum) then Pin := Component.DM_Pins(1);
+   if (Component.DM_PinCount >= pinNum) then Pin := Component.DM_Pins(pinNum-1);
    if PadName = Pin.DM_PinNumber then // если искомый пин совпадает
    Begin
     Result := Pin.DM_PinName;
@@ -1956,14 +1962,17 @@ Begin
      Begin
            //NameComp := Component.Name.Text;
            NameComp := Component.SourceDesignator; // —хемное им€ компонента 
-
-           if Component.EnablePinSwapping then Icomp := GetIComponent(NameComp,Component.SourceUniqueId);
-           if (Icomp = NIL) then
-           begin
-             LogOnlyShow();
-             Log.Lines.Add('Warning!!!');
-             Log.Lines.Add('For component: ' + NameComp + '.');
-             Log.Lines.Add('It was not possible to find the corresponding component on the electrical circuit.');
+           Icomp := NIL;
+           if (Component.EnablePinSwapping | Component.EnablePartSwapping) then
+           Begin
+             Icomp := GetIComponent(NameComp,Component.SourceUniqueId);
+             if (Icomp = NIL) then
+             begin
+               LogOnlyShow();
+               Log.Lines.Add('Warning!!!');
+               Log.Lines.Add('For component: ' + NameComp + '.');
+               Log.Lines.Add('It was not possible to find the corresponding component on the electrical circuit.');
+             end;
            end;
            IDcomp := Component.UniqueId;                           // вместо имени уникальный ID
            PadFlip := 'off';
@@ -2121,7 +2130,7 @@ Begin
                 end
                 else
                 begin
-                 Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'" pinSymName="'+GetPinSymName(Icomp,PadNFoot,Padname)+'"/>');
+                 Components.Add(#9+#9+#9+#9+#9+'<Pin pinNum="'+IntToStr(PadNFoot)+'" name="'+Padname+'"/>');
                 end;
 
 
