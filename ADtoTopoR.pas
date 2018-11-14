@@ -1960,8 +1960,9 @@ Begin
      //*******перебор всех компонентов********//
      While (Component <> Nil) Do
      Begin
-           //NameComp := Component.Name.Text;
-           NameComp := Component.SourceDesignator; // Схемное имя компонента 
+     
+           NameComp := Component.SourceDesignator; // Схемное имя компонента
+           if NameComp = '' then NameComp := Component.Name.Text;
            Icomp := NIL;
            if (Component.EnablePinSwapping | Component.EnablePartSwapping) then
            Begin
