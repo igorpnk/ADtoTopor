@@ -3025,6 +3025,7 @@ var
    PadIteratorHandle : IPCB_BoardIterator;
    I : integer;
    TestString : string;
+   FindString : string;
    FintString : String;
    indexString: integer;
 Begin
@@ -3061,7 +3062,18 @@ Begin
               Begin
                 FintString := (#9+#9+'<Net name="'+pad.Net.Name+'">');
                 indexString := FileXMLNList.IndexOf(FintString)+1;
+                if pad.JumperID > 0 then //если джампер
+                begin
+                  FindString := #9+#9+#9+'<PinRef compName="'+pad.Component.Name.Text+'" pinName="'+pad.Name+'"/>';
+                  if FileXMLNList.IndexOf(FindString)>0  then
+                    begin
+                      FileXMLNList.Insert(indexString,(#9+#9+#9+'<PinRef compName="'+pad.Component.Name.Text+'" pinName="'+pad.Name+'(2)'+'"/>'));
+                    end else begin
+                      FileXMLNList.Insert(indexString,(#9+#9+#9+'<PinRef compName="'+pad.Component.Name.Text+'" pinName="'+pad.Name+'"/>'));
+                    end;
+                end else begin
                 FileXMLNList.Insert(indexString,(#9+#9+#9+'<PinRef compName="'+pad.Component.Name.Text+'" pinName="'+pad.Name+'"/>'));
+                end;
               End;
           pad := PadIteratorHandle.NextPCBObject;
      End;
