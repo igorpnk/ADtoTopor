@@ -267,7 +267,7 @@ var
  LyrMehPairs              : IPCB_MechanicalLayerPairs;
  i                        : Integer;
  Stack                    : IPCB_LayerStack;
- LayerPairS               : array[0..16,0..2] of Tlayer;
+ LayerPairS               : array[0..32,0..2] of Tlayer;
  TestString               : String;
  TestInt                  : integer;
  LayerPairSCount          : integer;
@@ -290,16 +290,17 @@ Begin
 
      //*******Получаем все физические и парные механические слои********//
 
-     //Доступа к механическим слоям после 16го через скрипты нет.
+     //Оказалось что есть обходной путь для доступа ко всем механическим слоям.
      //находим все пары слоев перебором потому что LayerPair[I : Integer] возвращает TMechanicalLayerPair  с которой непонятно что делать.
       i := 0;
-      for LayerType := eMechanical1 to eMechanical16 do
-        for LayerType2 := LayerType to eMechanical16 do
+
+      for LayerType := 1 to 32 do
+        for LayerType2 := LayerType to 32 do
         begin
-          if LyrMehPairs.PairDefined(LayerType,LayerType2) then
+          if LyrMehPairs.PairDefined(PCBServer.LayerUtils.MechanicalLayer(LayerType),PCBServer.LayerUtils.MechanicalLayer(LayerType2)) then
           begin
-           LayerPairS[i,0] := LayerType;
-           LayerPairS[i,1] := LayerType2;
+           LayerPairS[i,0] := PCBServer.LayerUtils.MechanicalLayer(LayerType);
+           LayerPairS[i,1] := PCBServer.LayerUtils.MechanicalLayer(LayerType2);
            inc(i);
           end;
         end;
@@ -308,7 +309,8 @@ Begin
      For i := 0 To LayerPairSCount-1  Do
      Begin
        LyrObj := Stack.LayerObject[LayerPairS[LayerPairSCount-1 -i,0]];
-       LayerName := LyrObj.Name;
+       //LayerName :=  LyrObj.Name;
+       LayerName :=  Board.LayerName(LayerPairS[LayerPairSCount-1 -i,0]);
        LayerTypeStr := 'Mechanical';
        LayerThickness := FloatToStrF(0,ffFixed,3,3);
        XMLIn.Add(#9+#9+#9+'<Layer name="'+LayerName+'" type="'+LayerTypeStr+'" thickness="'+LayerThickness+'"/>');
@@ -353,7 +355,8 @@ Begin
      For i := 0 To LayerPairSCount-1 Do
      Begin
        LyrObj := Stack.LayerObject[LayerPairS[i,1]];
-       LayerName := LyrObj.Name;
+       //LayerName := LyrObj.Name;
+       LayerName :=  Board.LayerName(LayerPairS[LayerPairSCount-1 -i,1]);
        LayerTypeStr := 'Mechanical';
        LayerThickness := FloatToStrF(0,ffFixed,3,3);
        XMLIn.Add(#9+#9+#9+'<Layer name="'+LayerName+'" type="'+LayerTypeStr+'" thickness="'+LayerThickness+'"/>');
@@ -363,16 +366,19 @@ Begin
      //*******Получаем все документирующие слои********//
      XMLIn.Add(#9+#9+'<UnStackLayers>');
 
-     for LayerType := eMechanical1 to eMechanical16 do
+     for LayerType := 1 to 32 do
      begin
-        LyrMeh := Stack.LayerObject[LayerType];
-        if LyrMehPairs.LayerUsed(LyrMeh.LayerID) = false then
+        LyrMeh := Stack.LayerObject[PCBServer.LayerUtils.MechanicalLayer(LayerType)];
+        //LayerName := LyrMeh.Name;
+        LayerName := Board.LayerName(PCBServer.LayerUtils.MechanicalLayer(LayerType));
+        //if LyrMehPairs.LayerUsed(LyrMeh.LayerID) = false then
+        if LyrMehPairs.LayerUsed(PCBServer.LayerUtils.MechanicalLayer(LayerType)) = false then
         Begin
-          If LyrMeh.MechanicalLayerEnabled  then
-          XMLIn.Add(#9+#9+#9+'<Layer name="'+LyrMeh.Name+'" type="Doc"/>');
+          //If LyrMeh.MechanicalLayerEnabled  then
+          if Board.LayerIsUsed[PCBServer.LayerUtils.MechanicalLayer(LayerType)] then
+          XMLIn.Add(#9+#9+#9+'<Layer name="'+LayerName+'" type="Doc"/>');
         end;
      end;
-
      XMLIn.Add(#9+#9+#9+'<Layer name="'+Board.LayerName(56)+'" type="Doc"/>');
      XMLIn.Add(#9+#9+#9+'<Layer name="'+Board.LayerName(eDrillDrawing)+'" type="Doc"/>');
      XMLIn.Add(#9+#9+#9+'<Layer name="'+Board.LayerName(eDrillGuide)+'" type="Doc"/>');
@@ -1090,7 +1096,6 @@ Begin
     PadPlated := 'off';
     if Pad2.plated then PadPlated := 'on';
     PasteLyrNumber := -1;
-
 
     If Pad.Layer <> eMultiLayer then //  КП в 1 слое
     Begin
@@ -1810,6 +1815,29 @@ Begin
    if (Result = '') then Result := '0';
 End;
 
+// удаление символов из обозначений элементов
+Procedure CuttingDesignator( Board : IPCB_Board;);
+Var
+   ComponentIteratorHandle : IPCB_BoardIterator;
+   Component               : IPCB_Component;
+   NameComp                : String;
+Begin
+     //*******Инизиализация перебора всех компонентов на плате на всех слоях********//
+     ComponentIteratorHandle := Board.BoardIterator_Create;
+     ComponentIteratorHandle.AddFilter_ObjectSet(MkSet(eComponentObject));
+     ComponentIteratorHandle.AddFilter_LayerSet(AllLayers);
+     ComponentIteratorHandle.AddFilter_Method(eProcessAll);
+     Component := ComponentIteratorHandle.FirstPCBObject; // получаем первый компонент
+     While (Component <> Nil) Do
+     Begin
+          NameComp := Component.Name.Text;
+          NameComp := StringReplace(NameComp, 'A1', '', rfReplaceAll);
+          Component.Name.Text := NameComp;
+          Component := ComponentIteratorHandle.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(ComponentIteratorHandle);
+
+end;
 
 // да эту процедурку можно было разбить еще штук на 5.. но как-то несложилось;) думал что с компонентами проще будет разобраться
 Procedure AddLL(XMLInL : TStringList; Board : IPCB_Board; Units: String; FileXmlTSt : TStringList;FileXMLCOB : TStringList; ViastacksLL : TStringList;);  // Компоненты
@@ -1948,8 +1976,6 @@ Begin
           end;
         end;
 
-
-
      //*******Инизиализация перебора всех компонентов на плате на всех слоях********//
      ComponentIteratorHandle := Board.BoardIterator_Create;
      ComponentIteratorHandle.AddFilter_ObjectSet(MkSet(eComponentObject));
@@ -1960,9 +1986,11 @@ Begin
      //*******перебор всех компонентов********//
      While (Component <> Nil) Do
      Begin
-     
-           NameComp := Component.SourceDesignator; // Схемное имя компонента
-           if NameComp = '' then NameComp := Component.Name.Text;
+
+
+           NameComp := Component.Name.Text;                   //Десигнатор на плате
+           if NameComp = '' then
+           NameComp := Component.SourceDesignator;               // Схемное имя компонента
            Icomp := NIL;
            if (Component.EnablePinSwapping | Component.EnablePartSwapping) then
            Begin
@@ -1970,8 +1998,9 @@ Begin
              if (Icomp = NIL) then
              begin
                LogOnlyShow();
+
                Log.Lines.Add('Warning!!!');
-               Log.Lines.Add('For component: ' + NameComp + '.');
+               Log.Lines.Add('For component: ' + NameComp + ' | ' + Component.Descriptor +' | '+ Component.Detail);
                Log.Lines.Add('It was not possible to find the corresponding component on the electrical circuit.');
              end;
            end;
@@ -2651,6 +2680,7 @@ Procedure AddContruct(Constructive :TStringList; Board : IPCB_Board; FileXmlTSt 
 var
 Count     : integer;
 I         : Integer;
+J         : Integer;
 X0        : float;
 Y0        : float;
 XEnd      : Integer;
@@ -2675,11 +2705,20 @@ NetName   : String;
 Dem       : IPCB_Primitive;
 NoDem     : Boolean;
 IterDem   : IPCB_BoardIterator;
-
-
-
+LS        : IPCB_LayerSet;
+BoardSet  : IPCB_BoardLayerSet;
+BoardSetM : IPCB_BoardLayerSetManager;
+Layer     : TLayer;
+LyrIter   : IPCB_LayerIterator;
 BoardOutline: IPCB_BoardOutline;
+
+
 Begin
+     //BoardSetM := Board.BoardLayerSetManager;
+     // BoardSet := BoardSetM.BoardLayerSetByIndex[1];
+     //BoardSet.Layers.LayerIterator.First;
+
+     //LS.LayerIterator.First;
 
      Constructive.Add(#9+'<Constructive version="1.0">');
      //*******Контур платы********//
@@ -2796,12 +2835,25 @@ Begin
      Constructive.Add(#9+#9+'<MechLayerObjects>');
 
      //*******Перебираем трэки********//
+
+     // For J:=1 to 32 do
+     // begin
+     //J:=PCBServer.LayerUtils.MechanicalLayer(24);
+     //Layer := PCBServer.LayerUtils.MechanicalLayer(5);
+     //LS := LayerSet.EmptySet.Include(Layer);
+
+     //LS := LayerSet.EmptySet.lnclude(Layer);   // lnclude не работает для EmptySet
+     //LS := LayerSet.EmptySet.lnclude(67108885); //номер 21 механического слоя
+     //end;
+     //LS.Include(eTopOverlay); // работает добавление в уже сформированный сет
+     LS := LayerSet.EmptySet.IncludeMechanicalLayers; // заработал только этот вариант
+     LS := LS.IncludeMiscLayers;
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer,eTopPaste,eBottomPaste,eTopSolder,eBottomSolder));
+     MechIterH.AddFilter_IPCB_LayerSet(LS);
+     //MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer,eTopPaste,eBottomPaste,eTopSolder,eBottomSolder));
      MechIterH.AddFilter_ObjectSet(MkSet(eTrackObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Track := MechIterH.FirstPCBObject; //первый трэк на механическом слое
-
 
      lbProcess.Caption := 'Tracks In Mechanical Layers'; Form1.Update;
      While (Track <> Nil) Do
@@ -2818,7 +2870,8 @@ Begin
      lbProcess.Caption := 'Arc In Mechanical Layers'; Form1.Update;
      //*******Перебираем окружности********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer,eTopPaste,eBottomPaste,eTopSolder,eBottomSolder));
+     MechIterH.AddFilter_IPCB_LayerSet(LS);
+     //MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer,eTopPaste,eBottomPaste,eTopSolder,eBottomSolder));
      MechIterH.AddFilter_ObjectSet(MkSet(eArcObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Arc := MechIterH.FirstPCBObject; //первая окружность на механическом слое
@@ -2836,7 +2889,8 @@ Begin
      lbProcess.Caption := 'Fill In Mechanical Layers'; Form1.Update;
      //*******Перебираем Филы********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer,eTopPaste,eBottomPaste,eTopSolder,eBottomSolder));
+     MechIterH.AddFilter_IPCB_LayerSet(LS);
+     //MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer,eTopPaste,eBottomPaste,eTopSolder,eBottomSolder));
      MechIterH.AddFilter_ObjectSet(MkSet(eFillObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Fill := MechIterH.FirstPCBObject; //первый филл на механическом слое
@@ -2857,7 +2911,8 @@ Begin
      begin
      //*******Перебираем Полигоны********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer));
+     MechIterH.AddFilter_IPCB_LayerSet(LS);
+     //MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer));
      MechIterH.AddFilter_ObjectSet(MkSet(ePolyObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Poly := MechIterH.FirstPCBObject; //первый полигон на механическом слое
@@ -2875,7 +2930,8 @@ Begin
      lbProcess.Caption := 'Region In Mechanical Layers'; Form1.Update;
      //*******Перебираем Регионы********//
      MechIterH := Board.BoardIterator_Create;
-     MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer,eTopPaste,eBottomPaste,eTopSolder,eBottomSolder));
+     MechIterH.AddFilter_IPCB_LayerSet(LS);
+     //MechIterH.AddFilter_LayerSet(MkSet(eTopOverlay, eBottomOverlay,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,eDrillDrawing,eDrillGuide,eMultiLayer,eTopPaste,eBottomPaste,eTopSolder,eBottomSolder));
      MechIterH.AddFilter_ObjectSet(MkSet(eRegionObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Region := MechIterH.FirstPCBObject; //первый регион на механическом слое
@@ -3010,6 +3066,38 @@ Begin
      Constructive.Add(#9+#9+'</Texts>');
 
      Constructive.Add(#9+'</Constructive>');
+End;
+
+Procedure EditNets( Board : IPCB_Board;);
+Var
+  IteratorHandle : IPCB_BoardIterator;
+  Net : IPCB_Net;
+  Netname  :string;
+  Test     :string;
+Begin
+     IteratorHandle := Board.BoardIterator_Create;
+     IteratorHandle.AddFilter_ObjectSet(MkSet(eNetObject));
+     IteratorHandle.AddFilter_LayerSet(AllLayers);
+     IteratorHandle.AddFilter_Method(eProcessAll);
+     Net := IteratorHandle.FirstPCBObject; //первая цепь
+     While (Net <> Nil) Do
+     Begin
+       Netname := Net.Name;
+       Netname:= StringReplace(Netname, 'A11_#PA1', '', rfReplaceAll);
+       Netname:= StringReplace(Netname, 'A11_#PC1', '', rfReplaceAll);
+       Netname:= StringReplace(Netname, 'A11_#PL1', '', rfReplaceAll);
+       Netname:= StringReplace(Netname, 'A11_#PD1', '', rfReplaceAll);
+       Netname:= StringReplace(Netname, 'A11_#PR1', '', rfReplaceAll);
+       Netname:= StringReplace(Netname, 'NetA1', 'Net', rfReplaceAll);
+       //Netname:= StringReplace(Netname, 'A1', '', rfReplaceAll);
+       //Test := Netname[1];
+       IF Netname[1] = 'A' & Netname[2] = '1'then
+       Delete(Netname,1,2);
+
+       Net.Name := Netname;
+       Net := IteratorHandle.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(IteratorHandle);
 End;
 
 Procedure AddNetList(FileXMLNList :TStringList; Board : IPCB_Board;);
@@ -4144,19 +4232,21 @@ begin
        LyrObj := Stack.Next(eLayerClass_All,LyrObj);
      until LyrObj = Nil;
 
-     for LayerType := eMechanical1 to eMechanical16 do
+     for LayerType := 1 to 32 do
      begin
-       LyrMeh := Stack.LayerObject[LayerType];
-       if LyrMeh.MechanicalLayerEnabled then
+       //LyrMeh := Stack.LayerObject[PCBServer.LayerUtils.MechanicalLayer(LayerType)];
+       //PCBServer.LayerUtils.MechanicalLayer(LayerType)
+       //if LyrMeh.MechanicalLayerEnabled then
+       if Board.LayerIsUsed[PCBServer.LayerUtils.MechanicalLayer(LayerType)] then
        begin
        DispLayer := '';
-       if Board.LayerIsDisplayed[LyrMeh.LayerID] then DispLayer := 'visible="on"';
-       LyrColor := SysOpt.LayerColors[LyrMeh.LayerId];
+       if Board.LayerIsDisplayed[PCBServer.LayerUtils.MechanicalLayer(LayerType)] then DispLayer := 'visible="on"';
+       LyrColor := SysOpt.LayerColors[PCBServer.LayerUtils.MechanicalLayer(LayerType)];
        LyrColorS := GetHexFrom(LyrColor);
        LyrColorSP := GetHexFromDarker(LyrColor,30);
        LyrColorSF := GetHexFromDarker(LyrColor,50);
        FileXMLDispC.Add(#9+#9+#9+'<LayerOptions>');
-       FileXMLDispC.Add(#9+#9+#9+#9+'<LayerRef name="'+LyrMeh.Name+'"/>');
+       FileXMLDispC.Add(#9+#9+#9+#9+'<LayerRef name="'+Board.LayerName(PCBServer.LayerUtils.MechanicalLayer(LayerType))+'"/>');
        FileXMLDispC.Add(#9+#9+#9+#9+'<Colors details="#'+LyrColorS+'" pads="#'+LyrColorSP+'" fix="#'+LyrColorSF+'"/>');
        FileXMLDispC.Add(#9+#9+#9+#9+'<Show '+DispLayer+' details="on" pads="on"/>');
        FileXMLDispC.Add(#9+#9+#9+'</LayerOptions>');
@@ -5816,6 +5906,33 @@ Begin
 end;
 
 
+Procedure testprim;
+var
+LS : IPCB_LayerSet;
+Board : IPCB_Board;
+Layer : TLayer;
+Iterator : IPCB_BoardIterator;
+I : Integer;
+Messages : TStringList;
+Begin
+Messages := TStringList.Create;
+For I := 1 To 40 Do
+Begin
+Layer := PCBServer.LayerUtils.MechanicalLayer(I);
+LS := LayerSet.EmptySet.Include(Layer);
+
+Board := PCBServer.GetCurrentPCBBoard;
+Iterator := Board.BoardIterator_Create;
+Iterator.AddFilter_IPCB_LayerSet(LS);
+If Iterator.FirstPCBObject <> Nil Then
+Messages.Add('Layer ' + Layer2String(Layer) + ' Primitives is present');
+Board.BoardIterator_Destroy(Iterator);
+End;
+ShowMessage(Messages.Text);
+Messages.Free;
+End;
+
+
 Procedure StartScript ();
 var
   Board       : IPCB_Board;
@@ -5828,6 +5945,8 @@ var
 
 
 Begin
+
+//testprim;
 
 if GetADVer >= 18 then
      begin
@@ -5850,6 +5969,8 @@ if GetADVer >= 18 then
   Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
   If Board = nil then Begin ShowError('Open board!'); Exit; End; // Если платы нет то выходим
 
+  //EditNets(Board);
+  //CuttingDesignator(Board);     // Функция изменения десигнаторов всех компонентов
   //GetXYcomp(Board);     //спец секретная функция для получения размеров компонентов
   str := 'U1';
 
@@ -5999,6 +6120,8 @@ begin
   b_Import.Enabled := true;
 end;
 
+
+
 //ToDo
 // Добавить трансляцию эквивалентности выводов
 // исключить удаление проводников из посадочных
@@ -6017,10 +6140,26 @@ end;
 // Сделать вывод дуг с использованием ArcCW и ArcCCW
 
 // Вопросы в АД на форум
+
+// как получить пару слоев из IPCB_MechanicalLayerPairs?. см AddLayers
+
 // трансляция механических слоев с 17 по 32
+//ответ:
+//LS: IPCB.LayerSet;
+//Layer := PCBServer.LayerUtils.MechanicalLayer(LayerJndex);
+//LS := LayerSet.EmptySet.lnclude(Layer);
+//lterator.AddFilter_IPCB_LayerSet(LS);
+// опытным путем установлено, что можно создать сет из всех механических слоев следующим образом:
+//LS := LayerSet.EmptySet.IncludeMechanicalLayers;
+// см. пример в AddContruct.
+
 // Как для Аккардионов получить размеры прямоугольника в котором он состоит и как получить все примитивы входящие в змейку.
 // Как вообще получить обьект типа AccordionObject. Переменной eAccordionObject нет.
+// у аккордионов еть unionIndex у всех внутренних треков и арок такой же unionIndex.
+
 // как добраться до Хсигналов.
+// IPCB_Board.PinPairsmanager
+
 // Когда уже можно будет создать дифференциальный сигнал?.
 // Почему через WP API нет доступа к SwapID.
 
