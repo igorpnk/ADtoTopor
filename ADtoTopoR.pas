@@ -2919,7 +2919,7 @@ Begin
 
      While (Poly <> Nil) Do
      Begin
-       if Poly.Component = Nil then
+       if (Poly.Component = Nil) & (Board.LayerName(Poly.Layer) <> 'ConnectLayer' ) then
        Begin
          Constructive.AddStrings(PolygonToXML(Board,Poly,3));
        End;
@@ -2938,7 +2938,7 @@ Begin
 
      While (Region <> Nil) Do
      Begin
-       if (Region.Layer = eMultiLayer & pos('Layer Stack Region',Region.Name) >0 ) then begin end else begin
+       if ((Region.Layer = eMultiLayer & pos('Layer Stack Region',Region.Name) >0 ) | (Region.Layer = eConnectLayer)) then begin end else begin
        Constructive.AddStrings(RegionToXML(Board,Region,3)); end;
        Region := MechIterH.NextPCBObject;
      End;
@@ -5840,6 +5840,7 @@ begin
 
   lbProcess.Caption := 'Board Redraw'; Form1.Update;
   //*******отображаем все что изменили*******//
+  Board.ViewManager_FullUpdate;
   Client.SendMessage('PCB:Zoom', 'Action=Redraw' , 255, Client.CurrentView);
   AddStringParameter('Action', 'All');
   RunProcess('PCB:Zoom');
@@ -5966,6 +5967,7 @@ if GetADVer >= 18 then
 
 
   TopoRFile := TStringList.Create;
+
   Board := PCBServer.GetCurrentPCBBoard;              // Получение Текущей платы
   If Board = nil then Begin ShowError('Open board!'); Exit; End; // Если платы нет то выходим
 
@@ -6041,7 +6043,7 @@ if GetADVer >= 18 then
   tImport.Text :=  TopoRFile.Get(3);
   cb_Version.ItemIndex := StrToInt(TopoRFile.Get(4));
   if TopoRFile.Get(5) = 'True' then begin cb_FootComp.Checked := true; end
-  else begin cb_FootComp.Checked := false; end;
+  else begin cb_FootCom.Checked := false; end;
   if TopoRFile.Get(6) = 'True' then begin cbStartTopoR.Checked := true; end
   else begin cbStartTopoR.Checked := false; end;
   if TopoRFile.Get(7) = 'True' then begin cbTrack.Checked := true; end
@@ -6128,7 +6130,7 @@ end;
 // добавить дифф пары
 // Добавить змейки
 // Обработать правила проектирования (нет смысла)
-// трансляция механических слоев с 17 по 32 (не возможно)
+// трансляция механических слоев с 17 по 32 (возможно)
 // Сделать экспорт - импорт только для выбранных цепей
 // При нажатии на кнопку открыть: считывать пусть и сделать автоматический вход в выбранную папку
 // Для сквозных КП надо учитывать слой расположения компонента для пасты и маски (так как очень редко применяется оставил на будущее)
