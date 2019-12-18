@@ -2894,7 +2894,7 @@ Begin
      MechIterH.AddFilter_ObjectSet(MkSet(eFillObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Fill := MechIterH.FirstPCBObject; //первый филл на механическом слое
-          
+
      While (Fill <> Nil) Do
      Begin
        if Fill.Component = Nil then
@@ -6043,7 +6043,7 @@ if GetADVer >= 18 then
   tImport.Text :=  TopoRFile.Get(3);
   cb_Version.ItemIndex := StrToInt(TopoRFile.Get(4));
   if TopoRFile.Get(5) = 'True' then begin cb_FootComp.Checked := true; end
-  else begin cb_FootCom.Checked := false; end;
+  else begin cb_FootComp.Checked := false; end;
   if TopoRFile.Get(6) = 'True' then begin cbStartTopoR.Checked := true; end
   else begin cbStartTopoR.Checked := false; end;
   if TopoRFile.Get(7) = 'True' then begin cbTrack.Checked := true; end
