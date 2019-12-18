@@ -2894,7 +2894,7 @@ Begin
      MechIterH.AddFilter_ObjectSet(MkSet(eFillObject));
      MechIterH.AddFilter_Method(eProcessAll);
      Fill := MechIterH.FirstPCBObject; //первый филл на механическом слое
-
+          
      While (Fill <> Nil) Do
      Begin
        if Fill.Component = Nil then
