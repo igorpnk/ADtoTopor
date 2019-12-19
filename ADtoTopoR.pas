@@ -5689,9 +5689,10 @@ var
  NameComp                : String;
  StartInd                : integer;
  i                       : integer;
- angle                   : double;
+ angle                   : string;
  side                    : string;
  currStr                 : string;
+ ChangeLayer             : boolean;
 begin
      for i:=0 to FileXML.Count - 1 do
      if pos('<ComponentsOnBoard', FileXML.Strings[i]) > 0 then begin StartInd := i; break; end;
@@ -5704,24 +5705,29 @@ begin
 
      While (Component <> Nil) Do
      Begin
+       ChangeLayer := false;
        NameComp := Component.Name.Text;                        // Имя компонента
        For i:= StartInd to FileXML.Count - 1 do
        begin
          if pos('<CompInstance name="'+NameComp+'"', FileXML.Strings[i]) > 0 then
          begin
-           angle := XMLGetAttrValue(FileXML.Strings[i],'angle');
-           if angle = '' then angle := '0';
-           if angle <> '' then
-            Component.Rotation := StrToInt(angle);
-
            side := XMLGetAttrValue(FileXML.Strings[i],'side');
            if side = 'Top' then
            begin
+             if Component.Layer = 32 then ChangeLayer := true;
              Component.Layer := 1;
            end  else
            begin
+             if Component.Layer = 1 then ChangeLayer := true;
              Component.Layer := 32;
            end;
+
+           angle := XMLGetAttrValue(FileXML.Strings[i],'angle');
+           if angle = '' then angle := '0';
+           if ChangeLayer then angle := IntToStr(StrToInt(angle) + 180);
+           if angle <> '' then
+            Component.Rotation := StrToInt(angle);
+
            i := i+3;
            currStr := FileXML.Strings[i];
            Component.x := MMsToCoord(StrToFloatDot(XMLGetAttrValue(FileXML.Strings[i],'x')))+Board.XOrigin;
