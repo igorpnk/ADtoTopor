@@ -4,3 +4,5 @@ PCB1.fst
 PCB1.fsproj
 *.pasPreview
 *.Zip
+*.PcbDocPreview
+*.htm
