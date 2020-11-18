@@ -25,7 +25,7 @@ begin
     b_Log.Caption := ' \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/  \/ ';
     Form1.Height := 355;
   end;
-end;
+end;      
 
 Procedure LogOnlyShow();
 begin
@@ -6129,6 +6129,9 @@ begin
 end;
 
 
+//обновление платы после изменений:
+//Some moved PCB objects via SDK dont update unless you reopen.
+//https://forum.live.altium.com/#posts/242541/752263
 
 //ToDo
 // Добавить трансляцию эквивалентности выводов
