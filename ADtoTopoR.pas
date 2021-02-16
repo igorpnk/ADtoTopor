@@ -6132,6 +6132,7 @@ end;
 //обновление платы после изменений:
 //Some moved PCB objects via SDK dont update unless you reopen.
 //https://forum.live.altium.com/#posts/242541/752263
+//Обновление конкретного примитива: Board.ViewManager_GraphicallyInvalidatePrimitive(Component);
 
 //ToDo
 // Добавить трансляцию эквивалентности выводов
