@@ -1929,6 +1929,7 @@ Var // жуть...
    ComponentsRC            : array[0..1000] of IPCB_Component; /// увеличить массив в случае переполнени€.
    //ComponentsRC            : tlist;
    ComponentsRClist        : String;
+   PinNumMass              : String;
    CountFoot               : integer;
    CurrFoot                : integer;
    RCflag                  : boolean;
@@ -2101,11 +2102,12 @@ Begin
            PadIteratorHandle := Component.GroupIterator_Create;
            PadIteratorHandle.AddFilter_ObjectSet(MkSet(ePadObject));
            Pad := PadIteratorHandle.FirstPCBObject;
-
+           PinNumMass := '';
            While (Pad <> Nil) Do
            Begin
                 inc (PadNum);
                 PadNFoot := PadNum;
+                //TestString := IntToStr(PadNFoot); ShowError(TestString);
                 if (FTrue = false) then  // если посадочное уже было, то номер посадочного нужно установить по его номеру в компоненте образце.
                 begin
                    PadNum:=1;
@@ -2114,12 +2116,23 @@ Begin
                    Pad3 := PadIteratorHandle3.FirstPCBObject;
                    While (Pad3 <> Nil) Do
                    Begin
-                      if Pad.Name = Pad3.Name then begin
-                      PadNFoot := PadNum; break; end;
+                      if Pad.Name = Pad3.Name then
+                      begin
+                      PadNFoot := PadNum;
+
+                      if Pos('"' + IntToStr(PadNum) + '"',PinNumMass) = 0 then
+                        begin
+                        PinNumMass := PinNumMass + '"' + IntToStr(PadNum) + '"';
+                        break;
+                        end;
+                      end;
+
                       inc (PadNum);
                       Pad3 := PadIteratorHandle3.NextPCBObject;
                  end;
                  Component2.GroupIterator_Destroy(PadIteratorHandle3);
+
+                //TestString := IntToStr(PadNFoot); ShowError(TestString);
                 //i :=  Startindfoot;
                 //Repeat
                 //  CurrentStr := Footprints.Get(i);
@@ -3127,7 +3140,6 @@ Begin
      Net := IteratorHandle.FirstPCBObject; //перва€ цепь
      FileXMLNList.Add(#9+#9+'<Net name="No_Net">');
      FileXMLNList.Add(#9+#9+'</Net>');
-
      lbProcess.Caption := 'Nets'; Form1.Update;
      While (Net <> Nil) Do
      Begin
