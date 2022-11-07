@@ -2682,7 +2682,7 @@ Begin
      XMLInL.Add(#9+'</LocalLibrary>');
      FileXMLCOB.Add(#9+'</ComponentsOnBoard>');
 
-     //*******Подмитаем********// 
+     //*******Подметаем********//
      Padstacks.Free;
      Footprints.Free;
      Components.Free;
@@ -4799,6 +4799,8 @@ r           : Double;
 d           : Double;
 angle       : Double;
 testDouble  : Double;
+Moveable    : Boolean;
+fixedstr    : String;
 
 begin
   StartInd := 0;
@@ -4854,7 +4856,15 @@ begin
          Begin
           if XMLGetAttrValue(CurrentStr,'width') <> '' then
             begin width := StrToFloatDot(XMLGetAttrValue(CurrentStr,'width')); end
-            else begin  width := 0 end;
+            else begin  width := 0; end;
+
+          if XMLGetAttrValue(CurrentStr,'fixed') <> '' then
+            begin fixedstr := XMLGetAttrValue(CurrentStr,'fixed'); end
+            else begin  fixedstr := 'off'; end;
+
+          if (fixedstr = 'on') then
+            begin  Moveable := False; end
+            else begin   Moveable := True; end;
          end;
 
          if pos('<Start',CurrentStr) >0 then
@@ -4885,6 +4895,9 @@ begin
            Track.x2 := MMsToCoord(EndX)+Board.XOrigin;
            Track.y2 := MMsToCoord(EndY)+Board.YOrigin;
            Track.Width := MMsToCoord(Width);
+           Track.Moveable := Moveable;
+
+           //Track.
            Board.AddPCBObject(Track);
            StartX := EndX;
            StartY := EndY;
@@ -4898,7 +4911,7 @@ begin
            Arc.Net := Net;
            Arc.LineWidth  := MMsToCoord(Width);
            Arc.XCenter := MMsToCoord(CenterX)+Board.XOrigin;
-           Arc.YCenter := MMsToCoord(CenterY)+Board.YOrigin;
+           Arc.YCenter := MMsToCoord(CenterY)+Board.YOrigin; 
            r := abs(Sqrt((CenterX - StartX)*(CenterX - StartX) + (CenterY - StartY)*(CenterY - StartY))); // находим радиус
            // находим расстояние от точки старта до точки равному углу 0.
            d := abs(Sqrt((CenterX+r - StartX)*(CenterX+r - StartX) + (CenterY - StartY)*(CenterY - StartY)));
@@ -4916,6 +4929,7 @@ begin
            angle := RadToDeg(ArcCos(1-angle));
            if EndY < CenterY then angle := 360-angle;
            Arc.EndAngle := angle;
+           Arc.Moveable := Moveable;
 
            Arc.Radius := MMsToCoord(r);
            //Arc.StartAngle :=
@@ -4942,7 +4956,7 @@ begin
            if StartY < CenterY then angle := 360-angle;
 
            Arc.EndAngle := angle;
-
+           Arc.Moveable := Moveable;
            // находим расстояние от точки конца до точки равному углу 0.
            d := abs(Sqrt((CenterX+r - EndX)*(CenterX+r - EndX) + (CenterY - EndY)*(CenterY - EndY)));
            angle := (d*d)/(2*r*r);
